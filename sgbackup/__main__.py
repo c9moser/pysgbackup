@@ -121,8 +121,8 @@ def command_database(db,argv):
     cmd = argv[0]
     if cmd == 'delete':
         if not args:
-            print("sgbackup database delete: No arguments given!'",file=sys.stderr)
-            print(_HELP_DATABASE)
+            print("sgbackup database delete: No GameIDs given!'",file=sys.stderr)
+            print(COMMAND_DATABASE_HELP)
             sys.exit(2)
         
         for i in args:
@@ -133,15 +133,45 @@ def command_database(db,argv):
         for i in args:
             db.delete_game(i)            
     elif cmd == 'list':
-        pass
+        for gid,name in db.get_games():
+            if len(gid) < 32:
+                s=gid + (" " * (32 - len(gid))) + name
+            else:
+                s=" ".join(gid,name)
+            print(s)
     elif cmd == 'list-ids':
-        pass
+        for gid,name in db.get_games():
+            print(gid)        
     elif cmd == 'list-names':
-        pass
+        for gid,name in db.get_games():
+            print(name)
     elif cmd == 'name':
-        pass
+        if not args:
+            print("sgbackup database name: No GameIDs given!",file=sys.stderr)
+            print(COMMAND_DATABASE_HELP)
+            sys.exit(2)
+        for gid in args:
+            if not db.has_game(gid):
+                print("No GameID '{0}' found!".format(gid),file=sys.stderr)
+                sys.exit(2)
+        for gid in args:
+            game = db.get_game(gid)
+            print(game.name) 
     elif cmd == 'update':
-        pass
+        if not args:
+            database.update(db,force)
+        else:
+            game_list=[]
+            for gid in args:
+                g=games.parse_gameconf(gid)
+                if g:
+                    game_list.append(g)
+                else:
+                    print("No '{0}.conf' file found!".format(gid),file=sys.stderr)
+                    exit(2)
+                    
+            for g in game_list:
+                db.add_game(g)
 # _database()
     
         
