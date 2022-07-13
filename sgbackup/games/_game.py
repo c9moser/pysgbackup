@@ -1,8 +1,13 @@
+#-*- coding:utf-8 -*-
+
+from sgbackup import config
 import os
+from string import Template
 
 class Game(object):
     def __init__(self):
-        object.__init__(self,game_id,name,sg_name,sg_root,sg_dir,id=0,final_backup=False)
+        object.__init__(self,game_id,name,sg_name,sg_root,sg_dir,id=0,final_backup=False,variables={})
+        
         if id:
             self.id = id
         else:
@@ -13,12 +18,13 @@ class Game(object):
         self.savegame_root = sg_root
         self.savegame_dir = sg_dir
         self.final_backup = final_backup
+        self.__variables = dict(variables)
         
     @property
     def id(self):
         return self.__id
         
-    @id.setter(self):
+    @id.setter
     def id(self,x):
         if not isinstance(x,int):
             raise TypeError("'id' is not an integer!")
@@ -26,7 +32,7 @@ class Game(object):
             raise ValueError("'id' must be greater than 0!")
         self.__id = x
         
-    @propterty
+    @property
     def game_id(self):
         return self.__game_id
         
@@ -71,9 +77,19 @@ class Game(object):
             raise ValueError("'savegame_name' too long!")
         self.__sg_name = x
             
-    @poperty
-    def savegame_root(self):
+    @property
+    def raw_savegame_root(self):
         return self.__sg_root
+        
+    @property
+    def savegame_root(self):
+        v = dict(os.environ)
+        v.update(config.CONFIG["sg-vars"])
+        v.update({'BACKUP_DIR':config.CONFIG['sg-backup-dir']})
+        v.update(self.vaiables)
+        
+        return Template(self.__sg_root).substitute(v)
+        
         
     @savegame_root.setter
     def savegame_root(self,x):
@@ -82,8 +98,17 @@ class Game(object):
         self.__sg_root = x
         
     @property
-    def savegame_dir(self):
+    def raw_savegame_dir(self):
         return self.__sg_dir
+        
+    @property
+    def savegame_dir(self):
+        v = dict(os.environ)
+        v.update(config.CONFIG['sg-vars'])
+        v.update({'BACKUP_DIR':config.CONFIG['sg-backup-dir']})
+        v.update(self.vaiables)
+        
+        return Template(self.__sg.dir).substitute(v)
         
     @savegame_dir.setter
     def savegame_dir(self,x):
@@ -99,16 +124,34 @@ class Game(object):
     def final_backup(self,x):
         if x:
             self.__final_backup = True
-        else
+        else:
             self.__final_backup = False
+            
+    @property
+    def vaiables(self):
+        return self.variables     
+# Game class
 
 class GameConf(object):
-    def __init__(self,filename,checksum,user_file=False):
+    def __init__(self,filename,checksum,user_file=False,game_id=""):
         if not os.path.isabs(filename):
             raise TypeError('\'filename\' needs to ba an absolute path!')
         self.__filename = filename
         
+        if not game_id:
+            self.__game_id = os.path.splitext(os.path.basename(filename))[0]
+        else:
+            self.__game_id = game_id
+            
         self.user_file=user_file
+        
+    @property
+    def game_id(self):
+        return self.__game_id
+
+    @game_id.setter
+    def game_id(self,gid):
+        self.__game_id = gid
         
     @property
     def filename(self):
@@ -132,5 +175,6 @@ class GameConf(object):
             self.__user_file=True
         else:
             self.__user_file=False
+            
 
 

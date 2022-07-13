@@ -1,5 +1,9 @@
-import config
+#-*- coding:utf-8 -*-
+
+from . import config, games
+
 import sqlite3
+import os
 
 class Database:
     DB_ENGINE="sqlite3"
@@ -7,31 +11,313 @@ class Database:
     def __init__(self,db=None, connect=True):
         self.__db = None
         
+        
+        if not db:
+            self.__db_file = config.CONFIG["sg-database"];
+        else:
+            self.__db_file = db
+            
+        if not os.path.isfile(self.db_file):
+            if (os.path.isdir(self.db_file)):
+                raise ValueError("Database file '{0}' is a directory!".format(self.db_file))
+            if (os.path.exists(self.db_file)):
+                os.unlink(self.db_file)
+            self.__needs_creation = True
+        else:
+            self.__needs_creation = False
+        
         if (connect):
-            if not db:
-                self._connect(config.CONFIG["sg-database"]);
-            else
-                self._connect(db)
+            self.connect()
+    # __init__()
         
+    def __del__(self):
+        self.close()
+    # del()
         
-    def _connect(self,db):
-        self.__db = __self.connect(db)
+    @property
+    def _db(self):
+        return self.__db
+    # property _db
         
-    def connect_user_db(self,db):
-        pass
+    @property
+    def db_file(self):
+        return self.__db_file
+    # property db_file
+        
+    @property
+    def needs_creation(self):
+        return self.__needs_creation
+    # property needs_creation
+        
+    def _connect(self):
+        self.__db = sqlite3.connect(self.db_file)
+        if (self.needs_creation):
+            with open(config.CONFIG['db-create-sql'],'r') as sql_file:
+                self._db.execute_script(sql_file.read())
+                self.__needs_creation=False
+    # _connect()
+
         
     def close(self):
         if self.DB_ENGINE == "sqlite3" and self.__db:
             self.__db.close()
             self.__db = None
+    # close()
             
-    def _init_db(self):
-        pass
 
-def main():
-    pass
+    def _bool_to_db(self,x):
+        if (x):
+            return 'Y'
+        return 'N'
+    # _bool_to_db()
+        
+    def _db_to_bool(self,x):
+        if (x.upper() == 'Y'):
+            return True
+        elif (x.upper() == 'N'):
+            return False
+            
+        raise ValueError("'db-bool' must be 'Y' or 'N'!")
+    # _db_to_bool()
+        
+        
+    def list_games(self):
+        """
+        return a list of game_id,name tuples.
+        """
+        
+        sql = "SELECT game_id,name FROM games ORDER BY game_id;"
+        ret = []
+        
+        cur = self._db.cursor()
+        cur.execute(sql)
+        
+        for row in cur:
+            ret.append((row[0],row[1]))
+            
+        return ret
+    # list_games()
+        
+    def has_game(self,game_id):
+        sql = "SELECT id FROM games WHERE game_id=?;"
+        cur = self._db.cursor()
+        
+        cur.execute(sql,(game_id,));
+        row = cur.fetchone()
+        if row and row[0] == game_id:
+            return True
+        return False
+        
+    def get_game(self,game_id):
+        sql = "SELECT id,name,savegame_name,savegame_root,savegame_dir,final_backup FROM games WHERE game_id=?;"
+        var_sql="SELECT name,value FROM game_variables WHERE game=?;"
+        
+        ret = None
+        cur = self._db.cursor()
+        cur.execute(sql,(game_id,))
+        row = cur.fetchone()
+        
+        if row:
+            cur.execute(var_sql,(row[0],))
+            var = {}
+            for i in cur:
+                var[i[0]] = i[1]
+                
+            ret = Game(game_id,row[1],row[2],row[3],row[4],row[0],row[5],var)
+            
+            
+        return ret
+    # get_game()
+        
+    def get_gameconf(self,game_id):
+        sql = "SELECT filename,checksum,user_file FROM gameconf WHERE game=(SELECT id FROM games WHERE game_id=?);"
+        
+        ret = []
+        cur = self._db.cursor()
+        cur.execute(sql,(game_id,))
+        
+        for row in cur:
+            gc = GameConf(row[0],row[1],row[2],game_id)
+            ret.append(gc)
+            
+        return ret        
+    # get_gameconf()
+        
+    def get_gameconf_by_filename(self,filename):
+        sql = """SELECT t2.game_id,t1.filename,t1.checksum,t1.user_file 
+            FROM gameconf AS t1 JOIN games AS t2 ON t1.game = t2.id 
+            WHERE t1.filename = ?;"""
     
-if __name__ == '__main__':
-    main()
+        ret = None
+        
+        cur = self._db.cursor()
+        cur.execute(sql,(filename,))
+        
+        row = cursor.fetchone();
+        
+        if row:
+            ret = GameConf(filename,checksum,user_file,game_id)
+        
+        return ret
+    # get_gameconf_by_filename()
+        
+    def add_gameconf(self,filename,game):
+        if not game.id:
+            game = self.get_game(game.game_id)
+        assert(game)
+            
+        gc = self.get_gameconf_by_filename(filename)
+        
+        new_gc = games.get_gameconf_data_by_filename(filename,game.game_id)
+        
+        if gc:
+            sql="UPDATE gameconf SET checksum=?,user_file=? WHERE filename=?;"
+            sql_args=(new_gc.checksum,new_gc.user_file,filename)
+        else:
+            sql="INSERT INTO gameconf (game,filename,checksum,user_file) VALUES (?,?,?,?);"
+            sql_args=(game.id,filename,new_gc.checksum,new_gc.user_file)
+            
+        cur = self._db.cursor()
+        cur.execute(sql,sql_args)
+    # add_gameconf()
+        
+    def delete_gameconf(self,filename):
+        sql="DELETE FROM gameconf WHERE filename=?;"
+        
+        cur = selof._db.cursor()
+        cur.execute(sql,(filename,))
+        
+        
+    def add_game(self,game,gameconf=[]):
+        if game.id:
+            sql_args = (
+                game.game_id,
+                game.name,
+                game.savegame_name,
+                game.raw_savegame_root,
+                game.raw_savegame_dir,
+                self._bool_to_db(game.final_backup),
+                game.id)
+            sql = "UPDATE games SET game_id=?,name=?,savegame_name=?,savegame_root=?,savegame_dir=?,final_backup=? WHERE id=?;"
+        else:
+            g=self.get_game(game_id)
+            if (g):
+                if (game.final_backup or g.final_backup):
+                    final_backup=True
+                else:
+                    final_backup=False
+                game.id = g.id 
+                sql_args = (
+                    game.name,
+                    game.savegame_name,
+                    game.raw_savegame_root,
+                    game.raw_savegame_dir,
+                    self._bool_to_db(final_backup),
+                    game.game_id)
+                sql = "UPDATE games SET name=?,savegame_name=?,savegame_root=?,savegame_dir=?,final_backup=? WHERE game_id=?;"
+            else:
+                sql_args = (
+                    game.game_id,
+                    game.name,
+                    game.savegame_name,
+                    game.raw_savegame_root,
+                    game.raw_savegame_dir,
+                    game.final_backup)
+                sql = "INSERT INTO games (game_id,name,savegame_name,savegame_root,savegame_dir,final_backup) VALUES(?,?,?,?,?,?);"
 
+        cur = self._db.cursor()
+        cur.execute(sql,sql_args)
+        
+        if game.id:
+            g=game
+        else:
+            g=self.get_game(game.game_id)
+            
+        for n,v in game.variables.items():
+            pass
+        
+        for i in gameconf:
+            self.add_gameconf(i,g)
+    # add_game()
+    
+    def delete_game(self,game_id):
+        sql = "DELTE FROM games WHERE game_id=?;"
+        
+        for gc in self.get_gameconf(game_id):
+            self.delete_gameconf(gc.filename)
+        
+        cur = self._db.cursor()
+        cur.execute(sql,(game_id,))
+    # delete_game()
+    
+# Database class
 
+def update(db,force=False):
+    def _gameconf_changed(gameconf_list_db,gameconf_list_conf):
+        def gameconf_in_db(gameconf,gameconf_list):
+            for i in gameconf_list:
+                if gameconf.filename == i.filename:
+                    return True
+            return False
+        # gameconf_in_db()
+        
+        def gameconf_in_list_changed(gameconf,gameconf_list):
+            for i in gameconf_list:
+                if (gameconf.filename == i.filename) and (gameconf.checksum == i.checksum):
+                    return False                    
+            return True
+        # gameconf_in_list_changed
+        
+        for i in gameconf_list_conf:
+            if not gameconf_in_db(i,gameconf_list_conf):
+                return True
+                
+        for i in gameconf_list_db:
+            if gameconf_in_list_changed(i,gameconf_list_conf):
+                return True
+        return False
+    # _gameconf_changed()
+    
+    def _gameconf_removed(self,filename):
+        if not os.path.isfile(filename):
+            return True
+        return False
+    # _gameconf_removed()
+    
+    for gid in games.get_games():
+        if config.CONFIG['verbose']:
+            print("Processing: {0}".format(gid))
+            
+        if force or not db.has_game(gid):
+            has_game = True
+            if not db.has_game(gid):
+                has_game = False
+                print("Adding game: {0}".format(gid))
+            else:
+                print("Updating game: {0}".format(gid))
+                
+            gcd_list = game.get_gameconf_data(gid)
+            game = game.parse_gameconf(gid)
+            db.add_game(game,gcd_list)
+            if (has_game):
+                gcd_db = db.get_gameconf(gid)
+                for gcd in gcd_db:
+                    if _gameconf_removed(gcd.filename):
+                        if config.CONFIG['verbose']:
+                            print("Removing gameconf '{0}' from database".format(gcd.filename,gid))
+                        db.delete_gameconf(gcd.filename)
+            continue
+            
+        gcd_db = db.get_gameconf(gid)
+        gcd_conf = game.get_gameconf(game_id)
+        
+        if (_gameconf_changed(gcd_db,gcd_conf)):
+            print("Updating game: {0}".format(gid))
+            game = game.parse_gameconf(gid)
+            db.add_game(game,gcd_conf)
+            for gcd in gcd_db:
+                if _gameconf_removed(gcd.filename):
+                    if config.CONFIG['verbose']:
+                        print("Removing gameconf '{0}' from database".format(gcd.filename,gid))
+                    db.delete_gameconf(gcd.filename)
+# update()

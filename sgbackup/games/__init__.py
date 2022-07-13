@@ -1,10 +1,12 @@
+#-*- coding:utf-8 -*-
+
 import os
 from sgbackup import config
 import configparser
 
 import hashlib
 
-from _game import Game, GameConf
+from ._game import Game, GameConf
 
 def get_conf_dirs():
     ret = [
@@ -13,7 +15,7 @@ def get_conf_dirs():
         
     return ret
 
-def parse_game_conf(game_id):
+def parse_gameconf(game_id):
     def _real_parse_file(f,game=None):
         parser = configparser.ConfigParser()
         parser.read(f)
@@ -24,6 +26,11 @@ def parse_game_conf(game_id):
         sg_dir=None
         sg_root=None
         
+        sect='variables'
+        if parser.has_section(variables):
+            for i in parser.options(sect):
+                pass
+        
         sect='game'
         if parser.has_section(sect):
             if parser.has_option(sect,'name'):
@@ -32,7 +39,7 @@ def parse_game_conf(game_id):
                 sg_name=parser.get_option(sect,'savegame-name')
             if parser.has_option(sect,'savegame-root'):
                 sg_root=parser.get_option(sect,'savegame-root')
-            if parser.has_option(sect,'savegame-dir')
+            if parser.has_option(sect,'savegame-dir'):
                 sg_dir=parser.get_option(sect,'savegame-dir')
         
         if not game:
@@ -60,7 +67,7 @@ def parse_game_conf(game_id):
             game=_real_parse_file(f,game)
             
     return game
-# parse_game_conf()
+# parse_gameconf()
 
 
 def get_gameconf_data(game_id):
@@ -69,23 +76,41 @@ def get_gameconf_data(game_id):
     for d in get_conf_dirs():
         f = os.path.join(d,'.'.join(game_id,'.conf'))
         if os.path.isfile(f):
-            with open(f,'br') as conf:
+            with open(f,'rb') as conf:
                 checksum=hashlib.md5(conf.read()).hexdigest()
                 if d == config.CONFIG['sg-user-gameconf-dir']:
                     user_file=True
                 else:
                     user_file=False
                 ret.append(GameConf(filename,checksum,user_file))                            
-    return ret        
+    return ret     
 # get_gameconf_data            
 
-def get_gameconfigs():
+def get_gameconf_data_by_filename(filename,game_id=""):
+    ret = None
+    
+    if (os.path.isfile(filename)):
+        if os.path.dirname(filename) == config.CONFIG["sg-user-gameconf-dir"]:
+            user_file=True
+        else:
+            user_file=False
+            
+        with open(filename,"rb") as conf:
+            checksum = hashlib.md5(conf.read()).hexdigest()
+            
+        ret = GameConf(filename,checksum,user_file)
+        
+        if game_id:
+           ret.game_id = game_id
+            
+    return ret
+        
+
+def get_games():
     """
     return a list of game_id's.
     """
-    
     gameconf = []
-    
     for d in get_conf_dirs():
         if (os.path.exists(d)):
             for f in os.listdir(d):
