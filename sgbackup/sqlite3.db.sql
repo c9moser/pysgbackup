@@ -36,8 +36,8 @@ CREATE TABLE gameconf (
     UNIQUE(game,filename),
     
     FOREIGN KEY (game) REFERENCES games(id)
-        ON_UPDATE CASCADE
-        ON_DELETE CASCADE
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
 );
 CREATE INDEX gameconf_game_index ON gameconf(game);
 CREATE INDEX gameconf_filename_index ON gameconf(filename);
