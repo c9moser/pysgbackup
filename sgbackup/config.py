@@ -7,7 +7,9 @@ import sys
 import configparser
 from string import Template
 import hashlib
+import zipfile
 from . import archivers
+
 
 CONFIG={
     "version":(0,0,1),
@@ -27,13 +29,17 @@ CONFIG={
     "backup-archive": "zipfile",
     "backup-dir": os.path.join(GLib.get_home_dir(), "SaveGames"),
     "backup-write-listfile": False,
+    "backup-archiver": "zipfile",
     
+    "zipfile-compression": zipfile.ZIP_DEFLATED,
+    "zipfile-copmresslevel": 9,
     # Variables for game.conf files and database entries
     "sg-vars": {
         "HOME": GLib.get_home_dir(),
         "USER_DATA_DIR": GLib.get_user_data_dir(),
         "USER_DOCUMENTS_DIR": GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOCUMENTS)
     }
+    
 }
 CONFIG['backup-listfile']=os.path.join(CONFIG['backup-dir'],"backups.list")
 
@@ -84,6 +90,25 @@ def _init_config():
             if cparser.has_option(sect,'listfile'):
                 t=Template(cparser.get(sect,"listfile"))
                 CONFIG['backup-listfile'] = t.substitute(v)
+                
+        sect="zipfile"
+        if cparser.has_section(sect):
+            if cparser.has_option('compression'):
+                compression = {
+                    'stored': zipfile.ZIP_STORED
+                    'deflated': zipfile.ZIP_DEFLATED,
+                    'bzip2': zipfile.ZIP_BZIP2,
+                    'lzma': zipfile.ZIP_LZMA
+                }
+                
+                opt = cparser.get(sect,compression)
+                if (not opt or opt not in compression.keys()):
+                    print("CONFIG WARNING: [zipfile] compression {0} is not known! Using default compression!".format(opt))
+                else:
+                    CONFIG["zipfile-compression"] = compression[opt]
+            if cparser.has_option(sect,'compresslevel'):
+                CONFIG['zipfile-compresslevel'] = cparser.getint(sect,'compresslevel')
+                
     # parse_config()
     
     cfg = configparser.ConfigParser()
