@@ -215,6 +215,7 @@ def main():
         commands[sys.argv[1]]['function'](db,sys.argv[2:])
     else:
         print("sgbackup: Unknown command '{0}'!".format(sys.argv[1]),file=sys.stderr)
+        print(HELP)
         sys.exit(2)
     
 if __name__ == "__main__":
