@@ -127,7 +127,7 @@ def command_database(db,argv):
         
         for i in args:
             if not db.has_game(i):
-                print("No Game found for GameID '{0}'!",file=sys.stderr)
+                print("No Game found for GameID '{0}'!".format(i),file=sys.stderr)
                 sys.exit(2)
                 
         for i in args:
