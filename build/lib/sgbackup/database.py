@@ -13,7 +13,7 @@ class Database:
         
         
         if not db:
-            self.__db_file = config.CONFIG["sg-database"];
+            self.__db_file = config.CONFIG["database"];
         else:
             self.__db_file = db
             
@@ -52,7 +52,7 @@ class Database:
     def _connect(self):
         self.__db = sqlite3.connect(self.db_file)
         if (self.needs_creation):
-            with open(config.CONFIG['db-create-sql'],'r') as sql_file:
+            with open(config.CONFIG['database.create-sql'],'r') as sql_file:
                 self._db.executescript(sql_file.read())
                 self.__needs_creation=False
     # _connect()
@@ -136,7 +136,7 @@ class Database:
         return False
         
     def get_game(self,game_id):
-        sql = "SELECT id,name,savegame_name,savegame_root,savegame_dir,final_backup FROM games WHERE game_id=?;"
+        sql = "SELECT id,name,savegame_name,savegame_root,final_backup FROM games WHERE game_id=?;"
         var_sql="SELECT name,value FROM game_variables WHERE game=?;"
         
         ret = None
@@ -150,8 +150,7 @@ class Database:
             for i in cur:
                 var[i[0]] = i[1]
                 
-            ret = games.Game(game_id,row[1],row[2],row[3],row[4],row[0],row[5],var)
-            
+            ret = games.Game(game_id,row[1],row[2],row[3],row[0],row[4],var)
             
         return ret
     # get_game()
@@ -212,7 +211,7 @@ class Database:
     def delete_gameconf(self,filename):
         sql="DELETE FROM gameconf WHERE filename=?;"
         
-        cur = selof._db.cursor()
+        cur = self._db.cursor()
         cur.execute(sql,(filename,))
         self._db.commit()
         
@@ -224,10 +223,9 @@ class Database:
                 game.name,
                 game.savegame_name,
                 game.raw_savegame_root,
-                game.raw_savegame_dir,
                 self._bool_to_db(game.final_backup),
                 game.id)
-            sql = "UPDATE games SET game_id=?,name=?,savegame_name=?,savegame_root=?,savegame_dir=?,final_backup=? WHERE id=?;"
+            sql = "UPDATE games SET game_id=?,name=?,savegame_name=?,savegame_root=?,final_backup=? WHERE id=?;"
         else:
             g=self.get_game(game.game_id)
             if (g):
@@ -240,19 +238,17 @@ class Database:
                     game.name,
                     game.savegame_name,
                     game.raw_savegame_root,
-                    game.raw_savegame_dir,
                     self._bool_to_db(final_backup),
                     game.game_id)
-                sql = "UPDATE games SET name=?,savegame_name=?,savegame_root=?,savegame_dir=?,final_backup=? WHERE game_id=?;"
+                sql = "UPDATE games SET name=?,savegame_name=?,savegame_root=?,final_backup=? WHERE game_id=?;"
             else:
                 sql_args = (
                     game.game_id,
                     game.name,
                     game.savegame_name,
                     game.raw_savegame_root,
-                    game.raw_savegame_dir,
-                    game.final_backup)
-                sql = "INSERT INTO games (game_id,name,savegame_name,savegame_root,savegame_dir,final_backup) VALUES(?,?,?,?,?,?);"
+                    self._bool_to_db(game.final_backup))
+                sql = "INSERT INTO games (game_id,name,savegame_name,savegame_root,final_backup) VALUES(?,?,?,?,?);"
 
         cur = self._db.cursor()
         cur.execute(sql,sql_args)
@@ -271,7 +267,7 @@ class Database:
     # add_game()
     
     def delete_game(self,game_id):
-        sql = "DELTE FROM games WHERE game_id=?;"
+        sql = "DELETE FROM games WHERE game_id=?;"
         
         for gc in self.get_gameconf(game_id):
             self.delete_gameconf(gc.filename)

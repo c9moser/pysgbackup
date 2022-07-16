@@ -6,40 +6,86 @@ import importlib
 from .. import config
 from ._archiver import ArchiverBase,ProgramArchiver,TarFileArchiver,ZipFileArchiver
 
-for i in os.listdir(os.path.dirname(__file__)):
-    if not i.startswith('_') and not i.startswith('.') and i.endswith('.py'):
-        exec("import .{0}".format(i))
+ARCHIVERS={
+    'tarfile': {
+        'builtin': True,
+        'class': 'TarFileArchiver'
+    },
+    'zipfile': {
+        'builtin': True,
+        'class': 'ZipFileArchiver',
+    }
+}
 
-def get_archiver(archiver_id):
-    global_conf = os.path.join(os.path.dirname(__file__),'.'.join((archiver_id,'conf')))
-    user_conf = os.path.join(config.CONFIG['sg-user-archivers-dir'],'.'.join((archiver_id,'conf')))
-            
-    if not os.path.isfile(global_conf) and not os.path.isfile(user_conf):
-        return None
-        
+def _parse_conf(filename):
     parser = configparser.ConfigParser()
-    if os.path.isfile(global_conf):
-        parser.read(global_conf)
-    if os.path.isfile(user_conf):
-        parser.read(user_conf)
-        
-    archiver=None
-    if (has_section('archiver')):
-        pass
-    return archiver
-
-def list_archivers():
-    ret = []
-    for i in os.listdir(os.path.dirname(__file__)):
-        if i.endswith('.conf'):
-            ret.append(i[0:-5])
+    parser.read(filename)
+    conf={}
+    
+    sect='archiver'
+    if prarser.has_section(sect):
+        if parser.has_option(sect,'cygpath'):
+            x=parser.get('cygpath')
+            if (os.path.isabs('cygpath')):
+                conf['cygpath']=parser.get(sect,'cygpath')
+            else:
+                return {}     
+        if parser.has_option(sect,'executable'):
+            if os.path.isabs('executable'):
+                conf['executable'] = parser.get(sect,'executbale')
+            else:
+                return {}
+        if parser.has_option(sect,'create'):
+            conf['create'] = parser.get(sect,'create')
             
-    for i in os.listdir(config.CONFIG['sg-user-archivers-dir']):
+        if parser.has_opion(sect,'extract'):
+            conf['extract'] = parser.get(sect,'extract')
+            
+        if parser.has_option('verbose'):
+            conf['verbose'] = parser.get(sect,'verbose')
+            
+        if parser.has_option('chdir'):
+            conf['chdir'] = parser.getboolean(sect,'chdir')
+        else:
+            conf['chdir'] = False
+        
+    return conf
+    
+def _validate_conf_keys(conf):
+    if not conf:
+        return False
+        
+    keys=[
+        'executable',
+        'create',
+        'extract'
+    ]
+    for i in keys:
+        if i not in conf.keys():
+            return False
+    return True
+        
+
+# check global archivers
+for i in os.listdir(os.path.dirname(__file__)):
+    if not i.startswith('_') and not i.startswith('.'):
         if i.endswith('.conf'):
-            aid = i[0:-5]
-            if aid not in ret:
-                ret.append(aid)
-                
-    ret = sorted(ret)
-    return ret
+            archiver_id=i[0:-5]
+            conf=_parse_conf(filename)
+            if (_validate_conf_keys(conf)):
+                conf['class']='ProgramArchiver'
+                ARCHIVERS[archiver_id]=conf
+
+# check local archivers
+if os.path.isdir(config.CONFIG['user-archivers-dir']):
+    for i in os.listdir(config.CONFIG['user-archivers-dir']):
+        if i.startswith('.') or i.startswith('_'):
+            continue            
+        if i.endswith('.conf'):
+            conf=_parse_conf(os.path.join(config.CONFIG['user-archivers-dir'],i))
+            if (_validate_conf_keys(conf)):
+                archiver_id=i[0:-5]
+                ARCHIVERS[archiver_id]=conf
+
+#def get_archiver(archiver_id):
 

@@ -26,5 +26,9 @@ setup(name="pysqgbackup",
         "sgbackup.archivers",
         "sgbackup.games",
         "pysgbackup"],
-      scripts=scripts)
+      scripts=scripts,
+      include_package_data='true',
+      package_data={'sgbackup':["*.sql",'*.conf'],
+                    'sgbackup.games': ['*.conf'],
+                    'sgbackup.archivers': ['*.conf']})
 

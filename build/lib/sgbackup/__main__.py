@@ -99,16 +99,16 @@ def command_database(db,argv):
     
     if not argv:
         print("sgbackup database: No command given!", file=sys.stderr)
-        print(_HELP_DATABASE)
+        print(COMMAND_DATABASE_HELP)
     if (argv[0]) not in commands:
         print("sgbackup database: Unknown command '{0}'!".format(argv[0]),file=sys.stderr)
-        print(_HELP_DATABASE)
+        print(COMMAND_DATABASE_HELP)
     
     try:   
         opts,args = getopt.getopt(argv[1:], 'fv', ['force','verbose'])
     except getopt.GetoptError as err:
         print(err,file=sys.stderr)
-        print(_HELP_DATABASE)
+        print(COMMAND_DATABASE_HELP)
         sys.exit(2)
    
     force=False
@@ -131,6 +131,9 @@ def command_database(db,argv):
                 sys.exit(2)
                 
         for i in args:
+            if (config.CONFIG['verbose']):
+                g = db.get_game(i)
+                print('[database:delete] {0}'.format(g.name))
             db.delete_game(i)            
     elif cmd == 'list':
         game_list = db.list_games()

@@ -4,7 +4,7 @@ from . import config
 
 def backup(db,game_id,
            final_backup=False,
-           listfile=config.CONFIG['backup-listfile'],
+           listfile=None,
            write_listfile=False):
     pass
 

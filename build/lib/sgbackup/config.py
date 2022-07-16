@@ -7,93 +7,126 @@ import sys
 import configparser
 from string import Template
 import hashlib
-from . import archivers
+import zipfile
 
 CONFIG={
     "version":(0,0,1),
-    "sg-global-config": os.path.join(os.path.dirname(__file__),"sgbackup.conf"),
+    "global-config": os.path.join(os.path.dirname(__file__),"sgbackup.conf"),
     "user-data-dir": os.path.join(GLib.get_user_data_dir(),"sgbackup"),
-    "sg-user-config": os.path.join(GLib.get_user_data_dir(),"sgbackup","sgbackup.conf"),
-    "db-create-sql": os.path.join(os.path.dirname(__file__),"sqlite3.db.sql"),
+    "user-config": os.path.join(GLib.get_user_data_dir(),"sgbackup","sgbackup.conf"),
+    "database.create-sql": os.path.join(os.path.dirname(__file__),"sqlite3.db.sql"),
     
     # Variables changed by config files
     "verbose": False,
-    "sg-database": os.path.join(GLib.get_user_data_dir(),"sgbackup", "sgbackup.db"),
-    "sg-user-archivers-dir": os.path.join(GLib.get_user_data_dir(),"sgbackup","archivers"),
-    "sg-user-gameconf-dir": os.path.join(GLib.get_user_data_dir(),"sgbackup","games"),
+    "database": os.path.join(GLib.get_user_data_dir(),"sgbackup", "sgbackup.db"),
+    "user-archivers-dir": os.path.join(GLib.get_user_data_dir(),"sgbackup","archivers"),
+    "user-gameconf-dir": os.path.join(GLib.get_user_data_dir(),"sgbackup","games"),
     
-    "backups-max": 10,
-    "backup-checksum": "sha256",
-    "backup-archive": "zipfile",
-    "backup-dir": os.path.join(GLib.get_home_dir(), "SaveGames"),
-    "backup-write-listfile": False,
+    "backups.max": 10,
+    "backup.checksum": "sha256",
+    "backup.archiver": "zipfile",
+    "backup.dir": os.path.join(GLib.get_home_dir(), "SaveGames"),
+    "backup.write-listfile": False,
+    "backup.archiver": "zipfile",
+    
+    "zipfile.compression": zipfile.ZIP_DEFLATED,
+    "zipfile.copmresslevel": 9,
     
     # Variables for game.conf files and database entries
-    "sg-vars": {
+    "template-variables": {
         "HOME": GLib.get_home_dir(),
         "USER_DATA_DIR": GLib.get_user_data_dir(),
         "USER_DOCUMENTS_DIR": GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOCUMENTS)
     }
+    
 }
-CONFIG['backup-listfile']=os.path.join(CONFIG['backup-dir'],"backups.list")
+CONFIG['backup.listfile']=os.path.join(CONFIG['backup.dir'],"backups.list")
 
 CONFIG_DIRS=[
     "user-data-dir",
-    "sg-user-archivers-dir",
-    "sg-user-gameconf-dir"
+    "user-archivers-dir",
+    "user-gameconf-dir"
 ]
 
 def _init_config():
     def parse_config(cparser):
         if cparser.has_section("variables"):
             for opt in cparser.options("vaiables"):
-                CONFIG["sg-vars"][opt]=cparser.get_option("variables",opt)
+                CONFIG["template-variables"][opt]=cparser.get_option("variables",opt)
         v=dict(os.environ)
-        v.update(CONFIG["sg-vars"])
-        v.update({'BACKUP_DIR': CONFIG['backup-dir']})
-        
-        sect="sgbackup"
+        v.update(CONFIG["template-vaiables"])
+        v.update({'BACKUP_DIR': CONFIG['backup.dir']})
+     
+        sect="config"
         if cparser.has_section(sect):
             if cparser.has_option(sect,"verbose"):
-                COFNIG['verbose'] = cparser.getboolean(sect,'verbose')
-            if cparser.has_option(sect,"sg-user-db"):
-                t=Template(cparser.get(sect,"database"))
-                CONFIG["sg-database"] = t.substitute(v)
+                CONFIG['verbose'] = cparser.getboolean(sect,'verbose')
+            if cparser.has_option('user-config'):
+                CONFIG['user-config-template']=cparser.get(sect,'user-config')
+                t=Template(cparser.get(sect,'user-config'))
+                CONFIG['user-config']=t.substitute(v)
             if cparser.has_option('user-achivers-dir'):
+                CONFIG['user-archivers-dir-template']=cparser.get(sect,"user-archivers-dir")
                 t=Template(cparser.get(sect,"user-archivers-dir"))
-                CONFIG["sg-user-achivers-dir"] = t.substitute(v)
+                CONFIG["user-achivers-dir"] = t.substitute(v) 
+            if cparser.has_option(sect,"user-db"):
+                CONFIG["database-template"]=cparser.get(sect,"database")
+                t=Template(cparser.get(sect,"database"))
+                CONFIG["database"] = t.substitute(v)
             if cparser.has_option(sect,"user-gameconf-dir"):
+                CONFIG["user-gameconf-dir-template"]=cparser.get(sect,"user-gameconf-dir")
                 t=Template(cparser.get(sect,"user-gameconf-dir"))
-                CONFIG["sg-user-gameconf-dir"]=t.substitute(v)
+                CONFIG["user-gameconf-dir"]=t.substitute(v)
         
         sect="backup"
-        if (cpares.has_section(sect)):
-            if cparser.has_option(sect, "backup-dir"):
-                t=Template(cparser.get_option(sect,"backup-dir"))
+        if (cparser.has_section(sect)):
+            if cparser.has_option(sect, "dir"):
+                CONFIG['backup.dir.template']=cparser.get_option(sect,"dir")
+                t=Template(cparser.get_option(sect,"dir"))
                 value = t.substitute(v)
-                CONFIG["backup-dir"] = value
+                CONFIG["backup.dir"] = value
                 v["BACKUP_DIR"] = value
             if cparser.has_option(sect, "max-backups"):
-                CONFIG["backups-max"] = cparser.getint(sect, "max-backups")
+                CONFIG["backups.max"] = cparser.getint(sect, "max-backups")
             if cparser.has_option(sect, "checksum"):
                 x=cparser.get(sect,"checksum")
                 if (not x.strip() or x.upper() == "NONE"):
-                    CONFIG["backup-checksum"] = None
+                    CONFIG["backup.checksum"] = None
                 elif (x in hashlib.algorithms_available):
-                    CONFIG["backup-checksum"] = x
+                    CONFIG["backup.checksum"] = x
             if cparser.has_option(sect,'listfile'):
+                CONFIG['backup.listfile.template']=cparser.get(sect,"listfile")
                 t=Template(cparser.get(sect,"listfile"))
-                CONFIG['backup-listfile'] = t.substitute(v)
+                CONFIG['backup.listfile'] = t.substitute(v)
+                
+        sect="zipfile"
+        if cparser.has_section(sect):
+            if cparser.has_option('compression'):
+                compression = {
+                    'stored': zipfile.ZIP_STORED,
+                    'deflated': zipfile.ZIP_DEFLATED,
+                    'bzip2': zipfile.ZIP_BZIP2,
+                    'lzma': zipfile.ZIP_LZMA
+                }
+                
+                opt = cparser.get(sect,compression)
+                if (not opt or opt not in compression.keys()):
+                    print("CONFIG WARNING: [zipfile] compression {0} is not known! Using default compression!".format(opt))
+                else:
+                    CONFIG["zipfile.compression"] = compression[opt]
+            if cparser.has_option(sect,'compresslevel'):
+                CONFIG['zipfile.compresslevel'] = cparser.getint(sect,'compresslevel')
+                
     # parse_config()
     
     cfg = configparser.ConfigParser()
     
-    if os.path.exists(CONFIG['sg-global-config']):
-        cfg.read(CONFIG['sg-global-config'])
+    if os.path.exists(CONFIG['global-config']):
+        cfg.read(CONFIG['global-config'])
         parse_config(cfg)
         
-    if os.path.exists(CONFIG['sg-user-config']):
-        cf.read(CONFIG['sg-user-config'])
+    if os.path.exists(CONFIG['user-config']):
+        cf.read(CONFIG['user-config'])
         parse_config(cfg)
 # _init_config()
 
@@ -105,5 +138,48 @@ def _init_config_dirs():
 
 _init_config()
 _init_config_dirs()
+
+def write_config(option,value,global_config=False):
+    if (global_config):
+        config_file=CONFIG['global-config']
+    else:
+        config_file=CONFIG['user-config']
+        
+    cparser = configparser.ConfigParser()
+    
+    sect='config'
+    cparser.add_section(sect)
+    if global_config:
+        if 'user-config-template' in CONFIG.keys():
+            cparser.set(sect,'user-config',CONFIG['user-config-template'])
+    if 'database-template' in CONFIG.keys():
+        cparser.set(sect,'database',CONFIG['database-template'])
+    if 'user-gameconf-dir-template' in CONFIG.keys():
+        cparser.set(sect,'user-gameconf-dir',CONFIG['user-gameconf-dir-template'])
+    if 'user-archivers-dir-template' in CONFIG.keys():
+        cparser.set(sect,'user-archivers-dir',CONFIG['user-archivers-dir-template'])
+    cparser.set(sect,'verbose',CONFIG['verbose'])
+    
+    sect='backup'
+    cparser.add_section(sect)
+    cparser.set(sect,'max',CONFIG['backup.max'])
+    cparser.set(sect,'checksum',CONFIG['backup.checksum'])
+    cparser.set(sect,'archiver',CONFIG['backup.archiver'])
+    if 'backup.dir.template' in CONFIG.keys():
+        cparser.set(sect,'dir',CONFIG['backup.dir.template'])
+    if 'backup.listfile.template' in CONFIG.keys():
+        cparser.set(sect,'listfile',CONFIG['backup.listfile.template'])
+
+    zf_compress={
+        zipfile.ZIPFILE_STORED: 'stored',
+        zipfile.ZIPFILE_DEFLATED: 'deflated',
+        zipfile.ZIPFILE_BZIP2: 'bzip2',
+        zipfile.ZIPFILE_LZMA: 'lzma'
+    }    
+    sect='zipfile'
+    cparser.add_section(sect)
+    cparser.set(sect,'compression',zf_compress[CONFIG['zipfile.compression']])
+    cparser.set(sect,'compresslevel',CONFIG['zipfile.compresslevel'])
+# write_config()
 
 

@@ -11,7 +11,7 @@ from ._game import Game, GameConf
 def get_conf_dirs():
     ret = [
         os.path.dirname(__file__),
-        config.CONFIG['sg-user-gameconf-dir']]
+        config.CONFIG['user-gameconf-dir']]
         
     return ret
 
@@ -38,11 +38,9 @@ def parse_gameconf(game_id):
                 sg_name=parser.get(sect,'savegame-name')
             if parser.has_option(sect,'savegame-root'):
                 sg_root=parser.get(sect,'savegame-root')
-            if parser.has_option(sect,'savegame-dir'):
-                sg_dir=parser.get(sect,'savegame-dir')
         
         if not game:
-            game=Game(game_id,name,sg_name,sg_root,sg_dir)
+            game=Game(game_id,name,sg_name,sg_root)
             return game
             
         
@@ -54,8 +52,6 @@ def parse_gameconf(game_id):
             game.savegame_name = sg_name
         if sg_root:
             game.savegame_root = sg_root
-        if sg_dir:
-            game.savegame_dir = sg_dir
             
         return game
     # _real_parse_file()
@@ -79,7 +75,7 @@ def get_gameconf_data(game_id):
         if os.path.isfile(f):
             with open(f,'rb') as conf:
                 checksum=hashlib.md5(conf.read()).hexdigest()
-                if d == config.CONFIG['sg-user-gameconf-dir']:
+                if d == config.CONFIG['user-gameconf-dir']:
                     user_file=True
                 else:
                     user_file=False
@@ -91,7 +87,7 @@ def get_gameconf_data_by_filename(filename,game_id=""):
     ret = None
     
     if (os.path.isfile(filename)):
-        if os.path.dirname(filename) == config.CONFIG["sg-user-gameconf-dir"]:
+        if os.path.dirname(filename) == config.CONFIG["user-gameconf-dir"]:
             user_file=True
         else:
             user_file=False
