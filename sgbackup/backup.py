@@ -16,7 +16,7 @@ def get_backup_filename(game,archiver=None):
         date_str=dt.strftime("%Y%m%d-%H%M%S")
         fname='.'.join((game.savegame_name,date_str,archiver.extension))
         
-    return os.path.join(config.CONFIG['backup.dir'],,game.savegame_name,fname)
+    return os.path.join(config.CONFIG['backup.dir'],game.savegame_name,fname)
 # get_backup_filename()
 
 def backup(game,listfile=None,write_listfile=False):

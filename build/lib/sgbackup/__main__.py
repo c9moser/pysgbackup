@@ -184,7 +184,7 @@ USAGE:
   sgbackup database <COMMAND> [OPTIONS] [ARGS] ...
   
   sgbackup database <list | list-ids | list-names>
-  sgbackup database <name | delete> <GameID> ...
+  sgbackup database <name | delete | show> <GameID> ...
   sgbackup database [-f] [-v] update [GameID] ...
   
 COMMANDS:
@@ -194,6 +194,7 @@ COMMANDS:
   list-ids      List game ids only.
   list-names    List game names only.
   name          Get name of the game by GameID.
+  show          Show Game config for GameIDs
   update        Updates the database from ${GameID}.conf files.
 
 OPTIONS:
@@ -209,6 +210,7 @@ def command_database(db,argv):
         'list-ids',
         'list-names',
         'name',
+        'show',
         'update']
     
     if not argv:
@@ -284,6 +286,24 @@ def command_database(db,argv):
         for gid in args:
             game = db.get_game(gid)
             print(game.name) 
+    elif cmd == 'show':
+        if not args:
+            print('sgbackup database show: No GameIDs given!',file=sys.stderr)
+            print(COMMAND_DATABASE_HELP)
+            sys.exit(2)
+        for gid in args:
+            if not db.has_game(gid):
+                print('No GameID \'{0}\' found!'.format(gid))
+                sys.exit(2)
+        for gid in args:
+            g = db.get_game(gid)
+            fmt='{0}={1}'
+            print(fmt.format('name',g.name))
+            print(fmt.format('id',g.id))
+            print(fmt.format('game-id',g.game_id))
+            print(fmt.format('savegame-name',g.savegame_name))
+            print(fmt.format('savegame-root',g.savegame_root))
+            print(fmt.format('savegame-dir',g.savegame_dir))
     elif cmd == 'update':
         if not args:
             database.update(db,force)

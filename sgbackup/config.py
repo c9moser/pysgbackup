@@ -29,7 +29,7 @@ def _get_cehcksum_values():
         
     
 CONFIG={
-    "version":(0,0,1),
+    "version":(0,0,2),
     "global-config": os.path.join(os.path.dirname(__file__),"sgbackup.conf"),
     "user-name": GLib.get_user_name(),
     "user-data-dir": os.path.join(GLib.get_user_data_dir(),"sgbackup"),
