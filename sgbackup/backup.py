@@ -16,7 +16,7 @@ def get_backup_filename(game,archiver=None):
         date_str=dt.strftime("%Y%m%d-%H%M%S")
         fname='.'.join((game.savegame_name,date_str,archiver.extension))
         
-    return os.path.join(config.CONFIG['backup.dir'],fname)
+    return os.path.join(config.CONFIG['backup.dir'],,game.savegame_name,fname)
 # get_backup_filename()
 
 def backup(game,listfile=None,write_listfile=False):
@@ -24,7 +24,8 @@ def backup(game,listfile=None,write_listfile=False):
     backup_file=get_backup_filename(game,archiver)
     backup_dir=os.path.dirname(backup_file)
     if not os.path.exists(os.path.join(game.savegame_root,game.savegame_dir)):
-        print("Unable to backup '{0}'! (No such file or directory!)".format(os.path.join(game.savegame_root,game.savegame_dir)))
+        if config.CONFIG['verbose']:
+            print("Unable to backup '{0}'! (No such file or directory!)".format(os.path.join(game.savegame_root,game.savegame_dir)))
         return    
     
     print ("[sgbackup backup] {0}".format(game.name))
@@ -46,7 +47,7 @@ def backup(game,listfile=None,write_listfile=False):
             print("checksum {0}: {1}".format(csid,backup_file))
         csfile = '.'.join((backup_file,csid))
         with open(csfile,'w') as csf:
-            csf.write('{0} ({1}) = {2}'.format(csid,os.path.basename(backup_file),checksum))
+            csf.write('{0} ({1}) = {2}\n'.format(csid,os.path.basename(backup_file),checksum))
             
     if write_listfile:
         if not listfile:
