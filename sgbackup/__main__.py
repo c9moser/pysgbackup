@@ -237,11 +237,24 @@ def command_write_config(db,argv):
         if o == '-v' or o == '--verbose':
             config.CONFIG['verbose'] = True
             
-    for i in args:
+    if not args:
+        if global_config:
+            filename = config.CONFIG['global-config']
+        else:
+            filename = os.path.normpath(config.CONFIG['user-config'])
+            
         if config.CONFIG['verbose']:
-            print('[sgbackup write-config]: {0}'.format(i))
-        if not config.write_config(i,global_config):
-            print('Writing Config {0} failed!'.format(i),file=sys.stderr)
+            print('[sgbackup write-config] {0}'.format(filename))
+        try:
+            config.write_config(filename,global_config)            
+    else:
+        for i in args:
+            if config.CONFIG['verbose']:
+                print('[sgbackup write-config] {0}'.format(i))
+            try: 
+                config.write_config(i,global_config):
+            except Exception as error
+                print('Writing Config {0} failed! ({1})'.format(i,error),file=sys.stderr)
 # command_write_config()
 
 COMMAND_NOT_IMPLEMENTED_HELP="""COMMAND IS NOT IMPLEMENTED!

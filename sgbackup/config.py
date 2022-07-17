@@ -190,13 +190,8 @@ def write_config(filename,global_config=False):
     cparser.set(sect,'compression',zf_compress[CONFIG['zipfile.compression']])
     cparser.set(sect,'compresslevel',str(CONFIG['zipfile.compresslevel']))
     
-    try:
-        with open(filename,'w') as f:
-            cparser.write(f)
-        return True
-    except Exception as error:
-        print(error,file=sys.stderr)
-    return False
+    with open(filename,'w') as f:
+        cparser.write(f)
 # write_config()
 
 
