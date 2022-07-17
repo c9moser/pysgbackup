@@ -253,7 +253,7 @@ def command_write_config(db,argv):
                 print('[sgbackup write-config] {0}'.format(i))
             try: 
                 config.write_config(i,global_config):
-            except Exception as error
+            except Exception as error:
                 print('Writing Config {0} failed! ({1})'.format(i,error),file=sys.stderr)
 # command_write_config()
 
