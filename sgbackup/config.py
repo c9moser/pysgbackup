@@ -82,18 +82,18 @@ def _init_config():
             for opt in cparser.options("vaiables"):
                 CONFIG["template-variables"][opt]=cparser.get_option("variables",opt)
         v=dict(os.environ)
-        v.update(CONFIG["template-vaiables"])
+        v.update(CONFIG["template-variables"])
         v.update({'BACKUP_DIR': CONFIG['backup.dir']})
      
         sect="config"
         if cparser.has_section(sect):
             if cparser.has_option(sect,"verbose"):
                 CONFIG['verbose'] = cparser.getboolean(sect,'verbose')
-            if cparser.has_option('user-config'):
+            if cparser.has_option(sect,'user-config'):
                 CONFIG['user-config-template']=cparser.get(sect,'user-config')
                 t=Template(cparser.get(sect,'user-config'))
                 CONFIG['user-config']=os.path.normpath(t.substitute(v))
-            if cparser.has_option('user-achivers-dir'):
+            if cparser.has_option(sect,'user-achivers-dir'):
                 CONFIG['user-archivers-dir-template']=cparser.get(sect,"user-archivers-dir")
                 t=Template(cparser.get(sect,"user-archivers-dir"))
                 CONFIG["user-achivers-dir"] = os,path.normpath(t.substitute(v))
@@ -127,18 +127,16 @@ def _init_config():
                 t=Template(cparser.get(sect,"listfile"))
                 CONFIG['backup.listfile'] = os.path.normpath(t.substitute(v))
             if cparser.has_option(sect,'write-listfile'):
-                CONFIG['backup.write-listfile'] = cparser.getboolean(sec,'write-listfile')
+                CONFIG['backup.write-listfile'] = cparser.getboolean(sect,'write-listfile')
                 
         sect="zipfile"
         if cparser.has_section(sect):
-            if cparser.has_option('compression'):
-                
-                
-                opt = cparser.get(sect,compression)
+            if cparser.has_option(sect,'compression'):
+                opt = cparser.get(sect,'compression')
                 if (not opt or opt not in CONFIG['zipfile.compression.values'].keys()):
                     print("CONFIG WARNING: [zipfile] compression {0} is not known! Using default compression!".format(opt))
                 else:
-                    CONFIG["zipfile.compression"] = compression[opt]
+                    CONFIG["zipfile.compression"] = CONFIG['zipfile.compression.values'][opt]
             if cparser.has_option(sect,'compresslevel'):
                 CONFIG['zipfile.compresslevel'] = cparser.getint(sect,'compresslevel')
                 
