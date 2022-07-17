@@ -96,13 +96,14 @@ class _ZipFileListFiles(object):
     def __init__(self,root_dir,rel_dir):
         self.__files=[]
         
-        for i in os.path.listdir(os.path.join(root_dir,rel_dir)):
+        for i in os.listdir(os.path.join(root_dir,rel_dir)):
             if (i == '.' or i == '..'):
                 continue
-            if os.path.isdir(os.path.join(root_dir,rel_dir,i)):
+            fname=os.path.join(root_dir,rel_dir,i)
+            if os.path.isdir(fname):
                 x = _ZipFileListFiles(root_dir,os.path.join(rel_dir,i))
-                self.__files.append(x.files)
-            if (os.path.isfile(i)):
+                self.__files += x.files
+            elif os.path.isfile(fname):
                 self.__files.append(os.path.join(rel_dir,i))
         
     @property
@@ -113,8 +114,8 @@ class _ZipFileListFiles(object):
 class ZipFileArchiver(ArchiverBase):
     def __init__(self):
         ArchiverBase.__init__(self,'zipfile')
-        self.__compression=config.CONFIG['zipfile-compression']
-        self.__compresslevel=config.CONFIG['zipfile-compresslevel']
+        self.__compression=config.CONFIG['zipfile.compression']
+        self.__compresslevel=config.CONFIG['zipfile.compresslevel']
         
     def backup(self,filename,root_dir,backup_dir):
         if os.path.isdir(root_dir) and os.path.exists(os.path.join(root_dir,backup_dir)):
@@ -126,8 +127,8 @@ class ZipFileArchiver(ArchiverBase):
             try:
                 with zipfile.ZipFile(filename,'w',
                                      compression=self.compression,
-                                     comporesslevel=self.compresslevel) as archive:
-                        zfiles = _ZipFileListFiles(root_dir,rel_dir)
+                                     compresslevel=self.compresslevel) as archive:
+                        zfiles = _ZipFileListFiles(root_dir,backup_dir)
                         for i in zfiles.files:
                             if sys.platform == 'win32':
                                 arcname = i.replace('\\','/')
@@ -135,7 +136,7 @@ class ZipFileArchiver(ArchiverBase):
                                 arcname = i
                             
                             if (config.CONFIG['verbose']):
-                                print(['[zipfile:add] {0}'.format(i)])
+                                print('[zipfile:add] {0}'.format(i))
                             archive.write(i,arcname=arcname)
                 os.chdir(cwd)
                 return True

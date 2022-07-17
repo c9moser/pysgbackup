@@ -150,7 +150,7 @@ class Database:
             for i in cur:
                 var[i[0]] = i[1]
                 
-            ret = games.Game(game_id,row[1],row[2],row[3],row[4],row[0],row[5],var)
+            ret = games.Game(game_id,row[1],row[2],row[3],row[4],row[0],self._db_to_bool(row[5]),var)
             
         return ret
     # get_game()

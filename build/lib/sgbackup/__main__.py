@@ -50,41 +50,132 @@ def command_archiver(db,argv):
         sys.exit(2)
     
 
-COMMAND_BACKUP_HELP="""
+COMMAND_BACKUP_HELP="""sgbackup backup: Help
+
+USAGE:
+======
+  sgbackup backup [otions] GameID ...
+  
+OPTIONS:
+========
+  -F | --no-final           Create a normal backup and remove final_backup flag
+                            if set.
+  -f | --final              Create a final backup and set final_backup flag.
+  -L file | --listfile=file Set listfile to filename.
+  -v | -- verbose           Verbose output.
+  -W | --no-write-listfile  Don't write a listfile.
+  -w | --write-listfile     Write a listfile.
 """
 
 def command_backup(db,argv):
     try:
         opts,args = getopt.getopt(argv, 
-                                  "L:w",
-                                  ["listfile="
+                                  "FfL:Wwv",
+                                  ["final",
+                                   "listfile=",
+                                   "no-final",
+                                   "no-write-listfile",
+                                   "verbose",
                                    "write-listfile"])
     except getopt.GetoptError as err:
         print(err,file=sys.stderr)
         print(COMMAND_BACKUP_HELP)
         sys.exit(2)
     
-    
-    mode='b'
-    
+    final_backup = False
+    remove_final_backup_flag = False
     for o,a in opts:
-        if (o == '-L' or o == '--listfile'):
-            rtopts['write-listfile']=True
-            config.CONFIG['sg-listfile']=a
-        elif (o == '-a' or o == '--backup-all'):
-            mode='a'
+        if (o == '-F' or o == '..no-final'):
+            final_backup = False
+            remove_final_backup_flag = True
+        elif (o == '-f' or o == '--final'):
+            final_backup = True
+        elif (o == '-L' or o == '--listfile'):
+            config.CONFIG['backup.write-listfile']=True
+            config.CONFIG['backup.listfile']=a
+        elif (o == '-v' or o == '--verbose'):
+            config.CONFIG['verbose']=True
+        elif (o == '-W' or o == '--no-write-listfile'):
+            config.CONFIG['backup.write-listfile']=False
         elif (o == '-w' or o == '--write-listfile'):
             config.CONFIG['backup.write_listfile']=True
             
-    if mode == 'a':
-        backup_all_targets
+    if not args:
+        print("[sgbackup backup] No GameIDs given!",file=sys.stderr)
+        print(COMMAND_BACKUP_HELP)
+        sys.exit(2)
+        
+    games=[]
+    for i in args:
+        g = db.get_game(i)
+        if not g:
+            print("[sgbackup backup]: Unknown GameID '{0}'!".format(i),file=sys.stderr)
+            print("Use 'sgbackup database list' to show known GameIDs.",file=sys.stderr)
+            sys.exit(2)
+        games.append(g)
+        
+    for g in games:
+        if final_backup:
+            g.final_backup=True
+            db.add_game(g)
+        elif not final_backup and remove_final_backup_flag:
+            g.final_backup=False
+            db.add_game(g)
+
+        backup.backup(g,config.CONFIG['backup.listfile'],config.CONFIG['backup.write-listfile'])
 # command_backup()
 
-COMMAND_BACKUP_ALL_HELP="""
+COMMAND_BACKUP_ALL_HELP="""sgbackup backup-all: Help
+
+USAGE:
+======
+  sgbackup backup-all [options]
+  
+OPTIONS:
+========
+  -f | --force              Force all games including finished ones to 
+                            be backed up.
+  -L file | --listfile=file Write to listfile $file.
+  -W | --no-write-listfile  Don't write a listfile.
+  -w | --write-listfile     Write listfile.
+  -v | --verbose            Verbose output.
 """
 
 def command_backup_all(db,argv):
-    pass
+    try:
+        opts,args = getopt.getopt(argv,'fL:vWw',
+                                  ['force',
+                                   'listfile=',
+                                   'no-write_listfile'
+                                   'verbose',
+                                   'write-listfile'])
+    except getopt.GetoptError as error:
+        print(error,file=sys.stderr)
+        print(COMMAND_BACKUP_ALL_HELP)
+        sys.exit(2)
+    
+    if args:
+        print('sgbackup backup-all takes no arguments!',file=sys.stderr)
+        print(COMMAND_BACKUP_ALL_HELP)
+        sys.exit(2)
+        
+    force = False
+    listfile = config.CONFIG['backup.listfile']
+    write_listfile = config.CONFIG['backup.write-listfile']
+    for o,a in opts:
+        if o == '-f' or o == '--force':
+            force = True
+        elif o == '-L' or o == '--listfile':
+            listfile = a
+        elif o == '-W' or o == '--no-write-listfile':
+            write_listfile = False
+        elif o == '-w' or o == '--write-listfile':
+            write_listfile = True
+        elif o == '-v' or o == '--verbose':
+            config.CONFIG['verbose'] = True
+            
+    backup.backup_all(db,listfile,write_listfile,force)
+# command_backup_all()
 
 COMMAND_DATABASE_HELP="""sgbackup database: Help
 

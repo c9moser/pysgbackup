@@ -9,13 +9,14 @@ from ._archiver import ArchiverBase,ProgramArchiver,TarFileArchiver,ZipFileArchi
 ARCHIVERS={
     'tarfile': {
         'builtin': True,
-        'class': 'TarFileArchiver'
+        'class': TarFileArchiver
     },
     'zipfile': {
         'builtin': True,
-        'class': 'ZipFileArchiver',
+        'class': ZipFileArchiver,
     }
 }
+
 
 def _parse_conf(filename):
     parser = configparser.ConfigParser()
@@ -90,5 +91,20 @@ if os.path.isdir(config.CONFIG['user-archivers-dir']):
 def list_archivers():
     return ARCHIVERS.keys()
     
-#def get_archiver(archiver_id):
+def get_archiver(archiver_id=None):
+    if not archiver_id:
+        archiver_id=config.CONFIG['backup.archiver']
+        
+    if not archiver_id in ARCHIVERS.keys():
+        return None
+        
+    archiver=None
+    if ARCHIVERS[archiver_id].get('builtin',False):
+        archiver=ARCHIVERS[archiver_id]['class']()
+    else:
+        archiver=ProgramArchiver(archiver_id,ARCHIVERS[archiver_id])
+        
+    return archiver
+# get_archiver()
+    
 

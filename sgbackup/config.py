@@ -9,6 +9,25 @@ from string import Template
 import hashlib
 import zipfile
 
+def _get_cehcksum_values():
+    def get_checksum(filename,algorithm='None'):
+        if algorithm == 'None':
+            return ''
+            
+        with open(filename,'rb') as f:
+            h = hashlib.new(algorithm)
+            h.update(f.read())
+            return h.hexdigest()
+    # get_checksum()
+    
+    values = {'None': lambda f: get_checksum(f)}
+    
+    for i in hashlib.algorithms_available:
+        values[i] = lambda f: get_checksum(f,i)
+        
+    return values
+        
+    
 CONFIG={
     "version":(0,0,1),
     "global-config": os.path.join(os.path.dirname(__file__),"sgbackup.conf"),
@@ -25,6 +44,7 @@ CONFIG={
     
     "backup.max": 10,
     "backup.checksum": "sha256",
+    "backup.checksum.values": _get_cehcksum_values(),
     "backup.archiver": "zipfile",
     "backup.dir": os.path.join(GLib.get_home_dir(), "SaveGames"),
     "backup.write-listfile": False,
@@ -41,7 +61,7 @@ CONFIG={
     
     # Variables for game.conf files and database entries
     "template-variables": {
-        "HOME": GLib.get_home_dir(),
+        "USER_HOME": GLib.get_home_dir(),
         "USER_DATA_DIR": GLib.get_user_data_dir(),
         "USER_DOCUMENTS_DIR": GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOCUMENTS),
         "USER_NAME": GLib.get_user_name()

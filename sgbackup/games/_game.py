@@ -85,9 +85,9 @@ class Game(object):
     @property
     def savegame_root(self):
         v = dict(os.environ)
-        v.update(config.CONFIG["template-vaiables"])
+        v.update(config.CONFIG["template-variables"])
         v.update({'BACKUP_DIR':config.CONFIG['backup.dir']})
-        v.update(self.vaiables)
+        v.update(self.variables)
         
         return os.path.normpath(Template(self.__sg_root).substitute(v))
         
@@ -104,8 +104,8 @@ class Game(object):
 
     @property
     def savegame_dir(self):
-        v = dict(o.environ)
-        v.update(config.CONFIG['template-vaiables'])
+        v = dict(os.environ)
+        v.update(config.CONFIG['template-variables'])
         v.update(self.variables)
         
         return os.path.normpath(Template(self.__sg_dir).substitute(v))
