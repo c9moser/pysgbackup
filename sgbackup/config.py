@@ -12,6 +12,7 @@ import zipfile
 CONFIG={
     "version":(0,0,1),
     "global-config": os.path.join(os.path.dirname(__file__),"sgbackup.conf"),
+    "user-name": GLib.get_user_name(),
     "user-data-dir": os.path.join(GLib.get_user_data_dir(),"sgbackup"),
     "user-config": os.path.join(GLib.get_user_data_dir(),"sgbackup","sgbackup.conf"),
     "database.create-sql": os.path.join(os.path.dirname(__file__),"sqlite3.db.sql"),
@@ -22,7 +23,7 @@ CONFIG={
     "user-archivers-dir": os.path.join(GLib.get_user_data_dir(),"sgbackup","archivers"),
     "user-gameconf-dir": os.path.join(GLib.get_user_data_dir(),"sgbackup","games"),
     
-    "backups.max": 10,
+    "backup.max": 10,
     "backup.checksum": "sha256",
     "backup.archiver": "zipfile",
     "backup.dir": os.path.join(GLib.get_home_dir(), "SaveGames"),
@@ -30,7 +31,7 @@ CONFIG={
     "backup.archiver": "zipfile",
     
     "zipfile.compression": zipfile.ZIP_DEFLATED,
-    "zipfile.copmresslevel": 9,
+    "zipfile.compresslevel": 9,
     "zipfile.compression.values": {
         'stored': zipfile.ZIP_STORED,
         'deflated': zipfile.ZIP_DEFLATED,
@@ -42,7 +43,8 @@ CONFIG={
     "template-variables": {
         "HOME": GLib.get_home_dir(),
         "USER_DATA_DIR": GLib.get_user_data_dir(),
-        "USER_DOCUMENTS_DIR": GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOCUMENTS)
+        "USER_DOCUMENTS_DIR": GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOCUMENTS),
+        "USER_NAME": GLib.get_user_name()
     }
     
 }
@@ -142,7 +144,12 @@ def _init_config_dirs():
 _init_config()
 _init_config_dirs()
 
-def write_config(option,value,global_config=False):
+def _bool_to_config(b):
+    if (b):
+        return 'yes'
+    return 'no'
+
+def write_config(filename,global_config=False):
     if (global_config):
         config_file=CONFIG['global-config']
     else:
@@ -161,18 +168,18 @@ def write_config(option,value,global_config=False):
         cparser.set(sect,'user-gameconf-dir',CONFIG['user-gameconf-dir-template'])
     if 'user-archivers-dir-template' in CONFIG.keys():
         cparser.set(sect,'user-archivers-dir',CONFIG['user-archivers-dir-template'])
-    cparser.set(sect,'verbose',CONFIG['verbose'])
+    cparser.set(sect,'verbose',_bool_to_config(CONFIG['verbose']))
     
     sect='backup'
     cparser.add_section(sect)
-    cparser.set(sect,'max',CONFIG['backup.max'])
+    cparser.set(sect,'max',str(CONFIG['backup.max']))
     cparser.set(sect,'checksum',CONFIG['backup.checksum'])
     cparser.set(sect,'archiver',CONFIG['backup.archiver'])
     if 'backup.dir.template' in CONFIG.keys():
         cparser.set(sect,'dir',CONFIG['backup.dir.template'])
     if 'backup.listfile.template' in CONFIG.keys():
         cparser.set(sect,'listfile',CONFIG['backup.listfile.template'])
-    cparser.set(sect,'write-listfile',CONFIG['backup.write-listfile'])
+    cparser.set(sect,'write-listfile',_bool_to_config(CONFIG['backup.write-listfile']))
 
     zf_compress={}
     for k,v in CONFIG['zipfile.compression.values'].items():
@@ -181,7 +188,15 @@ def write_config(option,value,global_config=False):
     sect='zipfile'
     cparser.add_section(sect)
     cparser.set(sect,'compression',zf_compress[CONFIG['zipfile.compression']])
-    cparser.set(sect,'compresslevel',CONFIG['zipfile.compresslevel'])
+    cparser.set(sect,'compresslevel',str(CONFIG['zipfile.compresslevel']))
+    
+    try:
+        with open(filename,'w') as f:
+            cparser.write(f)
+        return True
+    except Exception as error:
+        print(error,file=sys.stderr)
+    return False
 # write_config()
 
 

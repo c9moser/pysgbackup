@@ -17,6 +17,7 @@ COMMANDS:
 =========
   archiver          list known archivers
   backup            backup savegames
+  config            set/get configuration values
   database          database operations (same as db)
   db                database operations (same as database)
   delete-savegame   delete savegames
@@ -24,6 +25,7 @@ COMMANDS:
   help [command]    print help [for command]
   restore           restore savegame backup
   restore-all       restore all savegame-backups
+  write-config      write a full configuration file
 """
 
 COMMAND_ARCHIVER_HELP="""sgbackup archivers: Help
@@ -207,7 +209,41 @@ def command_database(db,argv):
             for g in game_list:
                 db.add_game(g)
 # command_database()
+ 
+COMMAND_WRITE_CONFIG_HELP="""sgbackup write-config: Help
+
+USAGE:
+======
+  sgbackup write-config [options] [filename] ...
+  
+OPTIONS:
+========
+  -g | --global     Write a global file
+  -v | --verbose    Verbose output
+"""
+   
+def command_write_config(db,argv):
+    try:
+        opts,args = getopt.getopt(argv, 'gv', ['global','verbose'])
+    except GetoptError as error:
+        print(error,file=sys.stderr)
+        print(COMMAND_WRITE_CONFIG_HELP)
+            
+    global_config = False
     
+    for o,v in opts:
+        if o == '-g' or o == '--global':
+            global_config=True
+        if o == '-v' or o == '--verbose':
+            config.CONFIG['verbose'] = True
+            
+    for i in args:
+        if config.CONFIG['verbose']:
+            print('[sgbackup write-config]: {0}'.format(i))
+        if not config.write_config(i,global_config):
+            print('Writing Config {0} failed!'.format(i),file=sys.stderr)
+# command_write_config()
+
 COMMAND_NOT_IMPLEMENTED_HELP="""COMMAND IS NOT IMPLEMENTED!
 
 This is work in progress!
@@ -216,6 +252,7 @@ command_not_implemented = lambda db,argv: print('Not Implemented!')
 
 commands={
     'archiver': {'help':COMMAND_ARCHIVER_HELP,'function':command_archiver},
+    'config': {'help':COMMAND_NOT_IMPLEMENTED_HELP,'function':command_not_implemented},
     'backup': {'help': COMMAND_BACKUP_HELP,'function':command_backup},
     'backup-all': {'help': COMMAND_BACKUP_ALL_HELP,'function':command_backup_all},
     'database': {'help':COMMAND_DATABASE_HELP,'function':command_database},
@@ -223,7 +260,8 @@ commands={
     'delete-backups': {'help': COMMAND_NOT_IMPLEMENTED_HELP, 'function': command_not_implemented},
     'delete-savegames': {'help': COMMAND_NOT_IMPLEMENTED_HELP, 'function': command_not_implemented},
     'restore': {'help': COMMAND_NOT_IMPLEMENTED_HELP, 'function': command_not_implemented},
-    'restore-all': {'help':COMMAND_NOT_IMPLEMENTED_HELP,'function': command_not_implemented}
+    'restore-all': {'help':COMMAND_NOT_IMPLEMENTED_HELP,'function': command_not_implemented},
+    'write-config': {'help': COMMAND_WRITE_CONFIG_HELP,'function': command_write_config}
 }
     
 def main():
