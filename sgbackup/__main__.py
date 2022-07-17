@@ -246,7 +246,9 @@ def command_write_config(db,argv):
         if config.CONFIG['verbose']:
             print('[sgbackup write-config] {0}'.format(filename))
         try:
-            config.write_config(filename,global_config)            
+            config.write_config(filename,global_config)
+        except Exception as error:
+            print('Writing Config \'{0}\' failed! ({1})'.format(i,error),file=sys.stderr)          
     else:
         for i in args:
             if config.CONFIG['verbose']:
@@ -254,7 +256,7 @@ def command_write_config(db,argv):
             try: 
                 config.write_config(i,global_config):
             except Exception as error:
-                print('Writing Config {0} failed! ({1})'.format(i,error),file=sys.stderr)
+                print('Writing Config \'{0}\' failed! ({1})'.format(i,error),file=sys.stderr)
 # command_write_config()
 
 COMMAND_NOT_IMPLEMENTED_HELP="""COMMAND IS NOT IMPLEMENTED!
