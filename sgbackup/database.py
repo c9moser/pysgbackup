@@ -136,7 +136,7 @@ class Database:
         return False
         
     def get_game(self,game_id):
-        sql = "SELECT id,name,savegame_name,savegame_root,final_backup FROM games WHERE game_id=?;"
+        sql = "SELECT id,name,savegame_name,savegame_root,savegame_dir,final_backup FROM games WHERE game_id=?;"
         var_sql="SELECT name,value FROM game_variables WHERE game=?;"
         
         ret = None
@@ -150,7 +150,7 @@ class Database:
             for i in cur:
                 var[i[0]] = i[1]
                 
-            ret = games.Game(game_id,row[1],row[2],row[3],row[0],row[4],var)
+            ret = games.Game(game_id,row[1],row[2],row[3],row[4],row[0],row[5],var)
             
         return ret
     # get_game()
@@ -223,9 +223,10 @@ class Database:
                 game.name,
                 game.savegame_name,
                 game.raw_savegame_root,
+                game.raw_savegame_dir,
                 self._bool_to_db(game.final_backup),
                 game.id)
-            sql = "UPDATE games SET game_id=?,name=?,savegame_name=?,savegame_root=?,final_backup=? WHERE id=?;"
+            sql = "UPDATE games SET game_id=?,name=?,savegame_name=?,savegame_root=?,savegame_dir=?,final_backup=? WHERE id=?;"
         else:
             g=self.get_game(game.game_id)
             if (g):
@@ -238,17 +239,19 @@ class Database:
                     game.name,
                     game.savegame_name,
                     game.raw_savegame_root,
+                    game.raw_savegame_dir,
                     self._bool_to_db(final_backup),
                     game.game_id)
-                sql = "UPDATE games SET name=?,savegame_name=?,savegame_root=?,final_backup=? WHERE game_id=?;"
+                sql = "UPDATE games SET name=?,savegame_name=?,savegame_root=?,savegame_dir=?,final_backup=? WHERE game_id=?;"
             else:
                 sql_args = (
                     game.game_id,
                     game.name,
                     game.savegame_name,
                     game.raw_savegame_root,
+                    game.raw_savegame_dir,
                     self._bool_to_db(game.final_backup))
-                sql = "INSERT INTO games (game_id,name,savegame_name,savegame_root,final_backup) VALUES(?,?,?,?,?);"
+                sql = "INSERT INTO games (game_id,name,savegame_name,savegame_root,savegame_dir,final_backup) VALUES(?,?,?,?,?,?);"
 
         cur = self._db.cursor()
         cur.execute(sql,sql_args)
@@ -313,7 +316,9 @@ def update(db,force=False):
     
     for gid in games.get_games():
         game = games.parse_gameconf(gid)
-        
+        if not game:
+            continue
+            
         if config.CONFIG['verbose']:
             print("Processing: {0}".format(game.name))
             

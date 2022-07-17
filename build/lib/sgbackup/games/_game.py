@@ -5,7 +5,7 @@ import os
 from string import Template
 
 class Game(object):
-    def __init__(self,game_id,name,sg_name,sg_root,id=0,final_backup=False,variables={}):
+    def __init__(self,game_id,name,sg_name,sg_root,sg_dir,id=0,final_backup=False,variables={}):
         object.__init__(self)
         
         if id:
@@ -17,6 +17,7 @@ class Game(object):
         self.name = name
         self.savegame_name = sg_name
         self.savegame_root = sg_root
+        self.savegame_dir = sg_dir
         self.final_backup = final_backup
         self.__variables = dict(variables)
         
@@ -84,13 +85,13 @@ class Game(object):
     @property
     def savegame_root(self):
         v = dict(os.environ)
-        v.update(config.CONFIG["sg-vars"])
-        v.update({'BACKUP_DIR':config.CONFIG['sg-backup-dir']})
+        v.update(config.CONFIG["template-vaiables"])
+        v.update({'BACKUP_DIR':config.CONFIG['backup.dir']})
         v.update(self.vaiables)
         
-        return Template(self.__sg_root).substitute(v)
+        return os.path.normpath(Template(self.__sg_root).substitute(v))
         
-        
+    
     @savegame_root.setter
     def savegame_root(self,x):
         if not isinstance(x,str):
@@ -100,7 +101,18 @@ class Game(object):
     @property
     def raw_savegame_dir(self):
         return self.__sg_dir
+
+    @property
+    def savegame_dir(self):
+        v = dict(o.environ)
+        v.update(config.CONFIG['template-vaiables'])
+        v.update(self.variables)
         
+        return os.path.normpath(Template(self.__sg_dir).substitute(v))
+        
+    @savegame_dir.setter
+    def savegame_dir(self,x):
+        self.__sg_dir=x
        
     @property
     def final_backup(self):

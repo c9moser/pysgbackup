@@ -87,5 +87,8 @@ if os.path.isdir(config.CONFIG['user-archivers-dir']):
                 archiver_id=i[0:-5]
                 ARCHIVERS[archiver_id]=conf
 
+def list_archivers():
+    return ARCHIVERS.keys()
+    
 #def get_archiver(archiver_id):
 

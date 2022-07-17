@@ -1,23 +1,52 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
 
-from . import config,backup,database
+from . import config,backup,database,archivers
 
 import sys
 import getopt
 
-HELP="""USAGE:\n======
+HELP="""sgbackup: Help
+
+USAGE:
+======
   sgbackup [help] | [help command]
   sgbackup command [options] [args] ...
   
 COMMANDS:
 =========
-  help          print help
-  help command  print help for specified command
-  backup        backup operations
-  database      database operations (same as db)
-  db            database operations (same as database)
+  archiver          list known archivers
+  backup            backup savegames
+  database          database operations (same as db)
+  db                database operations (same as database)
+  delete-savegame   delete savegames
+  delete-backups    delete savegame backups
+  help [command]    print help [for command]
+  restore           restore savegame backup
+  restore-all       restore all savegame-backups
 """
+
+COMMAND_ARCHIVER_HELP="""sgbackup archivers: Help
+
+USAGE:
+======
+  sgbackup archiver
+
+DESCRIPTION:
+============
+
+This command takes no arguments. It only lists known archivers.  
+"""
+
+def command_archiver(db,argv):
+    if not argv:
+        for i in archivers.list_archivers():
+            print(i)
+    else:
+        print('sgbackup archiver: This command takes no arguments!')
+        print(COMMAND_ARCHIVER_HELP)
+        sys.exit(2)
+    
 
 COMMAND_BACKUP_HELP="""
 """
@@ -25,22 +54,14 @@ COMMAND_BACKUP_HELP="""
 def command_backup(db,argv):
     try:
         opts,args = getopt.getopt(argv, 
-                                  "L:ahuw",
-                                  ["backup-all",
-                                   "help",
-                                   "listfile="
-                                   "usage"
+                                  "L:w",
+                                  ["listfile="
                                    "write-listfile"])
     except getopt.GetoptError as err:
         print(err,file=sys.stderr)
         print(COMMAND_BACKUP_HELP)
         sys.exit(2)
     
-    rtopts={
-        "verbose":False,
-        "backup-all":False,
-        "write-listfile":False,
-    }
     
     mode='b'
     
@@ -50,18 +71,18 @@ def command_backup(db,argv):
             config.CONFIG['sg-listfile']=a
         elif (o == '-a' or o == '--backup-all'):
             mode='a'
-        elif (o == '-h' or o == '--help'):
-            print(get_help())
-            sys.exit(0)
-        elif (o == '-u' or o == '--usage'):
-            print(get_usage())
-            sys.exit(0)
         elif (o == '-w' or o == '--write-listfile'):
-            rtopts['write-listfile']=True
+            config.CONFIG['backup.write_listfile']=True
             
     if mode == 'a':
         backup_all_targets
 # command_backup()
+
+COMMAND_BACKUP_ALL_HELP="""
+"""
+
+def command_backup_all(db,argv):
+    pass
 
 COMMAND_DATABASE_HELP="""sgbackup database: Help
 
@@ -187,12 +208,22 @@ def command_database(db,argv):
                 db.add_game(g)
 # command_database()
     
-        
+COMMAND_NOT_IMPLEMENTED_HELP="""COMMAND IS NOT IMPLEMENTED!
+
+This is work in progress!
+"""
+command_not_implemented = lambda db,argv: print('Not Implemented!')
 
 commands={
-    'backup': {'help':COMMAND_BACKUP_HELP,'function':command_backup},
+    'archiver': {'help':COMMAND_ARCHIVER_HELP,'function':command_archiver},
+    'backup': {'help': COMMAND_BACKUP_HELP,'function':command_backup},
+    'backup-all': {'help': COMMAND_BACKUP_ALL_HELP,'function':command_backup_all},
     'database': {'help':COMMAND_DATABASE_HELP,'function':command_database},
-    'db': {'help':COMMAND_DATABASE_HELP,'function':command_database}
+    'db': {'help':COMMAND_DATABASE_HELP,'function':command_database},
+    'delete-backups': {'help': COMMAND_NOT_IMPLEMENTED_HELP, 'function': command_not_implemented},
+    'delete-savegames': {'help': COMMAND_NOT_IMPLEMENTED_HELP, 'function': command_not_implemented},
+    'restore': {'help': COMMAND_NOT_IMPLEMENTED_HELP, 'function': command_not_implemented},
+    'restore-all': {'help':COMMAND_NOT_IMPLEMENTED_HELP,'function': command_not_implemented}
 }
     
 def main():
@@ -217,7 +248,8 @@ def main():
         print("sgbackup: Unknown command '{0}'!".format(sys.argv[1]),file=sys.stderr)
         print(HELP)
         sys.exit(2)
-    
+# main()
+
 if __name__ == "__main__":
     main()
 

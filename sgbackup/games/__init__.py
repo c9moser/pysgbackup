@@ -38,11 +38,14 @@ def parse_gameconf(game_id):
                 sg_name=parser.get(sect,'savegame-name')
             if parser.has_option(sect,'savegame-root'):
                 sg_root=parser.get(sect,'savegame-root')
+            if parser.has_option(sect,'savegame-dir'):
+                sg_dir=parser.get(sect,'savegame-dir')
+            
         
         if not game:
-            game=Game(game_id,name,sg_name,sg_root)
-            return game
-            
+            if not name or not sg_name or not sg_dir or not sg_root:
+                return None
+            return Game(game_id,name,sg_name,sg_root,sg_dir)
         
         if game_id:
             game.game_id = game_id

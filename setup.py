@@ -16,7 +16,7 @@ if sys.platform == 'win32':
     scripts.append('bin/sgbackup.bat')
 scripts.append('bin/sgbackup')
 
-setup(name="pysqgbackup",
+setup(name="pysgbackup",
       version=".".join((str(i) for i in sgbackup.config.CONFIG["version"])),
       description="Tool to manage SaveGame backups",
       author="Christian Moser",

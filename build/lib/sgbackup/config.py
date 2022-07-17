@@ -31,6 +31,12 @@ CONFIG={
     
     "zipfile.compression": zipfile.ZIP_DEFLATED,
     "zipfile.copmresslevel": 9,
+    "zipfile.compression.values": {
+        'stored': zipfile.ZIP_STORED,
+        'deflated': zipfile.ZIP_DEFLATED,
+        'bzip2': zipfile.ZIP_BZIP2,
+        'lzma': zipfile.ZIP_LZMA
+    },
     
     # Variables for game.conf files and database entries
     "template-variables": {
@@ -64,19 +70,19 @@ def _init_config():
             if cparser.has_option('user-config'):
                 CONFIG['user-config-template']=cparser.get(sect,'user-config')
                 t=Template(cparser.get(sect,'user-config'))
-                CONFIG['user-config']=t.substitute(v)
+                CONFIG['user-config']=os.path.normpath(t.substitute(v))
             if cparser.has_option('user-achivers-dir'):
                 CONFIG['user-archivers-dir-template']=cparser.get(sect,"user-archivers-dir")
                 t=Template(cparser.get(sect,"user-archivers-dir"))
-                CONFIG["user-achivers-dir"] = t.substitute(v) 
+                CONFIG["user-achivers-dir"] = os,path.normpath(t.substitute(v))
             if cparser.has_option(sect,"user-db"):
                 CONFIG["database-template"]=cparser.get(sect,"database")
                 t=Template(cparser.get(sect,"database"))
-                CONFIG["database"] = t.substitute(v)
+                CONFIG["database"] = os.path.normpath(t.substitute(v))
             if cparser.has_option(sect,"user-gameconf-dir"):
                 CONFIG["user-gameconf-dir-template"]=cparser.get(sect,"user-gameconf-dir")
                 t=Template(cparser.get(sect,"user-gameconf-dir"))
-                CONFIG["user-gameconf-dir"]=t.substitute(v)
+                CONFIG["user-gameconf-dir"]=os.path.normpath(t.substitute(v))
         
         sect="backup"
         if (cparser.has_section(sect)):
@@ -84,7 +90,7 @@ def _init_config():
                 CONFIG['backup.dir.template']=cparser.get_option(sect,"dir")
                 t=Template(cparser.get_option(sect,"dir"))
                 value = t.substitute(v)
-                CONFIG["backup.dir"] = value
+                CONFIG["backup.dir"] = os.path.normpath(value)
                 v["BACKUP_DIR"] = value
             if cparser.has_option(sect, "max-backups"):
                 CONFIG["backups.max"] = cparser.getint(sect, "max-backups")
@@ -97,20 +103,17 @@ def _init_config():
             if cparser.has_option(sect,'listfile'):
                 CONFIG['backup.listfile.template']=cparser.get(sect,"listfile")
                 t=Template(cparser.get(sect,"listfile"))
-                CONFIG['backup.listfile'] = t.substitute(v)
+                CONFIG['backup.listfile'] = os.path.normpath(t.substitute(v))
+            if cparser.has_option(sect,'write-listfile'):
+                CONFIG['backup.write-listfile'] = cparser.getboolean(sec,'write-listfile')
                 
         sect="zipfile"
         if cparser.has_section(sect):
             if cparser.has_option('compression'):
-                compression = {
-                    'stored': zipfile.ZIP_STORED,
-                    'deflated': zipfile.ZIP_DEFLATED,
-                    'bzip2': zipfile.ZIP_BZIP2,
-                    'lzma': zipfile.ZIP_LZMA
-                }
+                
                 
                 opt = cparser.get(sect,compression)
-                if (not opt or opt not in compression.keys()):
+                if (not opt or opt not in CONFIG['zipfile.compression.values'].keys()):
                     print("CONFIG WARNING: [zipfile] compression {0} is not known! Using default compression!".format(opt))
                 else:
                     CONFIG["zipfile.compression"] = compression[opt]
@@ -169,13 +172,12 @@ def write_config(option,value,global_config=False):
         cparser.set(sect,'dir',CONFIG['backup.dir.template'])
     if 'backup.listfile.template' in CONFIG.keys():
         cparser.set(sect,'listfile',CONFIG['backup.listfile.template'])
+    cparser.set(sect,'write-listfile',CONFIG['backup.write-listfile'])
 
-    zf_compress={
-        zipfile.ZIPFILE_STORED: 'stored',
-        zipfile.ZIPFILE_DEFLATED: 'deflated',
-        zipfile.ZIPFILE_BZIP2: 'bzip2',
-        zipfile.ZIPFILE_LZMA: 'lzma'
-    }    
+    zf_compress={}
+    for k,v in CONFIG['zipfile.compression.values'].items():
+        zf_compress[v]=k
+        
     sect='zipfile'
     cparser.add_section(sect)
     cparser.set(sect,'compression',zf_compress[CONFIG['zipfile.compression']])
