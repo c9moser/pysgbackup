@@ -70,11 +70,10 @@ def _validate_conf_keys(conf):
 # check global archivers
 for i in os.listdir(os.path.dirname(__file__)):
     if not i.startswith('_') and not i.startswith('.'):
-        if i.endswith('.conf'):
-            archiver_id=i[0:-5]
+        if i.endswith('.archiver'):
             conf=_parse_conf(filename)
             if (_validate_conf_keys(conf)):
-                conf['class']='ProgramArchiver'
+                archiver_id=i[0:-5]
                 ARCHIVERS[archiver_id]=conf
 
 # check local archivers
@@ -82,7 +81,7 @@ if os.path.isdir(config.CONFIG['user-archivers-dir']):
     for i in os.listdir(config.CONFIG['user-archivers-dir']):
         if i.startswith('.') or i.startswith('_'):
             continue            
-        if i.endswith('.conf'):
+        if i.endswith('.archiver'):
             conf=_parse_conf(os.path.join(config.CONFIG['user-archivers-dir'],i))
             if (_validate_conf_keys(conf)):
                 archiver_id=i[0:-5]

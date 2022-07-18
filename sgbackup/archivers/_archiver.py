@@ -36,14 +36,30 @@ class ArchiverBase(object):
 class ProgramArchiver(ArchiverBase):
     def __init__(self,archiver_id,conf):
         ArchiverBase.__init__(self,archiver_id)
+    
+        self.__executable = conf['executable']    
+        self.__create = conf['create']
+        self.__restore = conf['restore']
+    
         
+        if ('verbose' in conf and conf['verbose']):
+            self.__verbose = conf['verbose']
+        else:
+            self.__verbose = ""
+            
+    @property
+    def create_template(self):
+        return self.__create
+        
+    #@property
+    #def create_command(self):
+    
     def backup(self,filename,root_dir,backup_dir):
         pass
         
     def restore(self):
         pass
         
-    
     @property
     def known_extensions(self):
         return []
@@ -51,6 +67,10 @@ class ProgramArchiver(ArchiverBase):
     @property
     def extension(self):
         return None
+        
+    @property
+    def verbose(self):
+        
 # ProgramArchiver class
         
 class TarFileArchiver(ArchiverBase):

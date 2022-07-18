@@ -61,7 +61,7 @@ def parse_gameconf(game_id):
     
     game=None
     for d in get_conf_dirs():
-        conf = os.path.join(d,'.'.join((game_id,'conf')))
+        conf = os.path.join(d,'.'.join((game_id,'game')))
 
         if os.path.isfile(conf):
             game=_real_parse_file(conf,game)
@@ -74,7 +74,7 @@ def get_gameconf_data(game_id):
     ret=[]
     
     for d in get_conf_dirs():
-        f = os.path.join(d,'.'.join((game_id,'conf')))
+        f = os.path.join(d,'.'.join((game_id,'game')))
         if os.path.isfile(f):
             with open(f,'rb') as conf:
                 checksum=hashlib.md5(conf.read()).hexdigest()
@@ -114,7 +114,7 @@ def get_games():
     for d in get_conf_dirs():
         if (os.path.exists(d)):
             for f in os.listdir(d):
-                if f.endswith('.conf'):
+                if f.endswith('.game'):
                     gid = os.path.splitext(os.path.basename(f))[0]
                     if not gid in gameconf:
                         gameconf.append(gid)
