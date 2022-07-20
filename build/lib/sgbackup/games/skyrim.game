@@ -1,0 +1,5 @@
+[game]
+name = The Elder Scrolls V: Skyrim
+savegame-name = TES5-Skyrim
+savegame-root = ${USER_DOCUMENTS_DIR}
+savegame-dir = My Games\Skyrim Special Edition

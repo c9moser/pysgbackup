@@ -1,0 +1,5 @@
+[game]
+name = The Elder Scrolls III: Morrowind
+savegame-name = TES3-Morrowind
+savegame-root = E:\SteamLibrary\steamapps\common
+savegame-dir = Morrowind\saves

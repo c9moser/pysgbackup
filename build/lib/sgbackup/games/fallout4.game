@@ -1,0 +1,5 @@
+[game]
+name = Fallout 4
+savegame-name = Fallout4
+savegame-root = ${USER_DOCUMENTS_DIR}
+savegame-dir = My Games\Fallout4

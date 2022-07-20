@@ -1,0 +1,5 @@
+[game]
+name = Xenonauts
+savegame-name = Xenonauts
+savegame-root = ${USER_DOCUMENTS_DIR}
+savegame_dir = Xenonauts

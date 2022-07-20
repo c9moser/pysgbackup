@@ -1,0 +1,5 @@
+[game]
+name = F1 2019
+savegame-name = F1-2019
+savegame-root = ${USER_DOCUMENTS_DIR}
+savegame-dir = My Games\F1 2019

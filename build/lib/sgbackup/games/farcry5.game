@@ -1,0 +1,5 @@
+[game]
+name = Far Cry 5
+savegame-name = FarCry5
+savegame-root = ${USER_DOCUMENTS_DIR}
+savegame-dir = My Games\Far Cry 5

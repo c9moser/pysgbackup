@@ -1,0 +1,6 @@
+[game]
+name = Jurassic World Evolution 2
+savegame-name = JurassicWorldEvolution2
+savegame-root = ${USERPROFILE}
+savegame-dir = Saved Games\Frontier Developments\Jurassic World Evolution 2
+

@@ -1,0 +1,5 @@
+[game]
+name = Atom RPG
+savegame-name = atom-rpg
+savegame-root = ${USERPROFILE}
+savegame-dir = AppData\LocalLow\AtomTeam

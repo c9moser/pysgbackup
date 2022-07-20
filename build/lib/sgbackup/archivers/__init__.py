@@ -39,16 +39,23 @@ def _parse_conf(filename):
         if parser.has_option(sect,'create'):
             conf['create'] = parser.get(sect,'create')
             
-        if parser.has_opion(sect,'extract'):
+        if parser.has_option(sect,'extract'):
             conf['extract'] = parser.get(sect,'extract')
             
-        if parser.has_option('verbose'):
+        if parser.has_option(sect,'verbose'):
             conf['verbose'] = parser.get(sect,'verbose')
             
-        if parser.has_option('chdir'):
-            conf['chdir'] = parser.getboolean(sect,'chdir')
+        
+        if parser.has_option(sect,'change-directory'):
+            conf['change-directory'] = parser.getboolean(sect,'change-directory')
         else:
-            conf['chdir'] = False
+            conf['change-directory'] = False
+            
+        if parser.has_option(sect,'extension'):
+            conf['extension'] = parser.get(sect,'extension')
+            conf['known-extensions'] = [conf['extension']]
+        if parser.has_option(sect,'known-extensions'):
+            conf['known-extensions'] = parser.get('known-extensions').split(';')
         
     return conf
     
@@ -59,7 +66,8 @@ def _validate_conf_keys(conf):
     keys=[
         'executable',
         'create',
-        'extract'
+        'extract',
+        'extension'
     ]
     for i in keys:
         if i not in conf.keys():
@@ -70,11 +78,10 @@ def _validate_conf_keys(conf):
 # check global archivers
 for i in os.listdir(os.path.dirname(__file__)):
     if not i.startswith('_') and not i.startswith('.'):
-        if i.endswith('.conf'):
-            archiver_id=i[0:-5]
+        if i.endswith('.archiver'):
             conf=_parse_conf(filename)
             if (_validate_conf_keys(conf)):
-                conf['class']='ProgramArchiver'
+                archiver_id=i[0:-5]
                 ARCHIVERS[archiver_id]=conf
 
 # check local archivers
@@ -82,7 +89,7 @@ if os.path.isdir(config.CONFIG['user-archivers-dir']):
     for i in os.listdir(config.CONFIG['user-archivers-dir']):
         if i.startswith('.') or i.startswith('_'):
             continue            
-        if i.endswith('.conf'):
+        if i.endswith('.archiver'):
             conf=_parse_conf(os.path.join(config.CONFIG['user-archivers-dir'],i))
             if (_validate_conf_keys(conf)):
                 archiver_id=i[0:-5]

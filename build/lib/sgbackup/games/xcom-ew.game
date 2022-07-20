@@ -1,0 +1,5 @@
+[game]
+name = XCOM - Enemy Within
+savegame-name = XCOM-EnemyWithin
+savegame-root = ${USER_DOCUMENTS_DIR}
+savegame-dir = My Games\XCOM - Enemy Within

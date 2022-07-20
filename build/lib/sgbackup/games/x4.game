@@ -1,0 +1,6 @@
+[game]
+name = X4 Foundations
+savegame-name = X4
+savegame-root = ${USER_DOCUMENTS_DIR}
+savegame-dir = Egosoft\X4
+

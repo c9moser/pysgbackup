@@ -1,0 +1,5 @@
+[game]
+name = Pathfinder Kingmaker
+savegame-name = PathfinderKingmaker
+savegame-root = ${USERPROFILE}\AppData\LocalLow
+savegame-dir = Owlcat Games\Pathfinder Kingmaker

@@ -1,0 +1,5 @@
+[game]
+name = The Witcher 3: The Wild Hunt
+savegame-name = Witcher3
+savegame-root = ${USER_DOCUMENTS_DIR}
+savegame-dir = The Witcher 3

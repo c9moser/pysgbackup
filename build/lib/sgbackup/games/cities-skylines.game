@@ -1,0 +1,5 @@
+[game]
+name = Cities Skylines
+savegame-name = CitiesSkylines
+savegame-root = ${LOCALAPPDATA}
+savegame-dir = Colossal Order\Cities_Skylines

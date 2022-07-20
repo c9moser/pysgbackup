@@ -1,0 +1,5 @@
+[game]
+name = Greed Fall
+savegame-name = GreedFall
+savegame-root = ${USER_DOCUMENTS_DIR}
+savegame-dir = Greed Fall

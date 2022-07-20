@@ -1,0 +1,5 @@
+[game]
+name = STAR WARS Squadrons
+savegame-name = StarWars-Squadrons
+savegame-root = ${USER_DOCUMENTS_DIR}
+savegame-dir = STAR WARS Squadrons Steam

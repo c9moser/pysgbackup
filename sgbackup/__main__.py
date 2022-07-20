@@ -85,7 +85,7 @@ def command_backup(db,argv):
     final_backup = False
     remove_final_backup_flag = False
     for o,a in opts:
-        if (o == '-F' or o == '..no-final'):
+        if (o == '-F' or o == '--no-final'):
             final_backup = False
             remove_final_backup_flag = True
         elif (o == '-f' or o == '--final'):

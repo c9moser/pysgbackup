@@ -9,7 +9,7 @@ from string import Template
 import hashlib
 import zipfile
 
-def _get_cehcksum_values():
+def _get_checksum_values():
     def get_checksum(filename,algorithm='None'):
         if algorithm == 'None':
             return ''
@@ -44,7 +44,7 @@ CONFIG={
     
     "backup.max": 10,
     "backup.checksum": "sha256",
-    "backup.checksum.values": _get_cehcksum_values(),
+    "backup.checksum.values": _get_checksum_values(),
     "backup.archiver": "zipfile",
     "backup.dir": os.path.join(GLib.get_home_dir(), "SaveGames"),
     "backup.write-listfile": False,
@@ -65,10 +65,15 @@ CONFIG={
         "USER_DATA_DIR": GLib.get_user_data_dir(),
         "USER_DOCUMENTS_DIR": GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOCUMENTS),
         "USER_NAME": GLib.get_user_name()
+    },
+    'archivers': {
+        'tar': {'archiver':'tarfile'},
+        'zip': {'archvier':'zipfile'}
     }
-    
 }
 CONFIG['backup.listfile']=os.path.join(CONFIG['backup.dir'],"backups.list")
+CONFIG['backup.checksum-database.template']="${BACKUP_DIR}/checksums.db"
+CONFIG['backup.checksum-database']=os.path.join(CONFIG['backup.dir'],'checksums.db')
 
 CONFIG_DIRS=[
     "user-data-dir",
@@ -79,7 +84,7 @@ CONFIG_DIRS=[
 def _init_config():
     def parse_config(cparser):
         if cparser.has_section("variables"):
-            for opt in cparser.options("vaiables"):
+            for opt in cparser.options("variables"):
                 CONFIG["template-variables"][opt]=cparser.get_option("variables",opt)
         v=dict(os.environ)
         v.update(CONFIG["template-variables"])
@@ -113,7 +118,12 @@ def _init_config():
                 t=Template(cparser.get_option(sect,"dir"))
                 value = t.substitute(v)
                 CONFIG["backup.dir"] = os.path.normpath(value)
-                v["BACKUP_DIR"] = value
+                CONFIG["template-variables"]['BACKUP_DIR'] = value
+                v["BACKUP_DIR"] = os.path.normpath(value)
+                
+                t = Template(CONFIG['backup-checksumdatabase.template'])
+                CONFIG['backup.checksum-database'] = t.substitute(v)
+                    
             if cparser.has_option(sect, "max-backups"):
                 CONFIG["backups.max"] = cparser.getint(sect, "max-backups")
             if cparser.has_option(sect, "checksum"):
@@ -128,6 +138,10 @@ def _init_config():
                 CONFIG['backup.listfile'] = os.path.normpath(t.substitute(v))
             if cparser.has_option(sect,'write-listfile'):
                 CONFIG['backup.write-listfile'] = cparser.getboolean(sect,'write-listfile')
+            if cparser.has_option(sect,'checksum-database'):
+                CONFIG['backup.checksum-database.template'] = cparser.get(sect,'checksum-database')
+                t = Template(cparser.get(sect,'checksum-database'))
+                CONFIG['backup.checksum-database'] = os.path.normpath(t.substitute(v))
                 
         sect="zipfile"
         if cparser.has_section(sect):
@@ -197,6 +211,8 @@ def write_config(filename,global_config=False):
         cparser.set(sect,'dir',CONFIG['backup.dir.template'])
     if 'backup.listfile.template' in CONFIG.keys():
         cparser.set(sect,'listfile',CONFIG['backup.listfile.template'])
+    if 'backup.checksum-database.template' in CONFIG:
+        cparser.set(sec,'checksum-database',CONFIG['backup.checksum-database.template'])
     cparser.set(sect,'write-listfile',_bool_to_config(CONFIG['backup.write-listfile']))
 
     zf_compress={}

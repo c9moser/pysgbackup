@@ -47,7 +47,7 @@ def backup(game,listfile=None,write_listfile=False):
             print("checksum {0}: {1}".format(csid,backup_file))
         csfile = '.'.join((backup_file,csid))
         with open(csfile,'w') as csf:
-            csf.write('{0} ({1}) = {2}\n'.format(csid,os.path.basename(backup_file),checksum))
+            csf.write('{0} ({1}) = {2}\n'.format(csid.upper(),os.path.basename(backup_file),checksum))
             
     if write_listfile:
         if not listfile:
