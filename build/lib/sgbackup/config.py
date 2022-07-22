@@ -228,10 +228,6 @@ def write_config(filename,global_config=False):
     cparser.set(sect,'compression',zf_compress[CONFIG['zipfile.compression']])
     cparser.set(sect,'compresslevel',str(CONFIG['zipfile.compresslevel']))
     
-    sect='tarfile'
-    cparser.add_section(sect)
-    cparser.set(sect,'compression',CONFIG['tarfile.compression'])
-    
     with open(filename,'w') as f:
         cparser.write(f)
 # write_config()

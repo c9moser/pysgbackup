@@ -40,7 +40,7 @@ class ProgramArchiver(ArchiverBase):
     
         self.__executable = conf['executable']    
         self.__create = conf['create']
-        self.__restore = conf['restore']
+        self.__restore = conf['extract']
         self.__extension = conf['extension']
         self.__known_extensions = conf['known-extensions']
         self.__change_directory = conf['change-directory']
@@ -59,7 +59,11 @@ class ProgramArchiver(ArchiverBase):
     
     @property
     def executable_raw(self):
-        return self.executable
+        return self.__executable
+        
+    @property
+    def executable(self):
+        return os.path.normpath(self.__executable)
         
     @property
     def _create_template(self):
@@ -71,7 +75,7 @@ class ProgramArchiver(ArchiverBase):
         
     @property
     def cygpath(self):
-        return self.__cygpath
+        return os.path.normpath(self.__cygpath)
         
     @property
     def change_directory(self):
@@ -88,16 +92,22 @@ class ProgramArchiver(ArchiverBase):
     @property
     def verbose(self):
         return self.__verbose
+    
+    def _save_win32_path(self,path):
+        return path.replace('/','\\')
         
     def _get_template_variables(self,filename,root_dir,backup_dir=''):
         def _cygpath(path):
             if not path:
                 return ""
             if not self.cygpath:
-                return path
+                # msys fix
+                if sys.platform == 'win32':
+                    return _save_win32_path(os.path.normpath(path))
+                return os.path.normpath(path)
             
             proc = subprocess.run([self.cygpath,path],capture_output=True,text=True)
-            return proc.stdout.read()
+            return proc.stdout[:-1]
         # _cygpath()
             
         if config.CONFIG['verbose']:
@@ -115,13 +125,13 @@ class ProgramArchiver(ArchiverBase):
     # _get_template_variables()
         
     def _get_backup_command(self,filename,root_dir,backup_dir):
-        tvars = _get_template_variables(filename,root_dir,backup_dir)
+        tvars = self._get_template_variables(filename,root_dir,backup_dir)
         t = string.Template(self._create_template)
         return t.substitute(tvars)
     # _get_backup_command()
           
     def _get_restore_command(self,filename,root_dir):
-        tvars = _get_template_variables(filename,root_dir)
+        tvars = self._get_template_variables(filename,root_dir)
         t = string.Template(self._restore_template)
         return t.substitute(tvars)
     # _get_restore_command()
@@ -134,7 +144,7 @@ class ProgramArchiver(ArchiverBase):
             os.chdir(root_dir)
             
         try:
-            cproc = subprocess.run(cmd,stdout=stdout,stderr=stderr,capture_output=True)
+            cproc = subprocess.run(cmd,stdout=stdout,stderr=stderr)
         except subprocess.CalledProcessError as error:
             print('Backup failed! ({0})'.format(error))
             if self.change_directory:

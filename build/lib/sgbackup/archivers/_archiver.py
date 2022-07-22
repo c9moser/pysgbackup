@@ -40,7 +40,7 @@ class ProgramArchiver(ArchiverBase):
     
         self.__executable = conf['executable']    
         self.__create = conf['create']
-        self.__restore = conf['restore']
+        self.__restore = conf['extract']
         self.__extension = conf['extension']
         self.__known_extensions = conf['known-extensions']
         self.__change_directory = conf['change-directory']
@@ -71,7 +71,7 @@ class ProgramArchiver(ArchiverBase):
         
     @property
     def cygpath(self):
-        return self.__cygpath
+        return os.path.normpath(self.__cygpath)
         
     @property
     def change_directory(self):
@@ -94,7 +94,9 @@ class ProgramArchiver(ArchiverBase):
             if not path:
                 return ""
             if not self.cygpath:
-                return path
+                return os.path.normpath(path)
+            
+            print(self.cygpath)
             
             proc = subprocess.run([self.cygpath,path],capture_output=True,text=True)
             return proc.stdout.read()
@@ -115,13 +117,13 @@ class ProgramArchiver(ArchiverBase):
     # _get_template_variables()
         
     def _get_backup_command(self,filename,root_dir,backup_dir):
-        tvars = _get_template_variables(filename,root_dir,backup_dir)
+        tvars = self._get_template_variables(filename,root_dir,backup_dir)
         t = string.Template(self._create_template)
         return t.substitute(tvars)
     # _get_backup_command()
           
     def _get_restore_command(self,filename,root_dir):
-        tvars = _get_template_variables(filename,root_dir)
+        tvars = self._get_template_variables(filename,root_dir)
         t = string.Template(self._restore_template)
         return t.substitute(tvars)
     # _get_restore_command()

@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 import os
 import sys
 
@@ -49,11 +49,12 @@ if sys.platform == 'win32':
                     with open(os.path.join(archiver_path,'.'.join((i,'archiver','w32','in'))),'r') as ifile:
                         s=ifile.read()
                     for k,v in replace.items():
-                        s.replace(k,v)
+                        s = s.replace(k,v)
                     with open(os.path.join(archiver_path,'.'.join((i,'archiver'))),'w') as ofile:
                         ofile.write(s)
-                
-    
+                        
+    for i in os.environ['PATH'].split(';'):
+        print(i)
 scripts.append('bin/sgbackup')
 
 setup(name="pysgbackup",
@@ -61,13 +62,9 @@ setup(name="pysgbackup",
       description="Tool to manage SaveGame backups",
       author="Christian Moser",
       author_email="c9moser@gmx.at",
-      packages=[
-        "sgbackup",
-        "sgbackup.archivers",
-        "sgbackup.games",
-        "pysgbackup"],
+      packages= ['sgbackup','sgbackup.archivers','sgbackup.games','pysgbackup'],
       scripts=scripts,
-      include_package_data='true',
+      include_package_data=True,
       package_data={'sgbackup':["*.sql"],
                     'sgbackup.games': ['*.game'],
                     'sgbackup.archivers': ['*.archiver']})
