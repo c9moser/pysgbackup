@@ -1,0 +1,8 @@
+*~
+*.bak
+*.tmp
+*.temp
+sgbackup/sgbackup.conf
+*.archiver
+*.game
+
