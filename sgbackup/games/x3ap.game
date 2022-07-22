@@ -1,5 +1,0 @@
-[game]
-name = X3 Albion Prelude
-savegame-name = X3AP
-savegame-root = ${USER_DOCUMENTS_DIR}
-savegame-dir = Egosoft\X3AP

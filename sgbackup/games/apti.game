@@ -1,5 +1,0 @@
-[game]
-name = A Plague Tale: Innocence
-savegame-name = APlagueTale-Innocence
-savegame-root = ${USER_DOCUMENTS_DIR}
-savegame-dir = My Games/A Plague Tale Innocence

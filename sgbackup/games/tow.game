@@ -1,5 +1,0 @@
-[game]
-name = The Outer Worlds
-savegame-name = TheOuterWorlds
-savegame-root = ${USERPROFILE}
-savegame-dir = Saved Games\The Outer Worlds

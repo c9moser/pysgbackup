@@ -1,5 +1,0 @@
-[game]
-name = Sid Meier's Civilization VI
-savegame-name = civ6
-savegame-root = ${USER_DOCUMENTS_DIR}
-savegame-dir = My Games\Sid Meier's Civilization VI

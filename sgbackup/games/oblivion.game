@@ -1,5 +1,0 @@
-[game]
-name = The Elder Scrolls IV: Oblivion
-savegame-name = TES4-Oblivion
-savegame-root = ${USER_DOCUMENTS_DIR}
-savegame-dir = My Games\Oblivion

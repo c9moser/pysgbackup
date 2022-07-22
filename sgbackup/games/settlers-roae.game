@@ -1,5 +1,0 @@
-[game]
-name = The Settlers - Rise of an Empire
-savegame-name = TheSettlers-RiseOfAnEmpire
-savegame-root = ${USER_DOCUMENTS_DIR}
-savegame-dir = DIE SIEDLER - Aufstieg eines Königreichs

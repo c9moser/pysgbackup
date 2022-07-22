@@ -1,5 +1,0 @@
-[game]
-name = DiRT Rally 2.0
-savegame-name = DiRT-Rally-2_0
-savegame-root = ${USER_DOCUMENTS_DIR}
-savegame-dir = My Games\DiRT Rally 2.0

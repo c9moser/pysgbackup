@@ -1,5 +1,0 @@
-[game]
-name = Horizon Zero Dawn
-savegame-name = HorizonZeroDawn
-savegame-root = ${USER_DOCUMENTS_DIR}
-savegame-dir = Horizon Zero Dawn

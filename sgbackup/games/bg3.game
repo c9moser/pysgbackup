@@ -1,5 +1,0 @@
-[game]
-name = Baldur's Gate 3
-savegame-name = BaldursGate3
-savegame-root = ${USER_DATA_DIR}
-savegame-dir = Larian Studios\Baldur's Gate 3

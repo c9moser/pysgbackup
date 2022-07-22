@@ -1,5 +1,0 @@
-[game]
-name = Dargon Age 2
-savegame-name = DragonAge2
-savegame-root = ${USER_DOCUMENTS_DIR}
-savegame-dir = BioWare\Dragon Age 2
