@@ -91,17 +91,20 @@ class ProgramArchiver(ArchiverBase):
         
     def _get_template_variables(self,filename,root_dir,backup_dir=''):
         def _cygpath(path):
+            if not path:
+                return ""
             if not self.cygpath:
                 return path
             
             proc = subprocess.run([self.cygpath,path],capture_output=True,text=True)
             return proc.stdout.read()
+        # _cygpath()
             
         if config.CONFIG['verbose']:
             verbose = self.verbose
         else:
             verbose = ""
-         
+        
         tvars = dict(os.environ)
         tvars.update(config.CONFIG['template-variables'])
         tvars.update({'FILENAME': _cygpath(filename),
@@ -177,11 +180,12 @@ class TarFileArchiver(ArchiverBase):
         
     @property
     def known_extensions(self):
-        return ["tar"]
+        return ['tar']
         
     @property
     def extension(self):
         return "tar"
+        
         
     def backup(self,filename,root_dir,backup_dir):
         if os.path.exists(os.path.join(root_dir,backup_dir)):
@@ -191,7 +195,7 @@ class TarFileArchiver(ArchiverBase):
             if not os.path.exists(os.path.dirname(filename)):
                 os.path.makedirs(os.path.dirname(filename))
             
-            archive = tarfile.TarFile(name=filename,mode='w',dereference=True)
+            archive = tarfile.open(filename,'w')
             archive.add(backup_dir,recursive=True)
             
             os.chdir(cwd)
@@ -206,7 +210,7 @@ class TarFileArchiver(ArchiverBase):
         if not os.path.exists(root_dir):
             os.path.makedirs(root_dir)
             
-        archive = tarfile.TarFile(name=filename,mode='r',dereference=True)
+        archive = tarfile.open(filename,'r')
         archive.extractall(path=root_dir)
         return True
     # restore()
@@ -275,11 +279,13 @@ class ZipFileArchiver(ArchiverBase):
                             if (config.CONFIG['verbose']):
                                 print('[zipfile:add] {0}'.format(i))
                             archive.write(i,arcname=arcname)
-                os.chdir(cwd)
-                return True
             except Exception as error:
                 print (error,file=sys.stderr)
-        return False
+                os.chdir(cwd)
+                return False
+                
+            os.chdir(cwd)
+            return True
     # backup()
 
     def restore(self,filename,root_dir):

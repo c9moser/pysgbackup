@@ -124,6 +124,8 @@ def _init_config():
                 t = Template(CONFIG['backup-checksumdatabase.template'])
                 CONFIG['backup.checksum-database'] = t.substitute(v)
                     
+            if cparser.has_option(sect,'archiver'):
+                CONFIG['backup.archiver'] = cparser.get(sect,'archiver')
             if cparser.has_option(sect, "max-backups"):
                 CONFIG["backups.max"] = cparser.getint(sect, "max-backups")
             if cparser.has_option(sect, "checksum"):
@@ -154,15 +156,16 @@ def _init_config():
             if cparser.has_option(sect,'compresslevel'):
                 CONFIG['zipfile.compresslevel'] = cparser.getint(sect,'compresslevel')
                 
+        
     # parse_config()
     
     cfg = configparser.ConfigParser()
     
-    if os.path.exists(CONFIG['global-config']):
+    if os.path.isfile(CONFIG['global-config']):
         cfg.read(CONFIG['global-config'])
         parse_config(cfg)
         
-    if os.path.exists(CONFIG['user-config']):
+    if os.path.isfile(CONFIG['user-config']):
         cf.read(CONFIG['user-config'])
         parse_config(cfg)
 # _init_config()
@@ -175,6 +178,7 @@ def _init_config_dirs():
 
 _init_config()
 _init_config_dirs()
+
 
 def _bool_to_config(b):
     if (b):
@@ -212,7 +216,7 @@ def write_config(filename,global_config=False):
     if 'backup.listfile.template' in CONFIG.keys():
         cparser.set(sect,'listfile',CONFIG['backup.listfile.template'])
     if 'backup.checksum-database.template' in CONFIG:
-        cparser.set(sec,'checksum-database',CONFIG['backup.checksum-database.template'])
+        cparser.set(sect,'checksum-database',CONFIG['backup.checksum-database.template'])
     cparser.set(sect,'write-listfile',_bool_to_config(CONFIG['backup.write-listfile']))
 
     zf_compress={}
@@ -223,6 +227,10 @@ def write_config(filename,global_config=False):
     cparser.add_section(sect)
     cparser.set(sect,'compression',zf_compress[CONFIG['zipfile.compression']])
     cparser.set(sect,'compresslevel',str(CONFIG['zipfile.compresslevel']))
+    
+    sect='tarfile'
+    cparser.add_section(sect)
+    cparser.set(sect,'compression',CONFIG['tarfile.compression'])
     
     with open(filename,'w') as f:
         cparser.write(f)

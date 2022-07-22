@@ -24,10 +24,10 @@ def _parse_conf(filename):
     conf={}
     
     sect='archiver'
-    if prarser.has_section(sect):
+    if parser.has_section(sect):
         if parser.has_option(sect,'cygpath'):
-            x=parser.get('cygpath')
-            if (os.path.isabs('cygpath')):
+            x=parser.get(sect,'cygpath')
+            if (os.path.isabs(x)):
                 conf['cygpath']=parser.get(sect,'cygpath')
             else:
                 return {}     
@@ -93,7 +93,7 @@ def _validate_conf_keys(conf):
 for i in os.listdir(os.path.dirname(__file__)):
     if not i.startswith('_') and not i.startswith('.'):
         if i.endswith('.archiver'):
-            conf=_parse_conf(filename)
+            conf=_parse_conf(os.path.join(os.path.dirname(__file__),i))
             if (_validate_conf_keys(conf)):
                 archiver_id=i[0:-5]
                 ARCHIVERS[archiver_id]=conf

@@ -24,10 +24,10 @@ def _parse_conf(filename):
     conf={}
     
     sect='archiver'
-    if prarser.has_section(sect):
+    if parser.has_section(sect):
         if parser.has_option(sect,'cygpath'):
-            x=parser.get('cygpath')
-            if (os.path.isabs('cygpath')):
+            x=parser.get(sect,'cygpath')
+            if (os.path.isabs(x)):
                 conf['cygpath']=parser.get(sect,'cygpath')
             else:
                 return {}     
@@ -52,11 +52,25 @@ def _parse_conf(filename):
             conf['change-directory'] = False
             
         if parser.has_option(sect,'extension'):
-            conf['extension'] = parser.get(sect,'extension')
-            conf['known-extensions'] = [conf['extension']]
+            raw_ext=parser.get(sect,'extension')
+            if raw_ext.startswith('.'):
+                ext = raw_ext[1:]
+            else:
+                ext = raw_ext
+            conf['extension'] = ext
+            conf['known-extensions'] = [ext]
         if parser.has_option(sect,'known-extensions'):
-            conf['known-extensions'] = parser.get('known-extensions').split(';')
-        
+            known_extensions=[]
+            for i in parser.get(sect,'known-extensions').split(';'):
+                if i.startswith('.'):
+                    ext = i[1:]
+                else:
+                    ext = i
+                known_extensions.append(ext)
+                
+            if not known_extensions:
+                known_extensions=[conf['extension']]
+            conf['known-extensions'] = known_extensions
     return conf
     
 def _validate_conf_keys(conf):
@@ -79,10 +93,12 @@ def _validate_conf_keys(conf):
 for i in os.listdir(os.path.dirname(__file__)):
     if not i.startswith('_') and not i.startswith('.'):
         if i.endswith('.archiver'):
-            conf=_parse_conf(filename)
+            conf=_parse_conf(os.path.join(os.path.dirname(__file__),i))
             if (_validate_conf_keys(conf)):
                 archiver_id=i[0:-5]
                 ARCHIVERS[archiver_id]=conf
+                for i in conf['known-extensions']:
+                    config.CONFIG['archivers'][i]={'archiver':archiver_id}
 
 # check local archivers
 if os.path.isdir(config.CONFIG['user-archivers-dir']):
@@ -94,6 +110,8 @@ if os.path.isdir(config.CONFIG['user-archivers-dir']):
             if (_validate_conf_keys(conf)):
                 archiver_id=i[0:-5]
                 ARCHIVERS[archiver_id]=conf
+                for i in conf['known-extensions']:
+                    config.CONFIG['archivers'][i]={'archiver':archiver_id}
 
 def list_archivers():
     return ARCHIVERS.keys()

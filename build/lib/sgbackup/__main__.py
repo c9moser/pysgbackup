@@ -85,7 +85,7 @@ def command_backup(db,argv):
     final_backup = False
     remove_final_backup_flag = False
     for o,a in opts:
-        if (o == '-F' or o == '..no-final'):
+        if (o == '-F' or o == '--no-final'):
             final_backup = False
             remove_final_backup_flag = True
         elif (o == '-f' or o == '--final'):
@@ -359,7 +359,7 @@ def command_write_config(db,argv):
         try:
             config.write_config(filename,global_config)
         except Exception as error:
-            print('Writing Config \'{0}\' failed! ({1})'.format(i,error),file=sys.stderr)          
+            print('Writing Config \'{0}\' failed! ({1})'.format(filename,error),file=sys.stderr)          
     else:
         for i in args:
             if config.CONFIG['verbose']:
@@ -369,6 +369,8 @@ def command_write_config(db,argv):
             except Exception as error:
                 print('Writing Config \'{0}\' failed! ({1})'.format(i,error),file=sys.stderr)
 # command_write_config()
+
+
 
 COMMAND_NOT_IMPLEMENTED_HELP="""COMMAND IS NOT IMPLEMENTED!
 

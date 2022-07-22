@@ -4,6 +4,74 @@ from . import config,archivers
 import os
 import datetime
 import sys
+import fnmatch
+import shelve
+import pickle
+import hashlib
+
+def find_latest_savegame(game):
+    sgdir = os.path.join(config.CONFIG['backup.dir'],game.savegame_name)
+    if os.path.isdir(sgdir):
+        for ext in config.CONFIG['archviers'].keys():
+            filename = os.path.join(sgdir,'.'.join((game.savegame_name,'final',ext)))
+            if os.path.isfile(filename):
+                return filename
+                    
+        for i in sorted(os.listdir(sgdir),reverse=True):
+            for ext in config.CONFIG['archivers'].keys():
+                if fnmatch.fnmatch(i,'.'.join(game.savegame_name,'*',ext)):
+                    return os.path.join(sgdir,i)
+    return ""
+# find_latest_savegame()
+
+def find_savegames(game,reverse=False):
+    sgdir = os.path.join(config.CONFIG['backup.dir'],game.savegame_name)
+    ret=[]
+    if os.path.isdir(sgdir):
+        for i in sorted(os.listdir(sgdir),reverse=reverse):
+            for ext in config.CONFIG['archivers'].keys():
+                if fnmatch.fnmatch(i,'.'.join((game.savegame_name,'*',ext))):
+                    ret.append(os.path.join(sgdir,i))
+    return ret
+# find_savegames()
+
+def delete_savegame(game,filename):
+    def _get_checksum_file(filename):
+        checksum_ext = ['b2','md5','sha1','sha224','sha256','sha384','sha512']
+        for ext in checksum_ext:
+            cfile = '.'.join((filename,ext))
+            if os.path.isfile(cfile):
+                return cfile
+                
+        return ""
+    # _get_checksum_file()
+    
+    cfile = _get_checksum_file(filename)
+    if cfile:
+        if config.CONFIG['verbose']:
+            print('[delete] {0}'.format(cfile))    
+        os.unlink(cfile)
+    if os.path.isfile(config.CONFIG['backup.checksum-database']):
+        with shelve.open(config.CONFIG['backup.checksum-database']) as d:
+            key = '/'.join((game.savegame_name,os.path.basename(filename)))
+            if key in d:
+                if config.CONFIG['verbose']:
+                    print('[delete checksum] {0}',key)
+                del d[key]
+    
+    if config.CONFIG['verbose']:
+        print('[delete] {0}'.format(filename))
+    os.unlink(filename)
+# delete_savegame()
+
+def delete_savegames(game,keep_latest=True):
+    latest = find_latest_savegame(game)
+    for i in find_savegames(game):
+        if keep_latest and i == latest:
+            continue
+        delete_savegame(game,filename)
+# delete_savegames()
+
 
 def get_backup_filename(game,archiver=None):
     if not archiver:
@@ -40,14 +108,18 @@ def backup(game,listfile=None,write_listfile=False):
         print('Backup failed!',file=sys.stderr)
         exit(3)
         
-    checksum = config.CONFIG['backup.checksum.values'][config.CONFIG['backup.checksum']](backup_file)
-    if checksum:
-        csid = config.CONFIG['backup.checksum']
-        if config.CONFIG['verbose']:
-            print("checksum {0}: {1}".format(csid,backup_file))
-        csfile = '.'.join((backup_file,csid))
-        with open(csfile,'w') as csf:
-            csf.write('{0} ({1}) = {2}\n'.format(csid.upper(),os.path.basename(backup_file),checksum))
+    # add checksum to database
+    if config.CONFIG['backup.checksum'] != 'None':
+        cksum = config.CONFIG['backup.checksum']
+        with shelve.open(config.CONFIG['backup.checksum-database']) as d:
+            key = '/'.join((game.savegame_name,os.path.basename(backup_file)))
+            h = hashlib.new(cksum)
+            with open(backup_file,'rb') as bf:
+                h.update(bf.read())
+            d[key] = {
+                'algorithm': cksum,
+                'hash': h.hexdigest()
+            }
             
     if write_listfile:
         if not listfile:
@@ -55,7 +127,13 @@ def backup(game,listfile=None,write_listfile=False):
             
         rel_path=os.path.join(game.savegame_name,os.path.basename(backup_file))
         with open(listfile,'a'):
-            write('{0}\n'.format(rel_path))    
+            write('{0}\n'.format(rel_path))
+            
+    savegames = find_savegames(game,True)
+    max_savegames = config.CONFIG['backup.max']
+    if len(savegames) > max_savegames:
+        for i in savegames[max_savegames:]:
+            delete_savegame(game,i)
 # backup()
 
 def backup_all(db,listfile=None,write_listfile=False,include_final=False):
@@ -65,4 +143,65 @@ def backup_all(db,listfile=None,write_listfile=False,include_final=False):
             backup(game,listfile,write_listfile)
 # backup_all()          
 
+def get_archiver_for_file(filename):
+    archiver = get_archiver()
+    for i in archiver.known_extensions():
+        if filename.ensdwith('.' + i):
+            return archiver
+            
+    for i in config.CONFIG['archivers'].keys():
+        if filename.endswith('.' + i):
+            return archivers.get_archiver(config.CONFIG['archivers'][i]['archiver'])        
+
+                
+def restore(game,filename):
+    archiver = get_archiver_for_file(filename)
+    archiver.restore(filename,game.savegame_root)
+# restore()
+
+def restore_ask(game):
+    d = {}
+    count = 0
+    for i in find_savegames(game,reverse=True):
+        count += 1
+        fn = os.path.basename(i)
+        timestamp = fn[len(game.savegame_name) + 1:]
+        timestamp = timestamp.split('.')[0]
+        if (date == 'final'):
+            d[count] = {'timestamp': timestamp,'file':i}
+        else:
+            dt = date.strptime(date,'%Y%m%d-%H%M%S')
+            d[count] = {'timestamp':dt.strftime('%c'),'file':i}
+    
+    for k in sorted(d.keys()):
+        print('{0}\t{1}'.format(k,d[k]['timestamp']))
+    
+    valid_input = False
+    while not valid_input:
+        x0 = input("Please enter SaveGame number to restore or q to quit: ")
+        if (x0.lower() == 'q'):
+            return
+        try:
+            x = int(x0)
+            if x in d:
+                valid_input=True
+        except Exception:
+            print ("'{0}' is not a valid input!".format(x0))
+
+    restore(game,d[x]['file'])
+
+    
+def restore_all(db):
+    for game_id in db.list_game_ids():
+        game = db.get_game(game_id)
+        
+        bdir = os.path.join(config.CONFIG['backup.dir'], game.game_id)
+        if not os.path.isdir(bdir):
+            continue
+            
+        filename = find_latest_savegame(game)
+        if (filename):
+            restore(game,filename)
+# restore_all()
+        
 
