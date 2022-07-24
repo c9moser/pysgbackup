@@ -1,5 +1,4 @@
 [archiver]
-cygpath = __CYGPATH__
 executable = __EXECUTABLE__
 verbose = -v
 extension = tar.xz

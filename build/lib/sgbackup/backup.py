@@ -8,23 +8,24 @@ import fnmatch
 import shelve
 import pickle
 import hashlib
+import pathlib
 
-def find_latest_savegame(game):
+def find_latest_backup(game):
     sgdir = os.path.join(config.CONFIG['backup.dir'],game.savegame_name)
     if os.path.isdir(sgdir):
-        for ext in config.CONFIG['archviers'].keys():
+        for ext in config.CONFIG['archivers'].keys():
             filename = os.path.join(sgdir,'.'.join((game.savegame_name,'final',ext)))
             if os.path.isfile(filename):
                 return filename
                     
         for i in sorted(os.listdir(sgdir),reverse=True):
             for ext in config.CONFIG['archivers'].keys():
-                if fnmatch.fnmatch(i,'.'.join(game.savegame_name,'*',ext)):
+                if fnmatch.fnmatch(i,'.'.join((game.savegame_name,'*',ext))):
                     return os.path.join(sgdir,i)
     return ""
 # find_latest_savegame()
 
-def find_savegames(game,reverse=False):
+def find_backups(game,reverse=False):
     sgdir = os.path.join(config.CONFIG['backup.dir'],game.savegame_name)
     ret=[]
     if os.path.isdir(sgdir):
@@ -35,7 +36,7 @@ def find_savegames(game,reverse=False):
     return ret
 # find_savegames()
 
-def delete_savegame(game,filename):
+def delete_backup(game,filename):
     def _get_checksum_file(filename):
         checksum_ext = ['b2','md5','sha1','sha224','sha256','sha384','sha512']
         for ext in checksum_ext:
@@ -64,14 +65,39 @@ def delete_savegame(game,filename):
     os.unlink(filename)
 # delete_savegame()
 
-def delete_savegames(game,keep_latest=True):
-    latest = find_latest_savegame(game)
-    for i in find_savegames(game):
+def delete_backups(game,keep_latest=True):
+    latest = find_latest_backup(game)
+    for i in find_backups(game):
         if keep_latest and i == latest:
             continue
         delete_savegame(game,filename)
 # delete_savegames()
 
+def delete_savegame(game):
+    def _rmdir(directory):
+        directory = pathlib.Path(directory)
+        for item in directory.iterdir():
+            if item.is_dir():
+                _rmdir(item)
+            else:
+                item.unlink()
+        directory.rmdir()
+    # _rmdir()
+    
+    sgdir=os.path.join(game.savegame_root,game.savegame_dir)
+    if os.path.isdir(sgdir):
+        for i in os.listdir(sgdir):
+            if i == '.' or i == '..':
+                continue
+                
+            path = os.path.join(sgdir,i)
+            if os.path.isdir(path):            
+                _rmdir(path)
+            elif os.path.isfile(path):
+                unlink(path)
+    elif os.path.isfile(sgdir):
+        os.unlink(sgdir)
+# delete_savegame()
 
 def get_backup_filename(game,archiver=None):
     if not archiver:
@@ -144,9 +170,9 @@ def backup_all(db,listfile=None,write_listfile=False,include_final=False):
 # backup_all()          
 
 def get_archiver_for_file(filename):
-    archiver = get_archiver()
-    for i in archiver.known_extensions():
-        if filename.ensdwith('.' + i):
+    archiver = archivers.get_archiver()
+    for i in archiver.known_extensions:
+        if filename.endswith('.' + i):
             return archiver
             
     for i in config.CONFIG['archivers'].keys():
@@ -167,10 +193,10 @@ def restore_ask(game):
         fn = os.path.basename(i)
         timestamp = fn[len(game.savegame_name) + 1:]
         timestamp = timestamp.split('.')[0]
-        if (date == 'final'):
+        if (timestamp == 'final'):
             d[count] = {'timestamp': timestamp,'file':i}
         else:
-            dt = date.strptime(date,'%Y%m%d-%H%M%S')
+            dt = datetime.datetime.strptime(timestamp,'%Y%m%d-%H%M%S')
             d[count] = {'timestamp':dt.strftime('%c'),'file':i}
     
     for k in sorted(d.keys()):
@@ -200,8 +226,9 @@ def restore_all(db):
             continue
             
         filename = find_latest_savegame(game)
-        if (filename):
+        if filename:
             restore(game,filename)
 # restore_all()
         
+    
 

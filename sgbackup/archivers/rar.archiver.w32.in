@@ -1,0 +1,8 @@
+[archiver]
+executable = __EXECUTABLE__
+verbose =
+change-directory = yes 
+create = a -y -htb -k -s -ibck "${FILENAME}" "${BACKUP_DIR}"
+extract = x -ibck "${FILENAME}"
+extension = rar
+

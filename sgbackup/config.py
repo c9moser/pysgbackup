@@ -29,7 +29,7 @@ def _get_checksum_values():
         
     
 CONFIG={
-    "version":(0,0,2),
+    "version":(0,0,4),
     "global-config": os.path.join(os.path.dirname(__file__),"sgbackup.conf"),
     "user-name": GLib.get_user_name(),
     "user-data-dir": os.path.join(GLib.get_user_data_dir(),"sgbackup"),
@@ -68,7 +68,7 @@ CONFIG={
     },
     'archivers': {
         'tar': {'archiver':'tarfile'},
-        'zip': {'archvier':'zipfile'}
+        'zip': {'archiver':'zipfile'}
     }
 }
 CONFIG['backup.listfile']=os.path.join(CONFIG['backup.dir'],"backups.list")
@@ -121,7 +121,7 @@ def _init_config():
                 CONFIG["template-variables"]['BACKUP_DIR'] = value
                 v["BACKUP_DIR"] = os.path.normpath(value)
                 
-                t = Template(CONFIG['backup-checksumdatabase.template'])
+                t = Template(CONFIG['backup-checksum-database.template'])
                 CONFIG['backup.checksum-database'] = t.substitute(v)
                     
             if cparser.has_option(sect,'archiver'):
@@ -166,7 +166,7 @@ def _init_config():
         parse_config(cfg)
         
     if os.path.isfile(CONFIG['user-config']):
-        cf.read(CONFIG['user-config'])
+        cfg.read(CONFIG['user-config'])
         parse_config(cfg)
 # _init_config()
 
@@ -179,6 +179,7 @@ def _init_config_dirs():
 _init_config()
 _init_config_dirs()
 
+from . import archivers
 
 def _bool_to_config(b):
     if (b):
@@ -232,4 +233,182 @@ def write_config(filename,global_config=False):
         cparser.write(f)
 # write_config()
 
+def _get_config_fallback(key,fallback):
+    if key in CONFIG:
+        return CONFIG[key]
+    return CONFIG[fallback]
+# _get_config_fallback()
+
+def _get_config_dict(global_config=False):
+    d={
+        'verbose':_bool_to_config(CONFIG['verbose']),
+        'database': _get_config_fallback('database-template','database'),
+        'backup.max': CONFIG['backup.max'],
+        'backup.dir': _get_config_fallback('backup.dir.template','backup.dir'),
+        'backup.checksum': CONFIG['backup.checksum'],
+        'backup.archiver': CONFIG['backup.archiver'],
+        'backup.listfile': _get_config_fallback('backup.listfile.template','backup.listfile'),
+        'backup.checksum-database': _get_config_fallback('backup.checksum-database.template','backup.checksum-database'),
+        'backup.write-listfile': _bool_to_config(CONFIG['backup.write-listfile']),
+        'zipfile.compression': CONFIG['zipfile.compression'],
+        'zipfile.compresslevel': CONFIG['zipfile.compresslevel']
+    }
+    if global_config:
+        d.update({
+            'user-config': _get_config_fallback('user-config-template','user-config'),
+            'user-archivers-dir': _get_config_fallback('user-archivers-dir-template','user-archivers-dir'),
+            'user-gameconf-dir': _get_config_fallback('user-gameconf-dir-template','user-gameconf-dir'),
+        })
+    return d
+# _get_config_dict()
+
+def print_config(global_config=False):
+    d = _get_config_dict(global_config)
+    for i in sorted(d.keys()):
+        print('{0}={1}'.format(i,d[i]))
+# print_config()
+        
+def print_config_key(key,global_config=False):
+    d = _get_config_dict(global_config)
+    
+    if key not in d:
+        raise LookupError('Key \'{0}\' not in config!'.format(key))
+
+    print('{0}={1}'.format(key,d[key]))
+# print_config_key()
+
+def print_config_value(key,global_config=False):
+    boolean ="boolean [1|0|y|n|yes|no|true|false]"
+    path_template = "path template"
+    integer = "integer"
+    
+    if key == 'verbose':
+        value = boolean
+    elif key == 'database':
+        value = path_template
+    elif key == 'user-config':
+        value = path_template
+    elif key == 'user-archivers-dir':
+        value = path_template
+    elif key == 'user-gameconf-dir':
+        value = path_template
+    elif key == 'backup.dir':
+        value = path_template
+    elif key == 'backup.max':
+        value = integer
+    elif key == 'backup.archiver':
+        value = 'string [{0}]'.format('|'.join(archivers.ARCHIVERS.keys()))
+    elif key == 'backup.checksum':
+        value = 'string [{0}]'.format('|'.join(CONFIG['backup.checksum.values']))
+    elif key == 'backup.checksum-database':
+        value = path_template
+    elif key == 'backup.listfile':
+        value = path_template
+    elif key == 'backup.write-listfile':
+        value = boolean
+    elif key == 'zipfile.compression':
+        value = 'string [{0}]'.format(CONFIG['zipfile.compression.values'].keys())
+    elif key == 'zipfile.compresslevel':
+        if CONFIG['zipfile.compression'] == zifile.ZIP_BZIP2:
+            CONFIG[key] = "integer [1-9]"
+        else:
+            CONFIG[key] = "integer [0-9]"
+    else:
+        raise LookupError("Key '{0}' not in config!".format(key))
+        
+    print("{0}: {1}".format(key,value))
+# print_config_value()
+    
+def write_config_key(key,value,global_config=False):
+    def _min_value(value,minimum):
+        if (value < minimum):
+            return minimum
+        return value
+        
+    def _max_value(value,maximum):
+        if (value > maximum):
+            return maximum
+        return value
+        
+    _min_max = lambda v,_min,_max: _max_value(_min_value(v,_min),_max)
+    
+    def _arg_to_bool(arg):
+        if (arg == "1" or arg.lower() == 'y' or arg.lower() == 'yes' or arg.lower() == 'true'):
+            return True
+        elif (arg == '0' or arg.lower() == 'n' or arg.lower() == 'no' or arg.lower() == 'false'):
+            return False
+
+        raise ValueError("Unable to convert '{0}' to bool!")
+    # _arg_to_bool
+    
+    v=dict(os.environ)
+    v.update(CONFIG['template-variables'])
+    v.update({'BACKUP_DIR': CONFIG['backup.dir']})
+
+    # set config    
+    if key == 'verbose':
+        CONFIG['verbose']=_arg_to_bool(value)
+    elif key == 'database':
+        CONFIG['database-template'] = value
+        t = Template(value)
+        CONFIG[key] = t.substitute(v)
+    elif key == 'user-config':
+        CONFIG['user-config-template'] = value
+        t = Template(value)
+        CONFIG[key] = t.substitute(v)
+    elif key == 'user-archivers-dir':
+        CONFIG['user-archivers-dir-template'] = v
+        t = Template(value)
+        CONFIG[key] = t.substitute(v)
+    elif key == 'user-gameconf-dir':
+        CONFIG['user-gameconf-dir-template'] = value
+        t = Template(value)
+        CONFIG[key] = t.substitute(v)
+    elif key == 'backup.dir':
+        CONFIG['backup.dir.template'] = value
+        t = Template(value)
+        CONFIG['backup.dir'] = t.substitute(v)
+        v['BACKUP_DIR'] = t.substitute(v)
+    elif key == 'backup.max':
+        CONFIG[key] = int(value)
+    elif key == 'backup.archiver':
+        if value in archivers.ARCHIVERS:
+            CONFIG[key] = value
+        else:
+            raise ValueError('{0} needs to be a valid ArchiverID!'.format(key))
+    elif key == 'backup.checksum':
+        if value in CONFIG['backup.checksum.values']:
+            CONFIG[key] = value
+        else:
+            raise ValueError('{0} needs to be a valid checksum algorithm!'.format(key))
+    elif key == 'backup.checksum-database':
+        CONFIG['backup.checksum-database.template'] = value
+        t = Template(value)
+        CONFIG['backup.checksum-database'] = t.substitute(v)
+    elif key == 'backup.listfile':
+        CONFIG['backup.listfile.template'] = value
+        t = Template(value)
+        CONFIG[key] = t.substitute(v)
+    elif key == 'backup.write-listfile':
+        CONFIG[key] = _bool_to_config(value)
+    elif key == 'zipfile.compression':
+        if value in CONFIG['zipfile.compression.values']:
+            CONFIG[key] = CONFIG['zipfile.compression.values'][value]
+        else:
+            raise ValueError('{0} needs to be a valid zipfile compression!'.format(key))
+    elif key == 'zipfile.compresslevel':
+        if CONFIG['zipfile.compression'] == zifile.ZIP_BZIP2:
+            CONFIG[key] = _min_max(int(value),1,9)
+        else:
+            CONFIG[key] = _min_max(int(value),0,9)
+    else:
+        raise LookupError('Key \'{0}\' not in config!'.format(key))
+    
+    if global_config:
+        filename=CONFIG['global-config']
+    else:
+        filename=CONFIG['user-config']
+        
+    write_config(filename,global_config)
+# write_config_key()
 

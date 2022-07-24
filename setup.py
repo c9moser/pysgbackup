@@ -1,4 +1,5 @@
-from setuptools import setup
+#from setuptools import setup
+from distutils.core import setup
 import os
 import sys
 
@@ -53,8 +54,20 @@ if sys.platform == 'win32':
                     with open(os.path.join(archiver_path,'.'.join((i,'archiver'))),'w') as ofile:
                         ofile.write(s)
                         
-    for i in os.environ['PATH'].split(';'):
-        print(i)
+    # check for winrar
+    winrar_exe = None
+    if os.path.isfile("C:\\Program Files\\WinRAR\\WinRAR.exe"):
+        winrar_exe="C:\\Program Files\\WinRAR\\WinRAR.exe"
+    elif os.path.isfile("C:\\Program Files (x86)\\WinRAR\\WinRAR.exe"):
+        winrar_exe="C:\\Program Files (x86)\\WinRAR\\WinRAR.exe"
+        
+    if winrar_exe:
+        with open(os.path.join(archiver_path,'rar.archiver.w32.in'),'r') as ifile:
+            s=ifile.read()
+        s = s.replace("__EXECUTABLE__",winrar_exe)
+        with open(os.path.join(archiver_path,'rar.archiver'),'w') as ofile:
+            ofile.write(s)
+        
 scripts.append('bin/sgbackup')
 
 setup(name="pysgbackup",

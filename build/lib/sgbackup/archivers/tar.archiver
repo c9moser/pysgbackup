@@ -4,4 +4,4 @@ executable = C:/msys64/usr/bin/tar.exe
 verbose = -v
 extension = tar
 create = -cf "${FILENAME}" ${VERBOSE} -C "${ROOT_DIR}" "${BACKUP_DIR}"
-extract = -xf "{FILENAME} ${VERBOSE} -C "${ROOT_DIR}"
+extract = -xf "${FILENAME}" ${VERBOSE} -C "${ROOT_DIR}"

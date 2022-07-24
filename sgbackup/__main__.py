@@ -4,9 +4,10 @@
 from . import config,backup,database,archivers
 
 import sys
+import os
 import getopt
 
-HELP="""sgbackup: Help
+HELP="""sgbackup
 
 USAGE:
 ======
@@ -50,7 +51,7 @@ def command_archiver(db,argv):
         sys.exit(2)
     
 
-COMMAND_BACKUP_HELP="""sgbackup backup: Help
+COMMAND_BACKUP_HELP="""sgbackup backup
 
 USAGE:
 ======
@@ -125,7 +126,7 @@ def command_backup(db,argv):
         backup.backup(g,config.CONFIG['backup.listfile'],config.CONFIG['backup.write-listfile'])
 # command_backup()
 
-COMMAND_BACKUP_ALL_HELP="""sgbackup backup-all: Help
+COMMAND_BACKUP_ALL_HELP="""sgbackup backup-all
 
 USAGE:
 ======
@@ -177,7 +178,99 @@ def command_backup_all(db,argv):
     backup.backup_all(db,listfile,write_listfile,force)
 # command_backup_all()
 
-COMMAND_DATABASE_HELP="""sgbackup database: Help
+COMMAND_RESTORE_HELP="""sgbackup restore
+
+USAGE:
+======
+  sgbackup restore [OPTIONS] GameID ...
+  
+OPTIONS:
+========
+  -c | --choose     Choose savegame-backup to restore.
+  -v | --verbose    Verbose output.
+  
+DESCRIPTION:
+============
+  Restores latest SaveGame-backup unless the -c | --choose option is given.
+  The -c | --choose option allows you to choose the SaveGame-backup to restore.
+"""
+
+def command_restore(db,argv):
+    try:
+        opts,args = getopt.getopt(argv,'cv',['choose','verbose'])
+    except getopt.GetoptError as error:
+        print(error,file=sys.stderr)
+        print(COMMAND_RESTORE_HELP)
+        sys.exit(2)
+    
+    if not args:
+        print("[sgbackup restore] No GameIDs given!",file=sys.stderr)
+        print(COMMAND_RESTORE_HELP)
+        sys.exit(2)
+    
+    for game_id in args:
+        if not db.has_game(game_id):
+            print("[sgbackup restore] No game for GameID '{0}' found!".format(game_id))
+            sys.exit(2)
+                
+    choose = False
+    for o,a in opts:
+        if o == '-c' or o == '--choose':
+            choose = True
+        elif o == '-v' or o == '--verbose':
+            config.CONFIG['verbose'] = True
+    
+    
+            
+    for game_id in args:
+        game = db.get_game(game_id)
+        latest_backup = backup.find_latest_savegame(game)
+        if not latest_backup:
+            print("[sgbackup restore] No SaveGame for \"{0}\" found!".format(game.name))
+            continue
+            
+        if choose:
+            backup.restore_ask(game)
+        else:
+            print("[sgbackup restore] {0}".format(game.name))
+            backup.restore(game,latest_backup)
+# command_restore()
+
+COMMAND_RESTORE_ALL_HELP="""sgbackup restore-all
+
+USAGE:
+======
+  sgbackup restore-all [OPTIONS]
+  
+OPTIONS:
+========
+  -v | --verbose    Verbose output.
+  
+DESCRIPTION:
+============
+  Restores the latest savegame backup of all games in database.
+"""
+def command_restore_all(db,argv):
+    try:
+        opts,args = getopt.getopt(argv,'v', ['--verbose'])
+    except getopt.GetoptError as error:
+        print(error, file=sys.stderr)
+        print(COMMAND_RESTORE_ALL_HELP)
+        
+    if args:
+        print("[sgbackup restore-all] Command does not take any arguments!",file=sys.stderr)
+        print(COMMAND_RESTORE_ALL_HELP)
+        
+    for o,a in opts:
+        if o == '-v' or o == '--verbose':
+            config.CONFIG['verbose'] = True
+    
+    backup.restore_all(db)
+# command_restore_all()
+        
+        
+
+COMMAND_DATABASE_HELP="""sgbackup database
 
 USAGE:
 ======
@@ -352,7 +445,7 @@ def command_write_config(db,argv):
         if global_config:
             filename = config.CONFIG['global-config']
         else:
-            filename = os.path.normpath(config.CONFIG['user-config'])
+            filename = config.CONFIG['user-config']
             
         if config.CONFIG['verbose']:
             print('[sgbackup write-config] {0}'.format(filename))
@@ -370,7 +463,75 @@ def command_write_config(db,argv):
                 print('Writing Config \'{0}\' failed! ({1})'.format(i,error),file=sys.stderr)
 # command_write_config()
 
+COMMAND_CONFIG_HELP="""sgbackup config
 
+USAGE:
+======
+  sgbackup config [-g | --global]
+  sgbackup config <-s | --show> KEY
+  sgbackup config [OPTIONS] KEY [VALUE]
+  
+OPTIONS:
+========
+  -g | --global     Global options
+  -s | --show       Show Options for KEY
+  -v | --verbose    Verbose Output
+  
+DESCRIPTION:
+============
+  Without an argument, sgbackup shows all valid KEYs and current confguration
+  values. With an argument (KEY) it shows the current configuration value for
+  specified KEY. With an argument (KEY) and the option '-s' set it shows valid
+  values for specified KEY. 
+  When the argument contains a '=' it assumes a KEY VALUE notation and the 
+  corresponding value is set and written down to the config-file. Without the
+  '-g' option user's config-file is assumed. With the '-g' option the global
+  config-file is beeing chosen.
+"""
+def command_config(db,argv):
+    try:
+        opts,args = getopt.getopt(argv,'gsv',['global','show','verbose'])
+    except getopt.GetoptError as error:
+        print(error,file=sys.stderr)
+        print(COMMAND_CONFIG_HELP)
+        sys.exit(2)
+        
+    global_config = False
+    show = False
+    for o,a in opts:
+        if o == '-g' or o == '--global':
+            global_config = True
+        elif o == '-s' or o == '--show':
+            show = True
+        elif o == '-v' or o == '--verbose':
+            config.CONFIG['verbose'] = True
+            
+    if not args:
+        config.print_config(global_config)
+    elif len(args) == 1:
+        if show:
+            try:
+                config.print_config_value(args[0],global_config)
+            except Exception as error:
+                print('[sgbackup config] ERROR: {0}'.format(error),file=sys.stderr)
+                sys.exit(2)
+        else:
+            try:
+                config.print_config_key(args[0],global_config)
+            except Exception as error:
+                print('[sgbackup config] ERROR: {0}'.format(error),file=sys.stderr)
+                sys.exit(2)
+    elif len(args) == 2:
+        try:
+            config.write_config_key(args[0],args[1],global_config)
+        except Exception as error:
+            print('[sgbackup config] ERROR: {0}'.format(error),file=sys.stderr)
+    else:
+        print('[sgbackup config] ERROR: Too many arguments!',file=sys.stderr)
+        print(COMMAND_CONFIG_HELP)
+        sys.exit(2)
+# command_config()
+        
 
 COMMAND_NOT_IMPLEMENTED_HELP="""COMMAND IS NOT IMPLEMENTED!
 
@@ -380,18 +541,18 @@ command_not_implemented = lambda db,argv: print('Not Implemented!')
 
 commands={
     'archiver': {'help':COMMAND_ARCHIVER_HELP,'function':command_archiver},
-    'config': {'help':COMMAND_NOT_IMPLEMENTED_HELP,'function':command_not_implemented},
     'backup': {'help': COMMAND_BACKUP_HELP,'function':command_backup},
     'backup-all': {'help': COMMAND_BACKUP_ALL_HELP,'function':command_backup_all},
+    'config': {'help':COMMAND_CONFIG_HELP,'function':command_config},
     'database': {'help':COMMAND_DATABASE_HELP,'function':command_database},
     'db': {'help':COMMAND_DATABASE_HELP,'function':command_database},
     'delete-backups': {'help': COMMAND_NOT_IMPLEMENTED_HELP, 'function': command_not_implemented},
     'delete-savegames': {'help': COMMAND_NOT_IMPLEMENTED_HELP, 'function': command_not_implemented},
-    'restore': {'help': COMMAND_NOT_IMPLEMENTED_HELP, 'function': command_not_implemented},
-    'restore-all': {'help':COMMAND_NOT_IMPLEMENTED_HELP,'function': command_not_implemented},
+    'restore': {'help': COMMAND_RESTORE_HELP, 'function': command_restore},
+    'restore-all': {'help':COMMAND_RESTORE_ALL_HELP,'function': command_restore_all},
     'write-config': {'help': COMMAND_WRITE_CONFIG_HELP,'function': command_write_config}
 }
-    
+
 def main():
     if len(sys.argv) == 1:
         print(HELP)

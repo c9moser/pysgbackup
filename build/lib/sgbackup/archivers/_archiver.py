@@ -38,6 +38,7 @@ class ProgramArchiver(ArchiverBase):
     def __init__(self,archiver_id,conf):
         ArchiverBase.__init__(self,archiver_id)
     
+        self.__archiver = conf['archiver']
         self.__executable = conf['executable']    
         self.__create = conf['create']
         self.__restore = conf['extract']
@@ -58,8 +59,16 @@ class ProgramArchiver(ArchiverBase):
     # __init__()
     
     @property
+    def archiver(self):
+        return self.__archiver
+    
+    @property
     def executable_raw(self):
-        return self.executable
+        return self.__executable
+        
+    @property
+    def executable(self):
+        return os.path.normpath(self.__executable)
         
     @property
     def _create_template(self):
@@ -88,18 +97,22 @@ class ProgramArchiver(ArchiverBase):
     @property
     def verbose(self):
         return self.__verbose
+    
+    def _save_win32_path(self,path):
+        return path.replace('/','\\')
         
     def _get_template_variables(self,filename,root_dir,backup_dir=''):
         def _cygpath(path):
             if not path:
                 return ""
             if not self.cygpath:
+                # msys fix
+                if sys.platform == 'win32':
+                    return _save_win32_path(os.path.normpath(path))
                 return os.path.normpath(path)
             
-            print(self.cygpath)
-            
             proc = subprocess.run([self.cygpath,path],capture_output=True,text=True)
-            return proc.stdout.read()
+            return proc.stdout[:-1]
         # _cygpath()
             
         if config.CONFIG['verbose']:
@@ -135,8 +148,10 @@ class ProgramArchiver(ArchiverBase):
         if self.change_directory:
             os.chdir(root_dir)
             
+        if config.CONFIG['verbose']:
+            print("<{0}:create> {1}".format(self.archiver,filename))
         try:
-            cproc = subprocess.run(cmd,stdout=stdout,stderr=stderr,capture_output=True)
+            cproc = subprocess.run(cmd,stdout=stdout,stderr=stderr)
         except subprocess.CalledProcessError as error:
             print('Backup failed! ({0})'.format(error))
             if self.change_directory:
@@ -162,8 +177,10 @@ class ProgramArchiver(ArchiverBase):
         if self.change_directory:
             os.chdir(root_dir)
             
+        if config.CONFIG['verbose']:
+            print("<{0}:extract> {1}".format(self.archiver,filename))
         try:
-            cproc = subprocess.run(cmd,stdout=stdout,stderr=stderr,capture_output=True)
+            cproc = subprocess.run(cmd,stdout=stdout,stderr=stderr)
         except subprocess.CalledProcessError as error:
             print('Backup restore failed! ({0})'.format(error),file=stderr)
             if self.change_directory:
@@ -194,9 +211,12 @@ class TarFileArchiver(ArchiverBase):
             cwd = os.getcwd()
             
             os.chdir(root_dir)
+            
             if not os.path.exists(os.path.dirname(filename)):
                 os.path.makedirs(os.path.dirname(filename))
             
+            if config.CONFIG['verbose']:
+                print('<tarfile:create>: {0}'.format(filename))
             archive = tarfile.open(filename,'w')
             archive.add(backup_dir,recursive=True)
             
@@ -212,6 +232,8 @@ class TarFileArchiver(ArchiverBase):
         if not os.path.exists(root_dir):
             os.path.makedirs(root_dir)
             
+        if config.CONFIG['verbose']:
+            print('<tarfile:extract> {0}'.format(filename))
         archive = tarfile.open(filename,'r')
         archive.extractall(path=root_dir)
         return True
@@ -266,7 +288,7 @@ class ZipFileArchiver(ArchiverBase):
             os.chdir(root_dir)
             
             if config.CONFIG['verbose']:
-                print ('[zipfile:create] {0}'.format(filename))
+                print ('<zipfile:create> {0}'.format(filename))
             try:
                 with zipfile.ZipFile(filename,'w',
                                      compression=self.compression,
@@ -279,7 +301,7 @@ class ZipFileArchiver(ArchiverBase):
                                 arcname = i
                             
                             if (config.CONFIG['verbose']):
-                                print('[zipfile:add] {0}'.format(i))
+                                print('<zipfile:add> {0}'.format(i))
                             archive.write(i,arcname=arcname)
             except Exception as error:
                 print (error,file=sys.stderr)
@@ -297,7 +319,7 @@ class ZipFileArchiver(ArchiverBase):
             
             try:
                 if config.CONFIG['verbose']:
-                    print('[zipfile:extract] {0}'.format(filename))
+                    print('<zipfile:extract> {0}'.format(filename))
                 with zipfile.ZipFile(filename,'r',
                                      compression=self.compression,
                                      compresslevel=self.compresslevel) as archive:

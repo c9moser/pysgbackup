@@ -21,8 +21,12 @@ ARCHIVERS={
 def _parse_conf(filename):
     parser = configparser.ConfigParser()
     parser.read(filename)
-    conf={'builtin':False}
     
+    conf={
+        'builtin':False,
+        'archiver': os.path.splitext(os.path.basename(filename))[0]
+    }
+
     sect='archiver'
     if parser.has_section(sect):
         if parser.has_option(sect,'cygpath'):
@@ -68,6 +72,7 @@ def _validate_conf_keys(conf):
         return False
         
     keys=[
+        'archiver',
         'executable',
         'create',
         'extract',
