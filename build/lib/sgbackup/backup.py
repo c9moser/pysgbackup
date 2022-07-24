@@ -155,11 +155,11 @@ def backup(game,listfile=None,write_listfile=False):
         with open(listfile,'a'):
             write('{0}\n'.format(rel_path))
             
-    savegames = find_savegames(game,True)
+    savegames = find_backups(game,reverse=True)
     max_savegames = config.CONFIG['backup.max']
     if len(savegames) > max_savegames:
         for i in savegames[max_savegames:]:
-            delete_savegame(game,i)
+            delete_backup(game,i)
 # backup()
 
 def backup_all(db,listfile=None,write_listfile=False,include_final=False):

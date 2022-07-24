@@ -80,7 +80,9 @@ class ProgramArchiver(ArchiverBase):
         
     @property
     def cygpath(self):
-        return os.path.normpath(self.__cygpath)
+        if self.__cygpath:
+            return os.path.normpath(self.__cygpath)
+        return ""
         
     @property
     def change_directory(self):
@@ -108,7 +110,7 @@ class ProgramArchiver(ArchiverBase):
             if not self.cygpath:
                 # msys fix
                 if sys.platform == 'win32':
-                    return _save_win32_path(os.path.normpath(path))
+                    return self._save_win32_path(os.path.normpath(path))
                 return os.path.normpath(path)
             
             proc = subprocess.run([self.cygpath,path],capture_output=True,text=True)
