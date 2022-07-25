@@ -70,17 +70,21 @@ def delete_backups(game,keep_latest=True):
     for i in find_backups(game):
         if keep_latest and i == latest:
             continue
-        delete_savegame(game,filename)
+        delete_backup(game,i)
 # delete_savegames()
 
-def delete_savegame(game):
+def delete_savegames(game):
     def _rmdir(directory):
         directory = pathlib.Path(directory)
         for item in directory.iterdir():
             if item.is_dir():
                 _rmdir(item)
             else:
+                if config.CONFIG['verbose']:
+                    print('<delete> {0}'.format(item.as_posix()))
                 item.unlink()
+        if config.CONFIG['verbose']:
+            print("<delete> {0}/".format(item.as_posix()))
         directory.rmdir()
     # _rmdir()
     
@@ -91,13 +95,15 @@ def delete_savegame(game):
                 continue
                 
             path = os.path.join(sgdir,i)
-            if os.path.isdir(path):            
+            if os.path.isdir(path):         
                 _rmdir(path)
             elif os.path.isfile(path):
-                unlink(path)
+                if config.CONFIG['verbose']:
+                    print("<delete> {0}".format(path))
+                os.unlink(path)
     elif os.path.isfile(sgdir):
         os.unlink(sgdir)
-# delete_savegame()
+# delete_savegames()
 
 def get_backup_filename(game,archiver=None):
     if not archiver:
@@ -188,7 +194,7 @@ def restore(game,filename):
 def restore_ask(game):
     d = {}
     count = 0
-    for i in find_savegames(game,reverse=True):
+    for i in find_backups(game,reverse=True):
         count += 1
         fn = os.path.basename(i)
         timestamp = fn[len(game.savegame_name) + 1:]

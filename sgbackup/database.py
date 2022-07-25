@@ -294,7 +294,7 @@ def update(db,force=False):
         def gameconf_in_list_changed(gameconf,gameconf_list):
             for i in gameconf_list:
                 if (gameconf.filename == i.filename) and (gameconf.checksum == i.checksum):
-                    return False                    
+                        return False                    
             return True
         # gameconf_in_list_changed
         

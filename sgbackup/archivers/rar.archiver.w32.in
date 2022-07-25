@@ -2,7 +2,7 @@
 executable = __EXECUTABLE__
 verbose =
 change-directory = yes 
-create = a -y -htb -k -s -ibck "${FILENAME}" "${BACKUP_DIR}"
+create = a -y -htb -k -s -ibck -m5 -ma5 -rr5p "${FILENAME}" "${BACKUP_DIR}"
 extract = x -ibck "${FILENAME}"
 extension = rar
 
