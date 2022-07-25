@@ -148,7 +148,7 @@ def command_backup_all(db,argv):
         opts,args = getopt.getopt(argv,'fL:vWw',
                                   ['force',
                                    'listfile=',
-                                   'no-write_listfile'
+                                   'no-write_listfile',
                                    'verbose',
                                    'write-listfile'])
     except getopt.GetoptError as error:

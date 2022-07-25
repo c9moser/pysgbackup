@@ -26,6 +26,7 @@ COMMANDS:
   help [command]    print help [for command]
   restore           restore savegame backup
   restore-all       restore all savegame-backups
+  version           prints version information
   write-config      write a full configuration file
 """
 
@@ -147,7 +148,7 @@ def command_backup_all(db,argv):
         opts,args = getopt.getopt(argv,'fL:vWw',
                                   ['force',
                                    'listfile=',
-                                   'no-write_listfile'
+                                   'no-write_listfile',
                                    'verbose',
                                    'write-listfile'])
     except getopt.GetoptError as error:
@@ -177,6 +178,85 @@ def command_backup_all(db,argv):
             
     backup.backup_all(db,listfile,write_listfile,force)
 # command_backup_all()
+
+COMMAND_DELETE_BACKUPS_HELP="""sgbackup delete-backups
+
+USAGE:
+======
+  sgbackup delete-backups [OPTIONS] <GameID> ...
+  
+OPTIONS:
+========
+  -f | --force      Force the deletion of all SaveGame-backups including 
+                    the latest one.
+  -v | --verbose    Verbose output.
+  
+Description:
+============
+  Deletes SaveGame-backups but keeps the latest one by default. When the 
+  [-a|--all] option is set it deletes all savegame-backups including the 
+  latest one.
+"""
+def command_delete_backups(db,argv):
+    try:
+        opts,args = getopt.getopt(argv,'fv',['force','verbose'])
+    except getopt.GetoptError as error:
+        print('[sgbackup delete-backups] ERROR: {0}'.format(error),file=sys.stderr)
+        print(COMMAND_DELETE_BACKUPS_HELP)
+        sys.exit(2)
+        
+    
+    keep_latest = True
+    for o,a in opts:
+        if o == '-f' or o == '--force':
+            keep_latest = False
+        elif o == '-v' or o == '--verbose':
+            config.CONFIG['verbose'] = True
+            
+    for game_id in args:
+        if not db.has_game(game_id):
+            print('[sgbackup delete-backups] ERROR: No such GameID "{0}!"'.format(game_id))
+            sys.exit(2)
+            
+    for game_id in args:
+        game = db.get_game(game_id)
+        backup.delete_backups(game,keep_latest)
+# command_delete_backups
+        
+
+COMMAND_DELETE_SAVEGAMES_HELP="""sgbackup delete-savegames
+
+USAGE:
+======
+  sgbackup delete-savegames [OPTIONS] <GameID> ...
+  
+OPTIONS:
+========
+  -v | --verbose    Verbose Output
+"""
+def command_delete_savegames(db,argv):
+    try:
+        opts,args = getopt.getopt(argv,'v',['verbose'])
+    except getopt.GetoptError as error:
+        print('[sgbackup delete-savegames] ERROR: {0}'.format(error),file=sys.stderr)
+        print(COMMAND_DELETE_SAVEGAMES_HELP)
+        sys.exit(2)
+        
+    for o,a in opts:
+        if o == '-v' or o == '--verbose':
+            config.CONFIG['verbose'] = True
+        
+    for game_id in args:
+        if not db.has_game(game_id):
+            print('[sgbackup delete-savegames] ERROR: No such GameID "{0}"!'.format(game_id))
+            sys.exit(2)
+    
+    for game_id in args:
+        game = db.get_game(game_id)
+        backup.delete_savegames(game)
+# command_delete_savegames()
+    
+
 
 COMMAND_RESTORE_HELP="""sgbackup restore
 
@@ -224,7 +304,7 @@ def command_restore(db,argv):
             
     for game_id in args:
         game = db.get_game(game_id)
-        latest_backup = backup.find_latest_savegame(game)
+        latest_backup = backup.find_latest_backup(game)
         if not latest_backup:
             print("[sgbackup restore] No SaveGame for \"{0}\" found!".format(game.name))
             continue
@@ -532,6 +612,18 @@ def command_config(db,argv):
         sys.exit(2)
 # command_config()
         
+COMMAND_VERSION_HELP="""sgbackup version
+
+USAGE:
+======
+  sgbackup version
+  
+DESCRIPTION:
+  Prints the program version.
+"""
+def command_version(db,argv):
+    print("sgbackup {0}".format('.'.join((str(i) for i in config.CONFIG['version']))))
+# command_version
 
 COMMAND_NOT_IMPLEMENTED_HELP="""COMMAND IS NOT IMPLEMENTED!
 
@@ -546,10 +638,11 @@ commands={
     'config': {'help':COMMAND_CONFIG_HELP,'function':command_config},
     'database': {'help':COMMAND_DATABASE_HELP,'function':command_database},
     'db': {'help':COMMAND_DATABASE_HELP,'function':command_database},
-    'delete-backups': {'help': COMMAND_NOT_IMPLEMENTED_HELP, 'function': command_not_implemented},
-    'delete-savegames': {'help': COMMAND_NOT_IMPLEMENTED_HELP, 'function': command_not_implemented},
+    'delete-backups': {'help': COMMAND_DELETE_BACKUPS_HELP, 'function': command_delete_backups},
+    'delete-savegames': {'help': COMMAND_DELETE_SAVEGAMES_HELP, 'function': command_delete_savegames},
     'restore': {'help': COMMAND_RESTORE_HELP, 'function': command_restore},
     'restore-all': {'help':COMMAND_RESTORE_ALL_HELP,'function': command_restore_all},
+    'version': {'help':COMMAND_VERSION_HELP,'function':command_version},
     'write-config': {'help': COMMAND_WRITE_CONFIG_HELP,'function': command_write_config}
 }
 

@@ -13,6 +13,11 @@ import pathlib
 def find_latest_backup(game):
     sgdir = os.path.join(config.CONFIG['backup.dir'],game.savegame_name)
     if os.path.isdir(sgdir):
+        archiver=archivers.get_archiver()
+        filename = os.path.join(sgdir,'.'.join((game.savegame_name,'final',archiver.ext)))
+        if os.path.isfile(filename):
+            return filename
+        
         for ext in config.CONFIG['archivers'].keys():
             filename = os.path.join(sgdir,'.'.join((game.savegame_name,'final',ext)))
             if os.path.isfile(filename):
@@ -143,8 +148,12 @@ def backup(game,listfile=None,write_listfile=False):
     # add checksum to database
     if config.CONFIG['backup.checksum'] != 'None':
         cksum = config.CONFIG['backup.checksum']
+        key = '/'.join((game.savegame_name,os.path.basename(backup_file)))
+        
+        if config.CONFIG['verbose']:
+            print("<checksum:{0}> {1}".format(cksum,key))
+            
         with shelve.open(config.CONFIG['backup.checksum-database']) as d:
-            key = '/'.join((game.savegame_name,os.path.basename(backup_file)))
             h = hashlib.new(cksum)
             with open(backup_file,'rb') as bf:
                 h.update(bf.read())

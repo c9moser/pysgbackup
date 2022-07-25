@@ -29,7 +29,7 @@ def _get_checksum_values():
         
     
 CONFIG={
-    "version":(0,0,4),
+    "version":(0,0,7),
     "global-config": os.path.join(os.path.dirname(__file__),"sgbackup.conf"),
     "user-name": GLib.get_user_name(),
     "user-data-dir": os.path.join(GLib.get_user_data_dir(),"sgbackup"),
@@ -412,3 +412,6 @@ def write_config_key(key,value,global_config=False):
     write_config(filename,global_config)
 # write_config_key()
 
+def version():
+    return '.'.join((str(i) for i in CONFIG['version']))
+    

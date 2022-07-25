@@ -13,6 +13,11 @@ import pathlib
 def find_latest_backup(game):
     sgdir = os.path.join(config.CONFIG['backup.dir'],game.savegame_name)
     if os.path.isdir(sgdir):
+        archiver=archivers.get_archiver()
+        filename = os.path.join(sgdir,'.'.join((game.savegame_name,'final',archiver.ext)))
+        if os.path.isfile(filename):
+            return filename
+        
         for ext in config.CONFIG['archivers'].keys():
             filename = os.path.join(sgdir,'.'.join((game.savegame_name,'final',ext)))
             if os.path.isfile(filename):
@@ -70,17 +75,21 @@ def delete_backups(game,keep_latest=True):
     for i in find_backups(game):
         if keep_latest and i == latest:
             continue
-        delete_savegame(game,filename)
+        delete_backup(game,i)
 # delete_savegames()
 
-def delete_savegame(game):
+def delete_savegames(game):
     def _rmdir(directory):
         directory = pathlib.Path(directory)
         for item in directory.iterdir():
             if item.is_dir():
                 _rmdir(item)
             else:
+                if config.CONFIG['verbose']:
+                    print('<delete> {0}'.format(item.as_posix()))
                 item.unlink()
+        if config.CONFIG['verbose']:
+            print("<delete> {0}/".format(item.as_posix()))
         directory.rmdir()
     # _rmdir()
     
@@ -91,13 +100,15 @@ def delete_savegame(game):
                 continue
                 
             path = os.path.join(sgdir,i)
-            if os.path.isdir(path):            
+            if os.path.isdir(path):         
                 _rmdir(path)
             elif os.path.isfile(path):
-                unlink(path)
+                if config.CONFIG['verbose']:
+                    print("<delete> {0}".format(path))
+                os.unlink(path)
     elif os.path.isfile(sgdir):
         os.unlink(sgdir)
-# delete_savegame()
+# delete_savegames()
 
 def get_backup_filename(game,archiver=None):
     if not archiver:
@@ -137,8 +148,12 @@ def backup(game,listfile=None,write_listfile=False):
     # add checksum to database
     if config.CONFIG['backup.checksum'] != 'None':
         cksum = config.CONFIG['backup.checksum']
+        key = '/'.join((game.savegame_name,os.path.basename(backup_file)))
+        
+        if config.CONFIG['verbose']:
+            print("<checksum:{0}> {1}".format(cksum,key))
+            
         with shelve.open(config.CONFIG['backup.checksum-database']) as d:
-            key = '/'.join((game.savegame_name,os.path.basename(backup_file)))
             h = hashlib.new(cksum)
             with open(backup_file,'rb') as bf:
                 h.update(bf.read())
@@ -188,7 +203,7 @@ def restore(game,filename):
 def restore_ask(game):
     d = {}
     count = 0
-    for i in find_savegames(game,reverse=True):
+    for i in find_backups(game,reverse=True):
         count += 1
         fn = os.path.basename(i)
         timestamp = fn[len(game.savegame_name) + 1:]
