@@ -1,0 +1,6 @@
+[archiver]
+executable = __EXECUTABLE__
+verbose = -v
+extension = tar.gz
+create = -czf "${FILENAME}" ${VERBOSE} -C "${ROOT_DIR}" "${BACKUP_DIR}"
+extract = -xzf "${FILENAME}" ${VERBOSE} -C "${ROOT_DIR}"

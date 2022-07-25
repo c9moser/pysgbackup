@@ -5,6 +5,7 @@ import configparser
 import importlib
 from .. import config
 from ._archiver import ArchiverBase,ProgramArchiver,TarFileArchiver,ZipFileArchiver
+from ._update import update
 
 ARCHIVERS={
     'tarfile': {
@@ -125,5 +126,8 @@ def get_archiver(archiver_id=None):
         
     return archiver
 # get_archiver()
+
+def list_archivers():
+    return sorted(ARCHIVERS.keys())
     
 

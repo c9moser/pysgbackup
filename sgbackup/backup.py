@@ -14,7 +14,7 @@ def find_latest_backup(game):
     sgdir = os.path.join(config.CONFIG['backup.dir'],game.savegame_name)
     if os.path.isdir(sgdir):
         archiver=archivers.get_archiver()
-        filename = os.path.join(sgdir,'.'.join((game.savegame_name,'final',archiver.ext)))
+        filename = os.path.join(sgdir,'.'.join((game.savegame_name,'final',archiver.extension)))
         if os.path.isfile(filename):
             return filename
         
@@ -172,6 +172,9 @@ def backup(game,listfile=None,write_listfile=False):
             
     savegames = find_backups(game,reverse=True)
     max_savegames = config.CONFIG['backup.max']
+    if max_savegames <= 0:
+        return
+        
     if len(savegames) > max_savegames:
         for i in savegames[max_savegames:]:
             delete_backup(game,i)

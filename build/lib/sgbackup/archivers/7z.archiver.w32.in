@@ -1,0 +1,7 @@
+[archiver]
+change-directory = yes
+extension = 7z
+executable = __EXECUTABLE__
+verbose = -bb
+create = a ${VERBOSE} "${FILENAME}" "${BACKUP_DIR}"
+extract = x ${VERBOSE} "${FILENAME}"

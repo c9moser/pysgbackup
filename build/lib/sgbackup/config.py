@@ -31,6 +31,8 @@ def _get_checksum_values():
 CONFIG={
     "version":(0,0,7),
     "global-config": os.path.join(os.path.dirname(__file__),"sgbackup.conf"),
+    "global-archivers-dir": os.path.join(os.path.dirname(__file__),"archivers"),
+    "global-gameconf-dir": os.path.join(os.path.dirname(__file__),"games"),
     "user-name": GLib.get_user_name(),
     "user-data-dir": os.path.join(GLib.get_user_data_dir(),"sgbackup"),
     "user-config": os.path.join(GLib.get_user_data_dir(),"sgbackup","sgbackup.conf"),

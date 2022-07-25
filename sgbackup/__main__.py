@@ -16,7 +16,7 @@ USAGE:
   
 COMMANDS:
 =========
-  archiver          list known archivers
+  archiver          list or update known archivers
   backup            backup savegames
   config            set/get configuration values
   database          database operations (same as db)
@@ -34,7 +34,12 @@ COMMAND_ARCHIVER_HELP="""sgbackup archivers: Help
 
 USAGE:
 ======
-  sgbackup archiver
+  sgbackup archiver [OPTIONS] <list|update>
+  
+OPTIONS:
+========
+  -g | --global     Update global .archiver files
+  -v | --verbose    Verbose output.
 
 DESCRIPTION:
 ============
@@ -43,13 +48,41 @@ This command takes no arguments. It only lists known archivers.
 """
 
 def command_archiver(db,argv):
-    if not argv:
-        for i in archivers.list_archivers():
-            print(i)
-    else:
-        print('sgbackup archiver: This command takes no arguments!')
+    try:
+        opts,args = getopt.getopt(argv,'gv',['global','verbose'])
+    except getopt.GetoptError as error:
+        print("[sgbackup archiver] ERROR: {0}".format(error),file=sys.stderr)
         print(COMMAND_ARCHIVER_HELP)
         sys.exit(2)
+        
+    global_archivers = False
+    for o,a in opts:
+        if o == '-g' or o == '--global':
+            global_archivers = True
+        if o == '-v' or o == '--verbose':
+            config.CONFIG['verbose'] = True
+            
+    if not args:
+        print("[sgbackup archiver] ERROR: No command given!",file=sys.stderr)
+        print(COMMAND_ARCHIVER_HELP)
+        sys.exit(2)
+        
+    if len(args) > 1:
+        print("[sgbackup archiver] ERROR: Too many arguments!",file=sys.stderr)
+        print(COMMAND_ARCHIVER_HELP)
+        sys.exit(2)
+        
+    cmd = args[0]
+    if cmd == 'list':
+        for i in archivers.list_archivers():
+            print(i)
+    elif cmd == 'update':
+        archivers.update(global_archivers)
+    else:
+        print('[sgbackup archiver] ERROR: Unknown command "{0}"!'.format(cmd),file=sys.stderr)
+        print(COMMAND_ARCHIVER_HELP)
+        sys.exit(2)
+# command_archiver
     
 
 COMMAND_BACKUP_HELP="""sgbackup backup

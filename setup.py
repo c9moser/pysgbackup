@@ -32,41 +32,6 @@ if sys.platform == 'win32':
             ofile.write(s)
     scripts.append('bin/sgbackup.bat')
     
-    # check if we are installed in msys or similar
-    if os.path.basename(os.path.basename(os.path.dirname(sys.executable))) == 'bin':
-        msys_root = os.path.dirname(os.path.dirname(os.path.dirname(sys.executable)))
-        msys_usr_bin = os.path.join(msys_root,'usr','bin')
-        if os.path.isdir(msys_usr_bin):
-            replace={"__CYGPATH__":''}
-            cygpath_exe = ""
-            if os.path.isfile(os.path.join(msys_usr_bin,'cygpath.exe')):
-                cygpath_exe = os.path.join(msys_usr_bin,'cygpath.exe')
-                replace['__CYGPATH__'] = cygpath_exe
-            if os.path.isfile(os.path.join(msys_usr_bin,'tar.exe')):
-                tar_exe = os.path.join(msys_usr_bin,'tar.exe')
-                replace['__EXECUTABLE__'] = tar_exe
-                
-                for i in ['tar','tar.xz','txz','tar.gz','tgz','tar.bz2','tbz']:
-                    with open(os.path.join(archiver_path,'.'.join((i,'archiver','w32','in'))),'r') as ifile:
-                        s=ifile.read()
-                    for k,v in replace.items():
-                        s = s.replace(k,v)
-                    with open(os.path.join(archiver_path,'.'.join((i,'archiver'))),'w') as ofile:
-                        ofile.write(s)
-                        
-    # check for winrar
-    winrar_exe = None
-    if os.path.isfile("C:\\Program Files\\WinRAR\\WinRAR.exe"):
-        winrar_exe="C:\\Program Files\\WinRAR\\WinRAR.exe"
-    elif os.path.isfile("C:\\Program Files (x86)\\WinRAR\\WinRAR.exe"):
-        winrar_exe="C:\\Program Files (x86)\\WinRAR\\WinRAR.exe"
-        
-    if winrar_exe:
-        with open(os.path.join(archiver_path,'rar.archiver.w32.in'),'r') as ifile:
-            s=ifile.read()
-        s = s.replace("__EXECUTABLE__",winrar_exe)
-        with open(os.path.join(archiver_path,'rar.archiver'),'w') as ofile:
-            ofile.write(s)
         
 scripts.append('bin/sgbackup')
 
@@ -80,5 +45,5 @@ setup(name="pysgbackup",
       include_package_data=True,
       package_data={'sgbackup':["*.sql"],
                     'sgbackup.games': ['*.game'],
-                    'sgbackup.archivers': ['*.archiver']})
+                    'sgbackup.archivers': ['*.archiver.in','*.archiver.w32.in']})
 

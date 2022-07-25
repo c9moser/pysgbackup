@@ -1,0 +1,7 @@
+[archiver]
+cygpath = __CYGPATH__
+executable = __EXECUTABLE__
+verbose = -v
+extension = txz
+create = -cJf "${FILENAME}" ${VERBOSE} -C "${ROOT_DIR}" "${BACKUP_DIR}"
+extract = -xJf "${FILENAME}" ${VERBOSE} -C "${ROOT_DIR}"
