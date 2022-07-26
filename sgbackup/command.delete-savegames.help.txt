@@ -1,0 +1,9 @@
+sgbackup delete-savegames
+
+USAGE:
+======
+  sgbackup delete-savegames [OPTIONS] <GameID> ...
+  
+OPTIONS:
+========
+  -v | --verbose    Verbose Output

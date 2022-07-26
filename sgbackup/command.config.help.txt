@@ -1,0 +1,24 @@
+sgbackup config
+
+USAGE:
+======
+  sgbackup config [-g | --global]
+  sgbackup config <-s | --show> KEY
+  sgbackup config [OPTIONS] KEY [VALUE]
+  
+OPTIONS:
+========
+  -g | --global     Global options
+  -s | --show       Show Options for KEY
+  -v | --verbose    Verbose Output
+  
+DESCRIPTION:
+============
+  Without an argument, sgbackup shows all valid KEYs and current confguration
+  values. With an argument (KEY) it shows the current configuration value for
+  specified KEY. With an argument (KEY) and the option '-s' set it shows valid
+  values for specified KEY. 
+  When the argument contains a '=' it assumes a KEY VALUE notation and the 
+  corresponding value is set and written down to the config-file. Without the
+  '-g' option user's config-file is assumed. With the '-g' option the global
+  config-file is beeing chosen.

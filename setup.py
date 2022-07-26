@@ -1,9 +1,20 @@
+#!/usr/bin/env python
+#-*- coding:utf-8 -*-
+
 #from setuptools import setup
 from distutils.core import setup
 import os
 import sys
 
 import sgbackup
+
+try:
+    import gi
+    gi.require_version('GLib','2.0')
+    gi.require_version('Gtk','4.0')
+except ImportError as err:
+    print("\"GObject Introspection\" not installed!")
+    sys.exit(3)
 
 scripts=[]
 
@@ -31,7 +42,6 @@ if sys.platform == 'win32':
         with open(sgbackup_bat,"w") as ofile:
             ofile.write(s)
     scripts.append('bin/sgbackup.bat')
-    
         
 scripts.append('bin/sgbackup')
 
@@ -43,7 +53,7 @@ setup(name="pysgbackup",
       packages= ['sgbackup','sgbackup.archivers','sgbackup.games','pysgbackup'],
       scripts=scripts,
       include_package_data=True,
-      package_data={'sgbackup':["*.sql"],
+      package_data={'sgbackup':["*.sql,*.txt"],
                     'sgbackup.games': ['*.game'],
                     'sgbackup.archivers': ['*.archiver.in','*.archiver.w32.in']})
 

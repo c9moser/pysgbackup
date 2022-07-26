@@ -29,7 +29,7 @@ def _get_checksum_values():
         
     
 CONFIG={
-    "version":(0,0,7),
+    "version":(0,0,8),
     "global-config": os.path.join(os.path.dirname(__file__),"sgbackup.conf"),
     "global-archivers-dir": os.path.join(os.path.dirname(__file__),"archivers"),
     "global-gameconf-dir": os.path.join(os.path.dirname(__file__),"games"),

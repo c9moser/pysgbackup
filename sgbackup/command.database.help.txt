@@ -1,0 +1,24 @@
+sgbackup database
+
+USAGE:
+======
+  sgbackup database <COMMAND> [OPTIONS] [ARGS] ...
+  
+  sgbackup database <list | list-ids | list-names>
+  sgbackup database <name | delete | show> <GameID> ...
+  sgbackup database [-f] [-v] update [GameID] ...
+  
+COMMANDS:
+=========
+  delete        Deletes a game from database.
+  list          List games in database.
+  list-ids      List game ids only.
+  list-names    List game names only.
+  name          Get name of the game by GameID.
+  show          Show Game config for GameIDs
+  update        Updates the database from ${GameID}.conf files.
+
+OPTIONS:
+========
+  -f | --force      Force database operation.
+  -v | --verbose    Enable verbose output.

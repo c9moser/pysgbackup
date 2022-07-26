@@ -1,0 +1,10 @@
+sgbackup write-config: Help
+
+USAGE:
+======
+  sgbackup write-config [options] [filename] ...
+  
+OPTIONS:
+========
+  -g | --global     Write a global file
+  -v | --verbose    Verbose output

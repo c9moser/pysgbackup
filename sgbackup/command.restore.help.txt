@@ -1,0 +1,15 @@
+sgbackup restore
+
+USAGE:
+======
+  sgbackup restore [OPTIONS] GameID ...
+  
+OPTIONS:
+========
+  -c | --choose     Choose savegame-backup to restore.
+  -v | --verbose    Verbose output.
+  
+DESCRIPTION:
+============
+  Restores latest SaveGame-backup unless the -c | --choose option is given.
+  The -c | --choose option allows you to choose the SaveGame-backup to restore.

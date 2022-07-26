@@ -1,0 +1,15 @@
+sgbackup backup-all
+
+USAGE:
+======
+  sgbackup backup-all [options]
+  
+OPTIONS:
+========
+  -f | --force              Force all games including finished ones to 
+                            be backed up.
+  -L file | --listfile=file Write to listfile $file.
+  -W | --no-write-listfile  Don't write a listfile.
+  -w | --write-listfile     Write listfile.
+  -v | --verbose            Verbose output.
+

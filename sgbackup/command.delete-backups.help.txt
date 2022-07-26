@@ -1,0 +1,17 @@
+sgbackup delete-backups
+
+USAGE:
+======
+  sgbackup delete-backups [OPTIONS] <GameID> ...
+  
+OPTIONS:
+========
+  -f | --force      Force the deletion of all SaveGame-backups including 
+                    the latest one.
+  -v | --verbose    Verbose output.
+  
+Description:
+============
+  Deletes SaveGame-backups but keeps the latest one by default. When the 
+  [-a|--all] option is set it deletes all savegame-backups including the 
+  latest one.

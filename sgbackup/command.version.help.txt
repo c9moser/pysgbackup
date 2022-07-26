@@ -1,0 +1,9 @@
+sgbackup version
+
+USAGE:
+======
+  sgbackup version
+  
+DESCRIPTION:
+============
+  Prints the program version.

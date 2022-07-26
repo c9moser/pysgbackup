@@ -1,0 +1,11 @@
+sgbackup archiver: Help
+
+USAGE:
+======
+  sgbackup archiver [OPTIONS] <list|update>
+  
+OPTIONS:
+========
+  -g | --global     Update global .archiver files
+  -v | --verbose    Verbose output.
+

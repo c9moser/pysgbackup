@@ -1,0 +1,13 @@
+sgbackup restore-all
+
+USAGE:
+======
+  sgbackup restore-all [OPTIONS]
+  
+OPTIONS:
+========
+  -v | --verbose    Verbose output.
+  
+DESCRIPTION:
+============
+  Restores the latest savegame backup of all games in database.

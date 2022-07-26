@@ -1,7 +1,0 @@
-[archiver]
-cygpath = C:/msys64/usr/bin/cygpath.exe
-executable = C:/msys64/usr/bin/tar.exe
-verbose = -v
-extension = tar
-create = -cf "${FILENAME}" ${VERBOSE} -C "${ROOT_DIR}" "${BACKUP_DIR}"
-extract = -xf "${FILENAME}" ${VERBOSE} -C "${ROOT_DIR}"
