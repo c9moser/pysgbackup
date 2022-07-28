@@ -1,10 +1,28 @@
+#-*- coding:utf-8 -*-
+################################################################################
+# sgbackup
+#   Copyright (C) 2022,  Christian Moser
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+################################################################################
+
 from . import config,backup,database,archivers
 
 import sys
 import os
 import getopt
 import gettext
-
 
 def Q_(s):
     t = gettext.gettext(s)
@@ -22,6 +40,8 @@ _HELPFILES={
     'archiver': N_('file|command.archiver.help.txt'),
     'backup': N_('file|command.backup.help.txt'),
     'backup-all': N_('file|command.backup-all.help.txt'),
+    'check': N_('file|command.check.help.txt'),
+    'check-all': N_('file|command.check-all.help.txt'),
     'config': N_('file|command.config.help.txt'),
     'database': N_('file|command.database.help.txt'),
     'db': N_('file|command.database.help.txt'),
@@ -44,7 +64,7 @@ def _get_command_help(command):
     
     if command in _HELPFILES:
         file=Q_(_HELPFILES[command])
-        return _read_helpfile(filename)
+        return _read_helpfile(file)
     else:
         print('No helpfile for command "{0}" found!'.format(command),file=sys.stderr)
 
@@ -79,8 +99,9 @@ COMMANDS:
 
 
 def command_help(db,argv):
-    if not argv:
+    if len(argv) == 0:
         print(_get_help())
+        return
         
     if (len(argv) > 1):
         print('[sgbackup help] ERROR: Too many arguments!',file=sys.stderr)
@@ -88,7 +109,7 @@ def command_help(db,argv):
         sys.exit(2)
         
     cmd = argv[0]
-    if cmd not in commands:
+    if cmd not in COMMANDS:
         print('[sgbackup help] ERROR: Unknown command "{0}"!'.format(cmd),file=sys.stderr)
         print(_get_help())
         sys.exit(2)
@@ -275,6 +296,57 @@ def command_config(db,argv):
         print(COMMANDS['config']['help-function']('config'))
         sys.exit(2)
 # command_config()
+
+def command_check(db,argv):
+    try:
+        opts,args = getopt.getopt(argv,'AaCcdv',
+                                  ['ask',
+                                  'no-ask',
+                                  'create-missing',
+                                  'check-deleted',
+                                  'remove-deleted',
+                                  'verbose'])
+    except getopt.GetoptError as error:
+        print(error,file=sys.stderr)
+        sys.exit(2)    
+    
+    if not args:
+        print('[sgbackup check] ERROR: No GameIDs given!',file=sys.stderr)
+        sys.exit(2)
+        
+    ask = True
+    create_missing = False
+    check_deleted = False
+    delete_failed = False
+    
+    for o,a in opts:
+        if o == '-a' or o == '--ask':
+            ask = True
+        elif o == '-A' or o == '--no-ask':
+            ask = False
+        elif o == '-c' or o == '--create-missing':
+            create_missing = True
+        elif o == '-C' or o == '--check-deleted':
+            check_deleted = True
+        elif o == '-d' or o == '--delete-failed':
+            delete_failed = True
+            ask = False
+        elif o == '-v' or o == '--verbose':
+            config.CONFIG['verbose'] = True
+            
+    for game_id in args:
+        if not db.has_game(game_id):
+            print('[sgbackup check] No such GameID "{0}"!'.format(game_id),file=sys.stderr)
+            sys.exit(2)
+            
+    for game_id in args:
+        game = db.get_game(game_id)
+        backup.check(game,create_missing,check_deleted,delete_failed,ask)
+# command_check()
+    
+def command_check_all(db,argv):
+    pass
+# command_check_all()
 
 def command_database(db,argv):
     commands=[
@@ -562,6 +634,11 @@ COMMANDS={
         'description': 'Backup all savegames.',
         'help-function': _get_command_help,
         'function':command_backup_all
+    },
+    'check': {
+        'description': 'Perform checksum checks on backups',
+        'help-function': _get_command_help,
+        'function':command_check
     },
     'config': {
         'description': 'Get/Set configuration values.',

@@ -98,6 +98,37 @@ if sys.platform == 'win32':
     
 else:
     def update(global_archivers=False):
-        pass
-    
+        global_archivers_dir = config.CONFIG['global-archivers-dir']
+        if (global_archivers):
+            archivers_dir = global_archivers_dir
+        else:
+            archivers_dir = config.CONFIG['user-archivers-dir']
+        
+        def _find_in_path(program):
+            path = os.environ['PATH'].split(':')
+            
+            for p in path:
+                f = os.path.join(p,prog)
+                if os.path.isfile(f):
+                    return f
+        
+            return ''
+            
+        # check for tar
+        tar_exe = _find_in_path('tar')
+        if (tar_exe):
+            tar_archivers = ['tar','tar.bz2','tar.gz','tar.xz','tbz','tgz','txz']
+            replace = {'__EXECUTABLE__':tar_exe}
+            for i in tar_archivers:
+                with open(os.path.join(global_archivers_dir,'.'.join((i,'archiver','in'))), 'r') as ifile:
+                    s = ifile.read()
+                    
+                for k,v in replace.items():
+                    s.replace(k,v)
+                    
+                with open(os.path.join(archivers_dir,'.'.join((i,'archiver'))),'w') as ofile:
+                    ofile.write(f)
+                    
+        #TODO: check for 7z
+    # udpate()
 

@@ -248,5 +248,57 @@ def restore_all(db):
             restore(game,filename)
 # restore_all()
         
-    
+def check(game,create_missing=False,check_deleted=False,delete_failed=False,ask=True):
+    backup_keys=['/'.join((game.savegame_name,os.path.basename(i))) for i in find_backups(game)]
+    verbose= config.CONFIG['verbose']
+    with shelve.open(config.CONFIG['backup.checksum-database']) as d:
+        for i in backup_keys:
+            if verbose:
+                print("<checksum:check> {0}".format(i))
+            if i in d:
+                check = d[i]
+                h = hashlib.new(check['algorithm'])
+                with open(os.path.normpath(os.path.join(config.CONFIG['backup.dir'],i)),'rb') as ifile:
+                    h.update(ifile.read())
+                digest = h.hexdigest()
+                
+                if (check['hash'] == digest):   
+                    print('<checksum:{0}:{1}> OK'.format(check['algorithm'],i))
+                else:
+                    print('<checksum:{0}:{1}> FAILED'.format(check['algorithm'],i))
+                    filename = os.path.normpath(os.path.join(config.CONFIG['backup.dir'],i))
+                    if (ask):
+                        ask = input('Delete SaveGame? [Y/N] ')
+                        if (ask.upper() == 'Y'):
+                            if (config.CONFIG['verbose']):
+                                print('<delete> {0}'.format(filename))
+                            os.unlink(filename)
+                    elif delete_failed:
+                        if (config.CONFIG['verbose']):
+                            print('<delete> {0}'.format(filename))
+                        os.unlink(filename)
+            elif create_missing and config.CONFIG['backup.checksum'] != 'None':
+                print('<checksum:{0}:create> {1}',config.CONFIG['backup.checksum'],i)
+                
+                cksum = hashlib.new(config.CONFIG['backup.checksum'])
+                h = hashlib.new(cksum)
+                with open(os.path.normpath(os.path.join(config.CONFIG['backup.dir'],i)),'rb') as ifile:
+                    h.update(ifile.read())
+                digest = h.hexdigest()
+                d[i] = {'algorithm': cksum, 'hash': digest}
+            elif verbose:
+                print('<checksum> No checksum for  "{0}"!'.format(i))
+                
+
+        if (check_deleted):
+            check_key='/'.join((game.savegame_name,game.savegame_name + '.'))
+            check_key += '.'
+            
+            for k in d.keys():
+                if k.startswith(check_key):
+                    if not os.path.isfile(os.path.normpath(os.path.join(config.CONFIG['backup.dir'],k))):
+                        if verbose:
+                            print('<checksum:delete> {0}'.format(k))
+                        del d[k]
+# check()
 

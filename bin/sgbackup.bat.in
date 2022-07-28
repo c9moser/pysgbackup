@@ -1,3 +1,2 @@
 @echo off
-chcp 65001
 __PYTHON_EXEC__ -m sgbackup %*
