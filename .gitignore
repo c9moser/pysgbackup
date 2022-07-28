@@ -5,4 +5,9 @@
 sgbackup/sgbackup.conf
 *.archiver
 *.game
-
+pysgbackup.egg-info
+pysgbackup.egg-info/*
+*.swp
+build
+*__pycache__*
+__pycache__
