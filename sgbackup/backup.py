@@ -278,16 +278,15 @@ def check(game,create_missing=False,check_deleted=False,delete_failed=False,ask=
                             print('<delete> {0}'.format(filename))
                         os.unlink(filename)
             elif create_missing and config.CONFIG['backup.checksum'] != 'None':
-                print('<checksum:{0}:create> {1}',config.CONFIG['backup.checksum'],i)
-                
-                cksum = hashlib.new(config.CONFIG['backup.checksum'])
+                print('<checksum:{0}:create> {1}'.format(config.CONFIG['backup.checksum'],i))
+                cksum=config.CONFIG['backup.checksum']
                 h = hashlib.new(cksum)
                 with open(os.path.normpath(os.path.join(config.CONFIG['backup.dir'],i)),'rb') as ifile:
                     h.update(ifile.read())
                 digest = h.hexdigest()
                 d[i] = {'algorithm': cksum, 'hash': digest}
             elif verbose:
-                print('<checksum> No checksum for  "{0}"!'.format(i))
+                print('<checksum> No checksum for "{0}"!'.format(i))
                 
 
         if (check_deleted):

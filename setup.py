@@ -59,7 +59,7 @@ setup(name="pysgbackup",
                  'pysgbackup'],
       scripts=scripts,
       include_package_data=True,
-      package_data={'sgbackup':["*.sql,*.txt"],
+      package_data={'sgbackup':["*.sql","*.txt"],
                     'sgbackup.games': ['*.game'],
                     'sgbackup.archivers': ['*.archiver.in','*.archiver.w32.in']})
 

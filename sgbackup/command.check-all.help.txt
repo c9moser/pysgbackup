@@ -2,7 +2,7 @@ sgbackup check
 
 USAGE:
 ======
-  sgbackup check [OPTIONS] GameID ...
+  sgbackup check-all [OPTIONS]
   
 OPTIONS:
 ========
@@ -18,4 +18,4 @@ OPTIONS:
   
 DESCRIPTION:
 ============
-  This command perfoms checksum checks on backup files.
+  This command perfoms checksum checks on all backup files.

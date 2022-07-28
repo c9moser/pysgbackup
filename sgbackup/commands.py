@@ -308,10 +308,12 @@ def command_check(db,argv):
                                   'verbose'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
+        print(COMMANDS['check']['help-function']('check'))
         sys.exit(2)    
     
     if not args:
         print('[sgbackup check] ERROR: No GameIDs given!',file=sys.stderr)
+        print(COMMANDS['check']['help-function']('check'))
         sys.exit(2)
         
     ask = True
@@ -337,6 +339,7 @@ def command_check(db,argv):
     for game_id in args:
         if not db.has_game(game_id):
             print('[sgbackup check] No such GameID "{0}"!'.format(game_id),file=sys.stderr)
+            print(COMMANDS['check']['help-function']('check'))
             sys.exit(2)
             
     for game_id in args:
@@ -345,7 +348,47 @@ def command_check(db,argv):
 # command_check()
     
 def command_check_all(db,argv):
-    pass
+    try:
+        opts,args = getopt.getopt(argv,'AaCcdv', 
+                                  ['ask',
+                                   'no-ask'
+                                   'create-missing',
+                                   'check-deleted',
+                                   'delete-failed',
+                                   'verbose'])
+    except getopt.GetoptError as error:
+        print(error,file=sys.stderr)
+        print(COMMANDS['check-all']['help-function']('check-all'))
+        sys.exit(2)
+        
+    if len(args) > 0:
+        print('[sgbackup check-all] ERROR: This command does not handle any arguments!',file=sys.stderr)
+        print(COMMANDS['check-all']['help-function']('check-all'))
+        sys.exit(2)
+        
+    ask=True
+    create_missing=False
+    check_deleted=False
+    delete_failed=False
+    
+    for o,a in opts:
+        if o == '-a' or o == '--ask':
+            ask = True
+        elif o == '-A' or o == '--no-ask':
+            ask = False
+        elif o == '-C' or o == '--check-deleted':
+            check_deleted = True
+        elif o == '-c' or o == '--create-missing':
+            create_missing = True
+        elif o == '-d' or o == '--delete-failed':
+            delete_failed = True
+            ask = False
+        elif o == '-v' or o == '--verbose':
+            config.CONFIG['verbose'] = True
+    
+    for game_id in db.list_game_ids():
+        game = db.get_game(game_id)
+        backup.check(game,create_missing,check_deleted,delete_failed,ask)
 # command_check_all()
 
 def command_database(db,argv):
@@ -588,6 +631,7 @@ def command_write_config(db,argv):
     except GetoptError as error:
         print(error,file=sys.stderr)
         print(COMMANDS['write-config']['help-function']('write-config'))
+        sys.exit(2)
             
     global_config = False
     
@@ -636,9 +680,14 @@ COMMANDS={
         'function':command_backup_all
     },
     'check': {
-        'description': 'Perform checksum checks on backups',
+        'description': 'Perform checksum checks on backups.',
         'help-function': _get_command_help,
         'function':command_check
+    },
+    'check-all': {
+        'description': 'Perform checksum checks on all backups.',
+        'help-function': _get_command_help,
+        'function': command_check_all
     },
     'config': {
         'description': 'Get/Set configuration values.',
