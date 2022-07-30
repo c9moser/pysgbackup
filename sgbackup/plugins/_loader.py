@@ -17,12 +17,25 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-import gi
-gi.require_version('GLib','2.0')
+from ._plugin import Plugin
 
-from . import config,database,backup,archivers,games
-from . import plugins
-
-db = database.Database()
-plugins.init_plugins(db)
+class PluginLoader(object):
+    def __init__(self):
+        object.__init__(self)
+        
+    def validate_plugin_dict(self,dict):
+        keys=['name']
+        for k in keys:
+            if not k in dict:
+                return False
+        return True
+        
+    def load(self,module):
+        if hasattr(module,'plugin'):
+            if isinstance(module.plugin,Plugin):
+                return module.plugin
+            elif isinstance(module.plugin,dict):
+                if self.validate_plugin_dict(module.plugin):
+                    return Plugin.new_from_dict(module.plugin)
+        return None
 

@@ -55,11 +55,15 @@ setup(name="pysgbackup",
                  'sgbackup.games',
                  'sgbackup.plugins',
                  'sgbackup.plugins.ftp',
-                 'sgbackup.plugins.cksum',
-                 'pysgbackup'],
+                 'sgbackup.plugins.checksum',
+                 'pysgbackup'
+      ],
       scripts=scripts,
       include_package_data=True,
       package_data={'sgbackup':["*.sql","*.txt"],
                     'sgbackup.games': ['*.game'],
-                    'sgbackup.archivers': ['*.archiver.in','*.archiver.w32.in']})
+                    'sgbackup.archivers': ['*.archiver.in','*.archiver.w32.in'],
+                    'sgbackup.plugins': ['_plugins_init.py.in'],
+                    'sgbackup.plugins.checksum': ['*.txt']
+      })
 

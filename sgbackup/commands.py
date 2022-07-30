@@ -17,7 +17,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-from . import config,backup,database,archivers
+from . import config,backup,database,archivers,plugins
 
 import sys
 import os
@@ -47,6 +47,7 @@ _HELPFILES={
     'db': N_('file|command.database.help.txt'),
     'delete-backups': N_('file|command.delete-backups.help.txt'),
     'delete-savegames': N_('file|command.delete-savegames.help.txt'),
+    'plugin': N_('file|command.plugin.help.txt'),
     'restore': N_('file|command.restore.help.txt'),
     'restore-all': N_('file|command.restore-all.help.txt'),
     'version': N_('file|command.version.help.txt'),
@@ -289,7 +290,7 @@ def command_config(db,argv):
     elif len(args) == 2:
         try:
             config.write_config_key(args[0],args[1],global_config)
-        except Exception as error:
+        except getopt.GetoptError as error:
             print('[sgbackup config] ERROR: {0}'.format(error),file=sys.stderr)
     else:
         print('[sgbackup config] ERROR: Too many arguments!',file=sys.stderr)
@@ -564,6 +565,55 @@ def command_delete_savegames(db,argv):
         backup.delete_savegames(game)
 # command_delete_savegames()
 
+def command_plugin(db,argv):
+    if not argv:
+        print('[sgbackup plugin] No command given!',file=sys.stderr)
+        print(COMMANDS['plugin']['help-function']('plugin'))
+        
+    cmd = argv[0]
+    if cmd == 'list':
+        length = 0
+        for i in plugins.get_plugins():
+            if len(i) > length:
+                length = len(i)
+        
+        length += 1
+        length = ((length // 4) + 1) * 4
+        
+        if length > 32:
+            length = 32
+            
+        for i in plugins.get_plugins():
+            plugin = plugins.PLUGINS[i]
+            
+            if (len(i) < length):
+                s= i + " " * (length - len(i)) + plugin.description
+            else:
+                s = i + " " + plugin.description
+                
+            print(s)
+    elif cmd == 'enable':
+        if len(argv) < 2:
+            print("[spbackup plugin enable] ERROR: No Plugins given!",file=sys.stderr)
+            print(COMMANDS['plugin']['help-function']('plugin'))
+        for i in argv[1:]:
+            if i not in plugins.PLUGINS:
+                print('No plugin "{0} found!"'.format(i),file=sys.stderr)
+                                
+        for i in argv[1:]:
+            db.enable_plugin(i)
+    elif cmd == 'disable':
+        if len(argv) < 2:
+            print("[spbackup plugin disable] ERROR: No Plugins given!",file=sys.stderr)
+            print(COMMANDS['plugin']['help-function']('plugin'))
+        for i in argv[1:]:
+            db.disable_plugin(i)
+    else:
+        print('[sgbackup plugin] No such command "{0}"!'.format(cmd),file=sys.stderr)
+        print(COMMANDS['plugin']['help-function']('plugin'))
+# command_plugin
+        
+    
 def command_restore(db,argv):
     try:
         opts,args = getopt.getopt(argv,'cv',['choose','verbose'])
@@ -718,6 +768,11 @@ COMMANDS={
         'description': 'Print help messages.',
         'help-function': lambda x: _get_help(),
         'function': command_help
+    },
+    'plugin': {
+        'description': 'List/Enable/Disable plugins.',
+        'help-function' : _get_command_help,
+        'function': command_plugin
     },
     'restore': {
         'description': 'Restore savegames from backup.',

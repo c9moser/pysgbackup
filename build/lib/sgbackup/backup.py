@@ -68,7 +68,12 @@ def delete_backup(game,filename):
     if config.CONFIG['verbose']:
         print('[delete] {0}'.format(filename))
     os.unlink(filename)
-# delete_savegame()
+    
+    for k,cb in config.CONFIG['delete-backup-callbacks'].items():
+        print(k)
+        if cb:
+            cb(game,filename)
+# delete_backup()
 
 def delete_backups(game,keep_latest=True):
     latest = find_latest_backup(game)
@@ -108,6 +113,10 @@ def delete_savegames(game):
                 os.unlink(path)
     elif os.path.isfile(sgdir):
         os.unlink(sgdir)
+        
+    for k,cb in config.CONFIG['delete-savegames-callbacks'].items():
+        if cb:
+            cb(game)
 # delete_savegames()
 
 def get_backup_filename(game,archiver=None):
@@ -178,6 +187,12 @@ def backup(game,listfile=None,write_listfile=False):
     if len(savegames) > max_savegames:
         for i in savegames[max_savegames:]:
             delete_backup(game,i)
+            
+    if config.CONFIG['backup-callbacks']:
+        for k,cb in config.CONFIG['backup-callbacks'].items():
+            if config.CONFIG['verbose']:
+                print('[sgbackup backup] callback {0}'.format(k))
+            cb(game,backup_file)
 # backup()
 
 def backup_all(db,listfile=None,write_listfile=False,include_final=False):
@@ -201,6 +216,10 @@ def get_archiver_for_file(filename):
 def restore(game,filename):
     archiver = get_archiver_for_file(filename)
     archiver.restore(filename,game.savegame_root)
+    
+    for k,cb in config.CONFIG['restore-callbacks'].items():
+        if cb:
+            cb(game,filename)
 # restore()
 
 def restore_ask(game):

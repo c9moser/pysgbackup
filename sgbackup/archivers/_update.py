@@ -16,7 +16,7 @@ if sys.platform == 'win32':
             print("<archiver:directory> {0}".format(archivers_dir))
             
         #check if we are installed with msys or similar
-        if os.path.basename(os.path.basename(os.path.dirname(sys.executable))) == 'bin':
+        if os.path.dirname(os.path.dirname(os.path.dirname(sys.executable))) == 'bin':
             root_dir = os.path.dirname(os.path.dirname(os.path.dirname(sys.executable)))
             usr_bin = os.path.join(root_dir,'usr','bin')
             

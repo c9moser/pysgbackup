@@ -1,0 +1,6 @@
+sgbackup plugin
+
+USAGE:
+======
+  sgbackup plugin list
+  sgbackup plugin <enable|disable> PLUGIN ...

@@ -1,6 +1,6 @@
 #-*- coding:utf-8 -*-
 
-from . import config, games
+from . import config, games, plugins
 
 import sqlite3
 import os
@@ -280,6 +280,104 @@ class Database:
         self._db.commit()
     # delete_game()
     
+    def list_plugins(self):
+        ret = []
+        sql = "SELECT id,name,version,enabled FROM plugins ORDER BY name;"
+        
+        cur = self._db.cursor()
+        cur.execute(sql)
+        for row in cur:
+            ret.append({'id':int(row[0]),'name':row[1],'version':row[2],'enabled':self._db_to_bool(row[3])})
+            
+        return ret
+    # list_plugins()
+    
+    def get_plugin(self,plugin):
+        if isinstance(plugin,plugins.Plugin):
+            name = plugin.name
+        else:
+            name = plugin
+        ret = None
+        sql = "SELECT id,name,version,enabled FROM plugins WHERE name=?;"
+        
+        cur = self._db.cursor()
+        cur.execute(sql,(name,))
+        row = cur.fetchone()
+        if row:
+            ret = {'id':int(row[0]),'name':row[1],'version':row[2],'enabled': self._db_to_bool(row[3])}
+            
+        return ret
+        
+    def add_plugin(self,plugin):
+        if not isinstance(plugin,plugins.Plugin):
+            raise TypeError('plugin')
+            
+        sql = "INSERT INTO plugins(name,version) VALUES (?,?);"
+        cur = self._db.cursor()
+        cur.execute(sql,(plugin.name,plugin.version))
+        self._db.commit()
+        
+    def has_plugin(self,plugin):
+        if isinstance(plugin,plugins.Plugin):
+            name = plugin.name
+        else:
+            name = plugin
+            
+        sql = "SELECT id FROM plugins WHERE name=?;"
+        cur = self._db.cursor()
+        cur.execute(sql,(name,))
+        
+        row = cur.fetchone()
+        if (row and row[0]):
+            return True
+        return False
+    # has_plugin
+        
+    def delete_plugin(self,plugin):
+        if isinstance(plugin,plugins.Plugin):
+            name = plugin.name
+        else:
+            name = plugin
+            
+        sql = "DELETE FROM plugins WHERE name=?;"
+        
+        cur = self._db.cursor()
+        cur.execute(sql,(name,))
+        self._db.commit()
+        
+    def enable_plugin(self,plugin):
+        if isinstance(plugin,plugins.Plugin):
+            name = plugin.name
+        else:
+            name = plugin
+            
+        sql = "UPDATE plugins SET enabled='Y' WHERE name=?;"
+        cur = self._db.cursor()
+        cur.execute(sql,(name,))
+        self._db.commit()
+    # enable_plugin()
+        
+    def disable_plugin(self,plugin):
+        if isinstance(plugin,plugins.Plugin):
+            name = plugin.name
+        else: 
+            name = plugin
+            
+        sql = "UPDATE plugins SET enabled='N' WHERE name=?;"
+        cur = self._db.cursor()
+        cur.execute(sql,(name,))
+        self._db.commit()
+    # disable_plugin()
+    
+    def update_plugin(self,plugin):
+        if not isinstance(plugin,plugins.Plugin):
+            raise TypeError('plugin')
+            
+        sql = "UPDATE plugins SET version=? WHERE name=?;"
+        cur = self._db.cursor()
+        cur.execute(sql,(plugin.version,plugin.name))
+        self._db.commit()
+    # update_plugin()
 # Database class
 
 def update(db,force=False):
@@ -314,6 +412,29 @@ def update(db,force=False):
         return False
     # _gameconf_removed()
     
+    def _plugin_changed(db,plugin):
+        spec = db.get_plugin(plugin.name)
+        
+        pv = plugin.version.split('.')
+        dbv = spec['version'].split('.')
+        
+        if (len(pv) >= 3 and len(dbv) >= 3):
+            if (pv[0] == dbv[0] and pv[1] <= dbv[1] and pv[2] <= pv[3]):
+                return False
+            return True
+        elif (len(pv) >= 2 and len(dbv) >= 2):
+            if (pv[0] == dbv[0] and pv[1] <= dbv[1]):
+                return False
+            return True
+        else:
+            return (pv[0] != dbv[0])
+    # _plugin_changed()
+    
+    def _plugin_deleted(spec):
+        if spec['name'] in plugins.PLUGINS:
+            return False
+        return True
+                
     for gid in games.get_games():
         game = games.parse_gameconf(gid)
         if not game:
@@ -353,4 +474,20 @@ def update(db,force=False):
                     if config.CONFIG['verbose']:
                         print("Removing gameconf '{0}' from database".format(gcd.filename,gid))
                     db.delete_gameconf(gcd.filename)
+                  
+                    
+    # check for deleted plugins
+    for spec in db.list_plugins():
+        if _plugin_deleted(spec):
+            if config.CONFIG['verbose']:
+                pass
+            db.delete_plugin(spec['name'])
+        
+    #check for plugins
+    for name,plugin in plugins.PLUGINS.items():
+        if db.has_plugin(plugin.name):
+            if _plugin_changed(db,plugin):
+                db.update_plugin(plugin)
+        else:
+            db.add_plugin(plugin)
 # update()

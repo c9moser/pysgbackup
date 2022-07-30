@@ -42,3 +42,11 @@ CREATE TABLE gameconf (
 CREATE INDEX gameconf_game_index ON gameconf(game);
 CREATE INDEX gameconf_filename_index ON gameconf(filename);
 
+CREATE TABLE plugins (
+    id INTEGER PRIMARY KEY,
+    name VARCHAR(128) NOT NULL,
+    version VARCHAR(32) DEFAULT '0.0.0',
+    enabled CHAR(1) DEFAULT 'N'
+);
+CREATE INDEX plugins_name_index ON plugins(name);
+
