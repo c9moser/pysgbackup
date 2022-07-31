@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<interface>
+    <menu id='menubar'>
+        <submenu>
+            <attribute name='label' translatable='yes'>_File</attribute>
+            <section>
+                <item>
+                    <attribute name='label' translatable='yes'>_Quit</attribute>
+                    <attribute name='action'>app.quit</attribute>
+                </item>
+            </section>
+        </sumenu>
+        <submenu>
+            <attribute name='help' translatable='yes'>_Help</attribute>
+            <section>
+                <item>
+                    <atrribute name='label' translatable='yes'>_About</attribute>
+                    <attribute name='action'>app.about</attribute>
+                </item>
+            </section>
+        <submenu>
+    </menu>
+</interface>

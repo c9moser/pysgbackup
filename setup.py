@@ -11,7 +11,7 @@ import sgbackup
 try:
     import gi
     gi.require_version('GLib','2.0')
-    gi.require_version('Gtk','4.0')
+    gi.require_version('Gtk','3.0')
 except ImportError as err:
     print("\"GObject Introspection\" not installed!")
     sys.exit(3)
@@ -42,8 +42,17 @@ if sys.platform == 'win32':
         with open(sgbackup_bat,"w") as ofile:
             ofile.write(s)
     scripts.append('bin/sgbackup.bat')
+    
+    pysgbackup_bat=os.path.join(os.path.dirname(__file__),'bin','pysgbackup.bat')
+    with open('.'.join((pysgbackup_bat,'in')),'r') as ifile:
+        s = ifile.read()
+        s = s.replace("__PYTHON_EXEC__",sys.executable)
+        with open(pysgbackup_bat,"w") as ofile:
+            ofile.write(s)
+    scripts.append('bin/pysgbackup.bat')
         
 scripts.append('bin/sgbackup')
+scripts.append('bin/pysgbackup')
 
 setup(name="pysgbackup",
       version=".".join((str(i) for i in sgbackup.config.CONFIG["version"])),
@@ -64,6 +73,7 @@ setup(name="pysgbackup",
                     'sgbackup.games': ['*.game'],
                     'sgbackup.archivers': ['*.archiver.in','*.archiver.w32.in'],
                     'sgbackup.plugins': ['_plugins_init.py.in'],
-                    'sgbackup.plugins.checksum': ['*.txt']
+                    'sgbackup.plugins.checksum': ['*.txt'],
+                    'pysgbackup' : ['*.ui']
       })
 

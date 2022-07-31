@@ -18,7 +18,9 @@
 ################################################################################
 
 import gi
-gi.require_version('Gtk','3.0')
+from gi.repository import Gtk,GLib
 
-import sgbackup
+class SettingDialog(Gtk.Dialog):
+    def __init__(self,parent=None):
+        Gtk.Dialog.__init__(self,parent=parent)
 

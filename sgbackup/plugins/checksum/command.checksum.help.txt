@@ -1,0 +1,16 @@
+sgbackup checksum
+
+USAGE:
+======
+  sgbackup checksum [OPTIONS] GameID ...
+  
+OPTIONS:
+========
+  -d | --delete     Delete files where checksum test failed.
+  -v | --verbose    Enable verbose output.
+
+DESCRIPTION:
+============
+  Check SaveGame-backups against checksum files. If the --delete option is set
+  delete files where checksum tests failed. Backups without checksum files are
+  ignored.
