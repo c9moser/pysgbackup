@@ -74,6 +74,7 @@ setup(name="pysgbackup",
                     'sgbackup.archivers': ['*.archiver.in','*.archiver.w32.in'],
                     'sgbackup.plugins': ['_plugins_init.py.in'],
                     'sgbackup.plugins.checksum': ['*.txt'],
+                    'sgbackup.plugins.ftp': ['*.txt'],
                     'pysgbackup' : ['*.ui']
       })
 
