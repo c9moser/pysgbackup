@@ -210,8 +210,8 @@ def backup(game,listfile=None,write_listfile=False):
             listfile=config.CONFIG['backup.listfile']
             
         rel_path=os.path.join(game.savegame_name,os.path.basename(backup_file))
-        with open(listfile,'a'):
-            write('{0}\n'.format(rel_path))
+        with open(listfile,'a') as lf:
+            lf.write('{0}\n'.format(rel_path))
             
     savegames = find_backups(game,reverse=True)
     max_savegames = config.CONFIG['backup.max']

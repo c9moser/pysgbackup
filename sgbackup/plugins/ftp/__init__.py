@@ -140,6 +140,7 @@ def ftp_put_listfile(ftp,ftpdir,listfile):
     filename = os.path.join(CONFIG['backup.dir'],listfile)
     if os.path.isfile(filename):
         with open(filename,'rb') as ifile:
+            print('<ftp:put> {}'.format(filename))
             ftp.storbinary("STOR {0}".format(os.path.basename(filename)),fp=ifile)
             
     ftp.cwd(pwd)
@@ -196,6 +197,9 @@ def command_ftp(db,argv):
         for game_id in args:
             game = db.get_game(game_id)
             game_dir = os.path.join(CONFIG['backup.dir'],game.savegame_name)
+            if not (game_dir):
+                continue
+                
             backup_files = []
             for i in os.listdir(game_dir):
                 if i == '.' or i == '..':
@@ -275,7 +279,10 @@ def command_ftp_all(db,argv):
         
         if dir_mode:
             game_dir = os.path.join(CONFIG['backup.dir'],game.savegame_name)
-            for i in listdir(game_dir):
+            if not os.path.isdir(game_dir):
+                continue
+                
+            for i in os.listdir(game_dir):
                 if i == '.' or i == '..':
                     continue
                     
@@ -347,8 +354,8 @@ def command_ftp_list(db,argv):
         print('[sgbackup ftp-list] Listfile "{0}" does not exist!'.format(listfile))
         sys.exit(0)
             
-    ftp=ftplib.FTP(connect['host'],user=connect['user'],password=connect['password'])
-    ftp.login()
+    ftp=ftplib.FTP(connect['host'])
+    ftp.login(connect['user'],connect['password'])
    
     if not os.path.isfile(listfile):
         print('[sgbackup ftp-list] ERROR: Listfile "{0}" not found!'.format(listfile),file=sys.stderr)
