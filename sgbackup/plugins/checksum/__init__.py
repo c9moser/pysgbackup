@@ -81,151 +81,156 @@ else:
     # _get_checksum_programs()
     
 CHECKSUM = _get_checksum_programs()
+plugin_avilable = (len(CHECKSUM) > 0)
 
-_HELP={
-    'checksum': N_('file|command.checksum.help.txt'),
-    'checksum-all': N_('file|command.checksum.all.txt')
-}    
+if plugin_avilable:
+    _HELP={
+        'checksum': N_('file|command.checksum.help.txt'),
+        'checksum-all': N_('file|command.checksum.all.txt')
+    }    
 
-def _get_help(cmd):
-    filename = os.path.join(os.path.dirname(__file__),Q_(_HELP[cmd]))
-    with open(filename,'r') as ifile:
-        return ifile.read()
+    def _get_help(cmd):
+        filename = os.path.join(os.path.dirname(__file__),Q_(_HELP[cmd]))
+        with open(filename,'r') as ifile:
+            return ifile.read()
+    # _get_help()
 
-def find_checksum_files(filename):
-    ret = []
-    for i in CHECKSUM:
-        ckfile = '.'.join((filename,i))
-        if os.path.isfile(ckfile):
-            ret.append(ckfile)    
-    return ret
-# find_checksum_files()
+    def find_checksum_files(filename):
+        ret = []
+        for i in CHECKSUM.keys():
+            ckfile = '.'.join((filename,i))
+            if os.path.isfile(ckfile):
+                ret.append(ckfile)    
+        return ret
+    # find_checksum_files()
     
-def backup_callback(game,filename):
-    if not CONFIG['checksum.enable'] or CONFIG['checksum.algorithm'] == 'None':
+    def backup_callback(game,filename):
+        if CONFIG['checksum.algorithm'] == 'None':
+            return True
+            
+        cksum = CONFIG['checksum.algorithm']
+        if cksum not in CHECKSUM:
+            raise RuntimeError('<checksum> Checksum "{0}" not available!'.format(cksum),file=sys.stderr)
+            return False
+        
+        f = os.path.basename(filename)
+        cwd = os.getcwd()
+        os.chdir(os.path.dirname(filename))
+    
+        if CONFIG['checksum.bsd-tags']:
+            cmd = '"{0}" --tag "{1}"'.format(CHECKSUM[cksum],f)
+        else:
+            cmd = '"{0}" "{1}"'.format(CHECKSUM[cksum],f)
+        
+        proc = subprocess.run(cmd,capture_output=True)
+        if proc.returncode != 0:
+            os.chdir(cwd)
+            return False
+        
+        with open('.'.join((f,cksum)),'wb') as ofile:
+            ofile.write(proc.stdout)
+            
+        if CONFIG['backup.write-listfile']:
+            with open(CONFIG['backup.listfile'],'a') as ofile:
+                ofile.write('{0}/{1}\n'.format(game.savegame_name,'.'.join((f,cksum))))
+    
+        os.chdir(cwd)
         return True
-        
-    cksum = CONFIG['checksum.algorithm']
-    if cksum not in CHECKSUM:
-        raise RuntimeError('<checksum> Checksum "{0}" not available!'.format(cksum),file=sys.stderr)
-        return False
-        
-    f = os.path.basename(filename)
-    cwd = os.getcwd()
-    os.chdir(os.path.dirname(filename))
-    
-    if CONFIG['checksum.bsd-tags']:
-        cmd = '"{0}" --tag "{1}"'.format(CHECKSUM[cksum],f)
-    else:
-        cmd = '"{0}" "{1}"'.format(CHECKSUM[cksum],f)
-        
-    proc = subprocess.run(cmd,capture_output=True)
-    if proc.returncode != 0:
-        return False
-        
-    with open('.'.join((f,cksum)),'wb') as ofile:
-        ofile.write(proc.stdout)
-        
-    if CONFIG['backup.write-listfile']:
-        with open(CONFIG['backup.listfile'],'a') as ofile:
-            ofile.write('{0}/{1}\n'.format(game.savegame_name,'.'.join((f,cksum))))
-    
-    os.chdir(cwd)
-    return True
-# backup_callback()
+    # backup_callback()
 
-def delete_backup_callback(game,filename):
-    for cksum in CHECKSUM.keys():
-        ckfile = '.'.join((filename,cksum))
-        if os.path.isfile(ckfile):
-            os.unlink(ckfile)
-# delete_backup_callback()
+    def delete_backup_callback(game,filename):
+        for cksum in CHECKSUM.keys():
+            ckfile = '.'.join((filename,cksum))
+            if os.path.isfile(ckfile):
+                os.unlink(ckfile)
+    # delete_backup_callback()
     
-def check_checksum(game,filename,delete=False):
-    cwd = os.getcwd()
-    os.chdir(os.path.dirname(filename))
-    
-    for i in find_checksum_files(filename):
-        if os.path.isfile(i):
-            if CONFIG['verbose']:
-                print('<checksum:check> {0} ... '.format(i),end='')
-            proc = subprocess.run('{0} --check "{1}"'.format(CHECKSUM[os.path.splitext(i)[1][1:]],os.path.basename(i)))
-            if proc.returncode == 0:
+    def check_checksum(game,filename,delete=False):
+        cwd = os.getcwd()
+        os.chdir(os.path.dirname(filename))
+        
+        for i in find_checksum_files(filename):
+            if os.path.isfile(i):
                 if CONFIG['verbose']:
-                    print('OK')
-            else:
-                if CONFIG['verbose']:
-                    print('FAILED')
-                if delete:
-                    print("<checksum:delete> {0}".format(filename))
-                    backup.delete_backup(game,filename)
-    os.chdir(cwd)
-# check_checksum
+                    print('<checksum:check> {0} ... '.format(i),end='')
+                proc = subprocess.run('{0} --check "{1}"'.format(CHECKSUM[os.path.splitext(i)[1][1:]],os.path.basename(i)))
+                if proc.returncode == 0:
+                    if CONFIG['verbose']:
+                        print('OK')
+                else:
+                    if CONFIG['verbose']:
+                        print('FAILED')
+                    if delete:
+                        print("<checksum:delete> {0}".format(filename))
+                        backup.delete_backup(game,filename)
+        os.chdir(cwd)
+    # check_checksum
 
-def command_checksum(db,argv):
-    try:
-        opts,args = getopt.getopt(argv,'dv',['delete','verbose'])
-    except getopt.GetoptError as error:
-        print(error,file=sys.stderr)
-        print(_get_help('checksum'))
-        sys.exit(2)
-        
-    if not args:
-        print('[sgabckup checksum] ERROR: No GameIDs given!',file=sys.stderr)
-        print(_get_help('checksum'))
-        sys.exit(2)
-        
-    for game_id in args:
-        if not db.has_game(game_id):
-            print('[sgbackup checksum] ERROR: No game for GameID "{0}" found!'.format(game_id),file=sys.stderr)
+    def command_checksum(db,argv):
+        try:
+            opts,args = getopt.getopt(argv,'dVv',['delete','no-verbose','verbose'])
+        except getopt.GetoptError as error:
+            print(error,file=sys.stderr)
+            print(_get_help('checksum'))
             sys.exit(2)
             
-    delete = False
-    for o,a in opts:
-        if o == '-d' or o == '--delete':
-            delete = True
-        elif o == '-v' or o == '--verbose':
-            CONFIG['verbose'] = True
+        if not args:
+            print('[sgabckup checksum] ERROR: No GameIDs given!',file=sys.stderr)
+            print(_get_help('checksum'))
+            sys.exit(2)
+        
+        for game_id in args:
+            if not db.has_game(game_id):
+                print('[sgbackup checksum] ERROR: No game for GameID "{0}" found!'.format(game_id),file=sys.stderr)
+                sys.exit(2)
             
-    cwd = os.getcwd()
-    
-    for game_id in args:
-        game = db.get_game(game_id)
-        if CONFIG['verbose']:
-            print('[sgbackup checksum] Checking game "{0}"'.format(game.name))
+        delete = False
+        for o,a in opts:
+            if o == '-d' or o == '--delete':
+                delete = True
+            elif o == '-V' or o == '--no-verbose':
+                CONFIG['verbose'] = False
+            elif o == '-v' or o == '--verbose':
+                CONFIG['verbose'] = True
+                
+        for game_id in args:
+            game = db.get_game(game_id)
+            if CONFIG['verbose']:
+                print('[sgbackup checksum] Checking game "{0}"'.format(game.name))
         
-        for backup_file in backup.find_backups(game):
-            check_checksum(game,backup_file,delete)            
-# command_checksum()
+            for backup_file in backup.find_backups(game):
+                check_checksum(game,backup_file,delete)            
+    # command_checksum()
     
-def command_checksum_all(db,argv):
-    try:
-        opts,args = getopt.getopt(argv,'dv',['delete','verbose'])
-    except getopt.GetoptError as error:
-        print(error,file=sys.stderr)
-        print(_get_help('cheacksum-all'))
-        sys.exit(2)
-        
-    if args:
-        print('[sgbackup checksum-all] ERROR: This command does not take any arguments!',file=sys.stderr)
-        print(_get_help('checksum-all'))
-        sys.exit(2)
-    
-    delete = False
-    for o,a in opts:
-        if o == '-d' or o == '--delete':
-            delete=True
-        elif o == '-v' or o == '--verbose':
-            CONFIG['verbose'] = True
+    def command_checksum_all(db,argv):
+        try:
+            opts,args = getopt.getopt(argv,'dVv',['delete','no-verbose','verbose'])
+        except getopt.GetoptError as error:
+            print(error,file=sys.stderr)
+            print(_get_help('cheacksum-all'))
+            sys.exit(2)
             
-    for game_id in db.list_game_ids():
-        game = db.get_game(game_id)
+        if args:
+            print('[sgbackup checksum-all] ERROR: This command does not take any arguments!',file=sys.stderr)
+            print(_get_help('checksum-all'))
+            sys.exit(2)
         
-        for backup_file in backup.find_backups(game):
-            check_checksum(game,backup_file,delete)
-# command_checksum_all
-    
-if CHECKSUM:
+        delete = False
+        for o,a in opts:
+            if o == '-d' or o == '--delete':
+                delete=True
+            elif o == '-V' or o == '--no-verbose':
+                CONFIG['verbose'] = False
+            elif o == '-v' or o == '--verbose':
+                CONFIG['verbose'] = True
+                
+        for game_id in db.list_game_ids():
+            game = db.get_game(game_id)
+            
+            for backup_file in backup.find_backups(game):
+                check_checksum(game,backup_file,delete)
+    # command_checksum_all
+
     plugin={
         'name': 'checksum',
         'description': 'Create/Check checksum files.',
@@ -237,11 +242,6 @@ if CHECKSUM:
             'global': True,
             'local': True,
             'values': {
-                'checksum.enable': {
-                    'option': 'enable',
-                    'type': 'boolean',
-                    'default': False
-                },
                 'checksum.algorithm': {
                     'type': 'string',
                     'option': 'algorithm',

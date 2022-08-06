@@ -114,7 +114,8 @@ CONFIG={
     'backup-callbacks': {},
     'delete-backup-callbacks': {},
     'delete-savegames-callbacks': {},
-    'restore-callbacks': {}
+    'restore-callbacks': {},
+    'rename-backup-callbacks': {}
 }
 CONFIG['backup.listfile']=os.path.join(CONFIG['backup.dir'],"backups.list")
 CONFIG['backup.checksum-database.template']="${BACKUP_DIR}/checksums.db"

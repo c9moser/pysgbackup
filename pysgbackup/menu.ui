@@ -1,5 +1,40 @@
 <?xml version="1.0"?>
 <interface>
+    <menu id='appmenu'>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>Backup selected Game</attribute>
+                <attribute name='action'>win.backup</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>Backup all Games</attribute>
+                <attribute name='action'>win.backup-all</attribute>
+            </item>
+        </section>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>_Settings</attribute>
+                <attribute name='action'>win.settings</attribute>
+            </item>
+        </section>
+        <section>
+            <submenu>
+                <attribute name='label' translatable='yes'>Games</attribute>
+            </submenu>
+        </section>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>_About</attribute>
+                <attribute name='action'>app.about</attribute>
+            </item>
+        </section>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>_Quit</attribute>
+                <attribute name='action'>app.quit</attribute>
+            </item>
+        </section>
+    </menu>
     <menu id='menubar'>
         <submenu>
             <attribute name='label' translatable='yes'>_File</attribute>
@@ -9,15 +44,24 @@
                     <attribute name='action'>app.quit</attribute>
                 </item>
             </section>
-        </sumenu>
+        </submenu>
         <submenu>
-            <attribute name='help' translatable='yes'>_Help</attribute>
+            <attribute name='label' translatable='yes'>_Edit</attribute>
             <section>
                 <item>
-                    <atrribute name='label' translatable='yes'>_About</attribute>
+                    <attribute name='label' translatable='yes'>_Settings</attribute>
+                    <attribute name='action'>win.settings</attribute>
+                </item>
+            </section>
+        </submenu>
+        <submenu>
+            <attribute name='label' translatable='yes'>_Help</attribute>
+            <section>
+                <item>
+                    <attribute name='label' translatable='yes'>_About</attribute>
                     <attribute name='action'>app.about</attribute>
                 </item>
             </section>
-        <submenu>
+        </submenu>
     </menu>
 </interface>

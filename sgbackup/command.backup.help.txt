@@ -10,6 +10,7 @@ OPTIONS:
                             if set.
   -f | --final              Create a final backup and set final_backup flag.
   -L | --listfile=file      Set listfile to filename.
-  -v | -- verbose           Verbose output.
+  -V | --no-verbose         Disable verbose output.
+  -v | -- verbose           Enable verbose output.
   -W | --no-write-listfile  Don't write a listfile.
   -w | --write-listfile     Write a listfile.

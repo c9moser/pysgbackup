@@ -1,0 +1,11 @@
+sgbackup checksum-all
+
+USAGE:
+======
+  sgbackup checksum-all [OPTIONS]
+  
+OPTIONS:
+========
+  -d | --delete         Delete files where checksum checks failed.
+  -V | --no-verbose     Disable verbose output.
+  -v | --verbose        Enable verbose output.

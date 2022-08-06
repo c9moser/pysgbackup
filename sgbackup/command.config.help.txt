@@ -8,9 +8,10 @@ USAGE:
   
 OPTIONS:
 ========
-  -g | --global     Global options
-  -s | --show       Show Options for KEY
-  -v | --verbose    Verbose Output
+  -g | --global     Global options.
+  -s | --show       Show Options for KEY.
+  -V | --no-verbose Disable verbose output.
+  -v | --verbose    Enable verbose Output.
   
 DESCRIPTION:
 ============

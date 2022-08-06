@@ -18,12 +18,14 @@
 ################################################################################
 
 import gi
-from gi.repository import Gtk
+from gi.repository import Gtk,Gio,GLib
 
 import sgbackup
 import os
 
-from . import settings
+from . import settings,backupdialog
+
+import pysgbackup
 
 class AppWindow(Gtk.ApplicationWindow):
     (
@@ -47,16 +49,25 @@ class AppWindow(Gtk.ApplicationWindow):
         self.__create_actions()
         self.set_title('PySGBackup')
         self.set_default_size(600,600)
-        self.vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        
         builder = Gtk.Builder()
         builder.add_from_file(os.path.join(os.path.dirname(__file__),'menu.ui'))
-        builder.connect.signals(self)
-        menubar = builder.get_object('menubar')
+        builder.connect_signals(self)
         
-        self.menubar = Gtk.Menubar.new_from_model(menubar)
+        self.vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         
-        self.vbox.pack_start(self.menubar,False,False,0)
+        self.headerbar = Gtk.HeaderBar()
+        self.headerbar.set_show_close_button(True)
+        self.headerbar.set_decoration_layout(':minimize,maximize,close')
+        self.headerbar.set_title(self.get_title())
+        self.menu_button = Gtk.MenuButton()
+        image = Gtk.Image.new_from_icon_name('open-menu-symbolic',Gtk.IconSize.BUTTON)
+        self.menu_button.set_image(image)
+        appmenu = builder.get_object('appmenu')
+        self.menu_button.set_menu_model(appmenu)
+        self.headerbar.pack_start(self.menu_button)
+        
+        self.set_titlebar(self.headerbar)
+        
         
         self.toolbar = Gtk.Toolbar()
         self.vbox.pack_start(self.toolbar,False,False,0)
@@ -103,6 +114,7 @@ class AppWindow(Gtk.ApplicationWindow):
         
         renderer = Gtk.CellRendererToggle()
         renderer.set_activatable(False)
+        renderer.set_radio(True)
         column = Gtk.TreeViewColumn('Latest',renderer,active=self.BV_COL_LATEST)
         self.backupview.append_column(column)
         
@@ -112,7 +124,12 @@ class AppWindow(Gtk.ApplicationWindow):
         self.vbox.pack_start(self.paned,True,True,0)
         self.paned.set_position(300)
         
+        self.statusbar = Gtk.Statusbar()
+        self.vbox.pack_start(self.statusbar,False,False,0)
+        
         self.add(self.vbox)
+        
+        self._on_gameview_selection_changed(self.gameview.get_selection())
         
         self.show_all()
         
@@ -130,6 +147,11 @@ class AppWindow(Gtk.ApplicationWindow):
                              game.savegame_root,
                              game.savegame_dir,
                              game.final_backup])
+        if len(model) > 0:
+            self._action_backup_all.set_enabled(True)
+        else:
+            self._action_backup_all.set_enabled(False)
+            
         return model
         
     def __create_backupview_model(self):
@@ -153,11 +175,63 @@ class AppWindow(Gtk.ApplicationWindow):
             self.add_action(action)
             return action
             
+        self._action_backup = add_simple_action('backup',self._on_action_backup)
+        self._action_backup_all = add_simple_action('backup-all',self._on_action_backup_all)
+        
+        add_simple_action('settings',self._on_action_settings)
+            
     
     def _on_gameview_selection_changed(self,selection):
         self.backupview.set_model(self.__create_backupview_model())
+        model,iter = selection.get_selected()
+        if iter:
+            self._action_backup.set_enabled(True)
+        else:
+            self._action_backup.set_enabled(False)
         
-    def _on_action_preferences(self,action,data):
-        dialog = settings.SettingDialog(parent=self)
+    def _on_action_backup(self,action,data):
+        model,iter = self.gameview.get_selection().get_selected()
+        if iter:
+            game_id = model.get_value(iter,self.GV_COL_GAMEID)
+            game=sgbackup.db.get_game(game_id)
+            
+            if not game:
+                dialog=Gtk.MessageDialog(self,
+                                         Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                                         Gtk.MessageType.ERROR,
+                                         Gtk.ButtonsType.CLOSE,
+                                         'Unable to backup game with id "{0}!"'.format(game_id))
+                dialog.connect('response', lambda d,r: d.destroy())
+                dialog.format_secondary_text('Game was not found in database!')
+                dialog.run()
+                return
+                
+            dialog = backupdialog.BackupDialog(self)
+            dialog.add_game(game)
+            dialog.run()
+            self.update_backupview()
         
+    def _on_action_backup_all(self,action,data):
+        game_ids = sgbackup.db.list_game_ids()
+        if game_ids:
+            dialog = backupdialog.BackupDialog(self)
+            for gid in game_ids:
+                game = sgbackup.db.get_game(gid)
+                if game and not game.final_backup:
+                    dialog.add_game(game)
+            dialog.run()
+        
+        
+    def _on_action_settings(self,action,data):
+        dialog = settings.SettingsDialog(parent=self)
         dialog.run()
+        
+    def update_gameview(self):
+        self.gameview.set_model(self.__create_gameview_model())
+        self.gameview.show()
+        
+    def update_backupview(self):
+        self.backupview.set_model(self.__create_backupview_model())
+        self.backupview.show()
+        
+        

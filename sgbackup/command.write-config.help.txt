@@ -6,5 +6,6 @@ USAGE:
   
 OPTIONS:
 ========
-  -g | --global     Write a global file
-  -v | --verbose    Verbose output
+  -g | --global     Write a global file.
+  -V | --no-verbose Disable verbose output.
+  -v | --verbose    Enable verbose output.

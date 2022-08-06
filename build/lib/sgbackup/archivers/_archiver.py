@@ -114,7 +114,15 @@ class ProgramArchiver(ArchiverBase):
                 return os.path.normpath(path)
             
             proc = subprocess.run([self.cygpath,path],capture_output=True,text=True)
-            return proc.stdout[:-1]
+            s=proc.stdout
+            if s.startswith("b'"):
+                s = s[2:-3]
+            elif s.endswith('\\n'):
+                s = s[:-2]
+            else: 
+                s= s[:-1]
+                
+            return s
         # _cygpath()
             
         if config.CONFIG['verbose']:

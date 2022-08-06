@@ -125,7 +125,7 @@ def command_help(db,argv):
 
 def command_archiver(db,argv):
     try:
-        opts,args = getopt.getopt(argv,'gv',['global','verbose'])
+        opts,args = getopt.getopt(argv,'gvV',['global','verbose','no-verbose'])
     except getopt.GetoptError as error:
         print("[sgbackup archiver] ERROR: {0}".format(error),file=sys.stderr)
         print(COMMANDS['archiver']['help-function']('archiver'))
@@ -135,8 +135,10 @@ def command_archiver(db,argv):
     for o,a in opts:
         if o == '-g' or o == '--global':
             global_archivers = True
-        if o == '-v' or o == '--verbose':
+        elif o == '-v' or o == '--verbose':
             config.CONFIG['verbose'] = True
+        elif o == '-V' or o == '--no-verbose':
+            config.CONFIG['verbose'] = False
             
     if not args:
         print("[sgbackup archiver] ERROR: No command given!",file=sys.stderr)
@@ -163,12 +165,13 @@ def command_archiver(db,argv):
 def command_backup(db,argv):
     try:
         opts,args = getopt.getopt(argv, 
-                                  "FfL:Wwv",
+                                  "FfL:WwVv",
                                   ["final",
                                    "listfile=",
                                    "no-final",
                                    "no-write-listfile",
                                    "verbose",
+                                   "no-verbose",
                                    "write-listfile"])
     except getopt.GetoptError as err:
         print(err,file=sys.stderr)
@@ -186,6 +189,8 @@ def command_backup(db,argv):
         elif (o == '-L' or o == '--listfile'):
             config.CONFIG['backup.write-listfile']=True
             config.CONFIG['backup.listfile']=a
+        elif (o == '-V' or o == '--no-verbose'):
+            config.CONFIG['verbose'] = False
         elif (o == '-v' or o == '--verbose'):
             config.CONFIG['verbose']=True
         elif (o == '-W' or o == '--no-write-listfile'):
@@ -212,6 +217,8 @@ def command_backup(db,argv):
             g.final_backup=True
             db.add_game(g)
         elif not final_backup and remove_final_backup_flag:
+            if g.final_backup:
+                backup.unfinal(g)
             g.final_backup=False
             db.add_game(g)
 
@@ -220,11 +227,12 @@ def command_backup(db,argv):
 
 def command_backup_all(db,argv):
     try:
-        opts,args = getopt.getopt(argv,'fL:vWw',
+        opts,args = getopt.getopt(argv,'fL:VvWw',
                                   ['force',
                                    'listfile=',
                                    'no-write_listfile',
                                    'verbose',
+                                   'no-verbose',
                                    'write-listfile'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
@@ -248,6 +256,8 @@ def command_backup_all(db,argv):
             write_listfile = False
         elif o == '-w' or o == '--write-listfile':
             write_listfile = True
+        elif o == '-V' or o == '--no-verbose':
+            config.CONFIG['verbose'] = False
         elif o == '-v' or o == '--verbose':
             config.CONFIG['verbose'] = True
             
@@ -256,7 +266,7 @@ def command_backup_all(db,argv):
 
 def command_config(db,argv):
     try:
-        opts,args = getopt.getopt(argv,'gsv',['global','show','verbose'])
+        opts,args = getopt.getopt(argv,'gsVv',['global','show','verbose','no-verbose'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
         print(COMMANDS['config']['help-function']('config'))
@@ -269,6 +279,8 @@ def command_config(db,argv):
             global_config = True
         elif o == '-s' or o == '--show':
             show = True
+        elif o == '-V' or o == '--no-verbose':
+            config.CONFIG['verbose'] = False
         elif o == '-v' or o == '--verbose':
             config.CONFIG['verbose'] = True
             
@@ -300,12 +312,13 @@ def command_config(db,argv):
 
 def command_check(db,argv):
     try:
-        opts,args = getopt.getopt(argv,'AaCcdv',
+        opts,args = getopt.getopt(argv,'AaCcdVv',
                                   ['ask',
                                   'no-ask',
                                   'create-missing',
                                   'check-deleted',
                                   'remove-deleted',
+                                  'no-verbose',
                                   'verbose'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
@@ -334,6 +347,8 @@ def command_check(db,argv):
         elif o == '-d' or o == '--delete-failed':
             delete_failed = True
             ask = False
+        elif o == '-V' or o == '--no-verbose':
+            config.CONFIG['verbose'] = False
         elif o == '-v' or o == '--verbose':
             config.CONFIG['verbose'] = True
             
@@ -350,12 +365,13 @@ def command_check(db,argv):
     
 def command_check_all(db,argv):
     try:
-        opts,args = getopt.getopt(argv,'AaCcdv', 
+        opts,args = getopt.getopt(argv,'AaCcdVv', 
                                   ['ask',
                                    'no-ask'
                                    'create-missing',
                                    'check-deleted',
                                    'delete-failed',
+                                   'no-verbose',
                                    'verbose'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
@@ -384,6 +400,8 @@ def command_check_all(db,argv):
         elif o == '-d' or o == '--delete-failed':
             delete_failed = True
             ask = False
+        elif o == '-V' or o == 'no-verbose':
+            config.CONFIG['verbose'] = False
         elif o == '-v' or o == '--verbose':
             config.CONFIG['verbose'] = True
     
@@ -410,17 +428,19 @@ def command_database(db,argv):
         print(COMMANDS['database']['help-function']('database'))
     
     try:   
-        opts,args = getopt.getopt(argv[1:], 'fv', ['force','verbose'])
+        opts,args = getopt.getopt(argv[1:], 'fVv', ['force','verbose','no-verbose'])
     except getopt.GetoptError as err:
         print(err,file=sys.stderr)
         print(COMMANDS['database']['help-function']('database'))
         sys.exit(2)
    
     force=False
-    for opt,value in opts:
-        if opt == '-f' or opt == '--force':
+    for o,a in opts:
+        if o == '-f' or o == '--force':
             force = True
-        elif opt == '-v' or opt == '--verbose':
+        elif o == '-V' or o == '--no-verbose':
+            config.CONFIG['verbose'] = False
+        elif o == '-v' or o == '--verbose':
             config.CONFIG['verbose'] = True
     
     cmd = argv[0]
@@ -512,7 +532,7 @@ def command_database(db,argv):
 
 def command_delete_backups(db,argv):
     try:
-        opts,args = getopt.getopt(argv,'fv',['force','verbose'])
+        opts,args = getopt.getopt(argv,'fVv',['force','verbose','no-verbose'])
     except getopt.GetoptError as error:
         print('[sgbackup delete-backups] ERROR: {0}'.format(error),file=sys.stderr)
         print(COMMANDS['delete-backups']['help-function']('delete-backups'))
@@ -526,6 +546,8 @@ def command_delete_backups(db,argv):
     for o,a in opts:
         if o == '-f' or o == '--force':
             keep_latest = False
+        elif o == '-V' or o == '--no-verbose':
+            config.CONFIG['verbose'] = False
         elif o == '-v' or o == '--verbose':
             config.CONFIG['verbose'] = True
             
@@ -541,7 +563,7 @@ def command_delete_backups(db,argv):
 
 def command_delete_savegames(db,argv):
     try:
-        opts,args = getopt.getopt(argv,'v',['verbose'])
+        opts,args = getopt.getopt(argv,'Vv',['no-verbose','verbose'])
     except getopt.GetoptError as error:
         print('[sgbackup delete-savegames] ERROR: {0}'.format(error),file=sys.stderr)
         print(COMMANDS['delete-savegames']['help-function']('delete-savegames'))
@@ -552,6 +574,8 @@ def command_delete_savegames(db,argv):
         print(COMMANDS['delete-savegames']['help-function']('delete-savegames'))
         
     for o,a in opts:
+        if o == '-V' or o == '--no-verbose':
+            config.CONFIG['verbose'] = False
         if o == '-v' or o == '--verbose':
             config.CONFIG['verbose'] = True
         
@@ -616,7 +640,7 @@ def command_plugin(db,argv):
     
 def command_restore(db,argv):
     try:
-        opts,args = getopt.getopt(argv,'cv',['choose','verbose'])
+        opts,args = getopt.getopt(argv,'cVv',['choose','no-verbose','verbose'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
         print(COMMANDS['restore']['help-function']('restore'))
@@ -636,6 +660,8 @@ def command_restore(db,argv):
     for o,a in opts:
         if o == '-c' or o == '--choose':
             choose = True
+        elif o == '-V' or o == 'no-verbose':
+            config.CONFIG['verbose'] = False
         elif o == '-v' or o == '--verbose':
             config.CONFIG['verbose'] = True
             

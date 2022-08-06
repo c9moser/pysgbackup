@@ -7,6 +7,7 @@ USAGE:
 OPTIONS:
 ========
   -d | --delete     Delete files where checksum test failed.
+  -V | --no-verbose Disable verbose output.
   -v | --verbose    Enable verbose output.
 
 DESCRIPTION:

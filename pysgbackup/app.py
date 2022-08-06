@@ -17,8 +17,9 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
+import os
 import gi
-from gi.repository import Gtk,Gio,GLib
+from gi.repository import Gtk,Gio,GLib,Gdk
 
 from . import appwindow
 
@@ -28,6 +29,8 @@ class Application(Gtk.Application):
     def __init__(self,**kwargs):
         super().__init__(**kwargs)
         self.__appwindow = None
+        Gdk.threads_init()
+        
         
     @property
     def appwindow(self):
@@ -52,6 +55,9 @@ class Application(Gtk.Application):
         self.quit()
             
     def _on_action_about(self,action,data):
+        def on_response(dialog,response):
+            dialog.destroy()
+            
         dialog = Gtk.AboutDialog()
         dialog.set_title('About PySGBackup')
         dialog.set_name('PySGBackup')
@@ -59,6 +65,7 @@ class Application(Gtk.Application):
         dialog.set_version('.'.join((str(i) for i in sgbackup.config.CONFIG['version'])))
         dialog.set_authors(['Christian Moser'])
         dialog.set_license_type(Gtk.License.GPL_3_0)
+        dialog.connect('response',on_response)
         
         dialog.run()
             
@@ -68,5 +75,10 @@ class Application(Gtk.Application):
         
         #if not self.appwindow:
         self.__appwindow = appwindow.AppWindow(application=self)
+        builder = Gtk.Builder()
+        builder.add_from_file(os.path.join(os.path.dirname(__file__),'menu.ui'))
+        menu = builder.get_object('appmenu')
+        
+        self.set_app_menu(menu)
         self.appwindow.present()
         

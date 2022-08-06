@@ -14,7 +14,8 @@ OPTIONS:
                             checksum database.
   -d | --delete-failed      Delete files where checksum comparison failed. This
                             option implies the --no-ask flag.
-  -v | --verbose            Verbose output.
+  -V | --no-verbose         Disable verobse output.
+  -v | --verbose            Enable verbose output.
   
 DESCRIPTION:
 ============

@@ -20,7 +20,32 @@
 import gi
 from gi.repository import Gtk,GLib
 
-class SettingDialog(Gtk.Dialog):
+class SettingsDialog(Gtk.Dialog):
     def __init__(self,parent=None):
         Gtk.Dialog.__init__(self,parent=parent)
-
+        self.set_title('PySGBackup: Settings')
+        
+        vbox = self.get_content_area()
+        paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        
+        # create_chooser
+        #TODO
+        
+        # create_content_area
+        #TODO
+        
+        self.add_button('Apply',Gtk.ResponseType.APPLY)
+        self.add_button('Cancel',Gtk.ResponseType.CANCEL)
+    
+    def _save_settings(self):
+        pass
+        
+    def do_response(self,response):
+        if response == Gtk.ResponseType.APPLY:
+            self._save_settings()
+            
+        if response in [Gtk.ResponseType.CANCEL,Gtk.ResponseType.APPLY]:
+            self.hide()
+            self.destroy()
+            
+            

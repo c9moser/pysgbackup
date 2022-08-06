@@ -21,4 +21,5 @@ COMMANDS:
 OPTIONS:
 ========
   -f | --force      Force database operation.
+  -V | --no-verbose Disable verbose output.
   -v | --verbose    Enable verbose output.

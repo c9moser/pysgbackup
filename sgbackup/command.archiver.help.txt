@@ -7,5 +7,6 @@ USAGE:
 OPTIONS:
 ========
   -g | --global     Update global .archiver files
-  -v | --verbose    Verbose output.
+  -v | --verbose    Enable verbose output.
+  -V | --no-verbose Disable verbose output.
 

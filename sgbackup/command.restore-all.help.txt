@@ -6,7 +6,8 @@ USAGE:
   
 OPTIONS:
 ========
-  -v | --verbose    Verbose output.
+  -v | --verbose    Enable verbose output.
+  -V | --no-verbose Disable verbose output.
   
 DESCRIPTION:
 ============

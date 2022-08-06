@@ -419,7 +419,7 @@ def update(db,force=False):
         dbv = spec['version'].split('.')
         
         if (len(pv) >= 3 and len(dbv) >= 3):
-            if (pv[0] == dbv[0] and pv[1] <= dbv[1] and pv[2] <= pv[3]):
+            if (pv[0] == dbv[0] and pv[1] <= dbv[1] and pv[2] <= pv[2]):
                 return False
             return True
         elif (len(pv) >= 2 and len(dbv) >= 2):

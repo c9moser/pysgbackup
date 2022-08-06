@@ -11,5 +11,6 @@ OPTIONS:
   -L file | --listfile=file Write to listfile $file.
   -W | --no-write-listfile  Don't write a listfile.
   -w | --write-listfile     Write listfile.
-  -v | --verbose            Verbose output.
+  -V | --no-verbose         Disable verbose output.
+  -v | --verbose            Enable verbose output.
 

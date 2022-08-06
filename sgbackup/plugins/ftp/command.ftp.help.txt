@@ -1,0 +1,24 @@
+sgbackup ftp
+
+USAGE:
+======
+  sgbackup ftp [OPTIONS] GameID ...
+  
+OPTIONS:
+========
+  -d | --directory=FTP_DIR  The directory on the FTP-Server to put backup files
+                            in.
+  -D | --dir-mode           Copy the whole Game-backup-directory to the 
+                            FTP-Server.
+  -h | --host=HOSTNAME      Set Hostname of the FTP-Server.
+  -u | --user=USER          Set username to USER.
+  -p | --password=PASSWD    Set password to PASSWD.
+  -V | --no-verbose         Disable verbose messages.
+  -v | --verbose            Enable verbose messages.
+  
+
+DESCRIPTION:
+============
+  This command puts SaveGame-backups on the ftp server. With the 
+  <-d|--directory>-Option set it copys the whole directory to the FTP-Server.
+  Else only the latest backup-file and "$LATEST_BACKUP.*"-files are copied.  

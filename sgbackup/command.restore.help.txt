@@ -7,7 +7,8 @@ USAGE:
 OPTIONS:
 ========
   -c | --choose     Choose savegame-backup to restore.
-  -v | --verbose    Verbose output.
+  -V | --no-verbose Disable verbose output.
+  -v | --verbose    Enable verbose output.
   
 DESCRIPTION:
 ============

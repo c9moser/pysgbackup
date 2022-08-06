@@ -9,6 +9,7 @@ import shelve
 import pickle
 import hashlib
 import pathlib
+import glob
 
 def find_latest_backup(game):
     sgdir = os.path.join(config.CONFIG['backup.dir'],game.savegame_name)
@@ -23,11 +24,17 @@ def find_latest_backup(game):
             if os.path.isfile(filename):
                 return filename
                     
+        latest  = ""
+        latest_ctime = 0
         for i in sorted(os.listdir(sgdir),reverse=True):
             for ext in config.CONFIG['archivers'].keys():
                 if fnmatch.fnmatch(i,'.'.join((game.savegame_name,'*',ext))):
-                    return os.path.join(sgdir,i)
-    return ""
+                    filename = os.path.join(sgdir,i)
+                    stat = os.stat(filename)
+                    if stat.st_ctime > latest_ctime:
+                        latest = filename
+                        latest_ctime = stat.st_ctime
+    return latest
 # find_latest_savegame()
 
 def find_backups(game,reverse=False):
@@ -42,21 +49,6 @@ def find_backups(game,reverse=False):
 # find_savegames()
 
 def delete_backup(game,filename):
-    def _get_checksum_file(filename):
-        checksum_ext = ['b2','md5','sha1','sha224','sha256','sha384','sha512']
-        for ext in checksum_ext:
-            cfile = '.'.join((filename,ext))
-            if os.path.isfile(cfile):
-                return cfile
-                
-        return ""
-    # _get_checksum_file()
-    
-    cfile = _get_checksum_file(filename)
-    if cfile:
-        if config.CONFIG['verbose']:
-            print('[delete] {0}'.format(cfile))    
-        os.unlink(cfile)
     if os.path.isfile(config.CONFIG['backup.checksum-database']):
         with shelve.open(config.CONFIG['backup.checksum-database']) as d:
             key = '/'.join((game.savegame_name,os.path.basename(filename)))
@@ -80,6 +72,15 @@ def delete_backups(game,keep_latest=True):
     for i in find_backups(game):
         if keep_latest and i == latest:
             continue
+            
+        ignore_file = False
+        for ext in config.CONFIG['archivers']:
+            if fnmatch.fnmatch(os.path.basename(i),"{0}.latest.*.{1}".format(game.savegame_name,ext)):
+                ingore_file = True
+                break
+        if ignore_file:
+            continue
+        
         delete_backup(game,i)
 # delete_savegames()
 
@@ -132,6 +133,39 @@ def get_backup_filename(game,archiver=None):
         
     return os.path.join(config.CONFIG['backup.dir'],game.savegame_name,fname)
 # get_backup_filename()
+
+def unfinal(game):
+    backup_dir=os.path.join(config.CONFIG['backup.dir'],game.savegame_name)
+    #get final max
+    globs = ["{0}.final.*.{1}".format(game.savegame_name,i) for i in config.CONFIG['archivers'].keys()]
+    globs = tuple(globs)
+    sglen=len(game.savegame_name + '.final.')
+    cnt=-1
+    for i in glob.iglob(*globs,root_dir=backup_dir):
+        try:
+          num = int(i[sglen:].split('.')[0])
+          if num > cnt:
+            cnt=num
+        except Exception as ex:
+            continue
+
+    cnt += 1
+    globs = ["{0}.final.{1}".format(game.savegame_name,i) for i in config.CONFIG['archivers'].keys()]
+    for i in glob.iglob(*globs,root_dir=backup_dir):
+        fname = "{0}.final.{1}.{2}".format(game.savegame_name,cnt,i[sglen:])
+        chk_old = "{0}/{1}".format(game.savegame_name,i)
+        chk_new = "{0}/{1}".format(game.savegame_name,fname)
+        
+        os.rename(os.path.join(backup_dir,i),os.path.join(backup_dir,fname))
+        
+        with shelve.open(config.CONFIG['backup.checksum-database']) as d:
+            d[chk_new] = d[chk_old]
+            del d[chk_old]
+            
+        for k,cb in config.CONFIG['rename-backup-callbacks']:
+            if cb:
+                cb(game,os.path.join(backup_dir,i),os.path.join(backup_dir,fname))
+# unfinal
 
 def backup(game,listfile=None,write_listfile=False):
     archiver=archivers.get_archiver()
@@ -231,7 +265,12 @@ def restore_ask(game):
         timestamp = fn[len(game.savegame_name) + 1:]
         timestamp = timestamp.split('.')[0]
         if (timestamp == 'final'):
-            d[count] = {'timestamp': timestamp,'file':i}
+            try:
+                final_count = fn[len(game.savegame_name + ".final.")]
+                final_count = int(final_count.split('.')[0])
+                d[count] = {'timestamp': 'final.{0}'.format(final_count),'file':i}
+            except Exception:
+                d[count] = {'timestamp': timestamp,'file':i}
         else:
             dt = datetime.datetime.strptime(timestamp,'%Y%m%d-%H%M%S')
             d[count] = {'timestamp':dt.strftime('%c'),'file':i}
