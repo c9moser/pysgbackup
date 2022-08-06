@@ -99,13 +99,12 @@ def ftp_backup_files(game,filenames=[],connect={}):
     ftp_dir = ftp_dir.replace('\\','/')
     game_dir='/'.join((ftp_dir,game.savegame_name))
     
-    ftp=ftplib.FTP(ftp_host,user=ftp_user,passwd=ftp_password)
+    ftp=ftplib.FTP(ftp_host)
     ftp.login(ftp_user,ftp_password)
     _ftp_cwd_directory(ftp,game_dir)
 
     for fname in filenames:
-        if CONFIG['verbose']:
-            print('<ftp:put> {0}'.format(fname))
+        print('<ftp:put> {0}'.format(fname))            
         with open(fname,'rb') as ifile:
             ftp.storbinary("STOR {0}".format(os.path.basename(fname)),fp=ifile)
         
@@ -113,7 +112,37 @@ def ftp_backup_files(game,filenames=[],connect={}):
 # ftp_backup_files
 
 def ftp_put_listfile(ftp,ftpdir,listfile):
-    pass
+    pwd = ftp.pwd()
+    directory = '/'.join((ftpdir,os.path.dirname(listfile)))
+    directory = directory.replace('\\','/')
+
+    try:
+        ftp.cwd(directory)
+    except Exception as error:
+        dirs = directory.split('/')
+        if not dirs[0]:
+            ftp.cwd('/')
+            del dirs[0]
+        if not dirs[-1]:
+            del dirs[-1]
+            
+        for d in dirs:
+            dir_found = False
+            if not d:
+                continue
+            if d in ftp.nlst():
+                dir_found=True
+                
+            if not dir_found:
+                ftp.mkd(d)
+            ftp.cwd(d)
+    
+    filename = os.path.join(CONFIG['backup.dir'],listfile)
+    if os.path.isfile(filename):
+        with open(filename,'rb') as ifile:
+            ftp.storbinary("STOR {0}".format(os.path.basename(filename)),fp=ifile)
+            
+    ftp.cwd(pwd)
 
 def command_ftp(db,argv):
     try:
@@ -136,7 +165,12 @@ def command_ftp(db,argv):
         sys.exit(2)
         
     dir_mode = False
-    connect={}
+    connect={
+        'host': CONFIG['ftp.host'],
+        'user': CONFIG['ftp.user'],
+        'password': CONFIG['ftp.password'],
+        'directory': CONFIG['ftp.directory']
+    }
     for o,a in opts:
         if o == '-d' or o == '--directory':
             connect['directory'] = a
@@ -316,9 +350,12 @@ def command_ftp_list(db,argv):
     ftp=ftplib.FTP(connect['host'],user=connect['user'],password=connect['password'])
     ftp.login()
    
-    
+    if not os.path.isfile(listfile):
+        print('[sgbackup ftp-list] ERROR: Listfile "{0}" not found!'.format(listfile),file=sys.stderr)
+        return
+        
     with open(listfile,'r') as ifile:
-        lines = [line.strip() for line in ifile]
+        lines = [line.strip() for line in ifile.readlines()]
         for l in lines:
             if l:
                 ftp_put_listfile(ftp,connect['directory'],l)

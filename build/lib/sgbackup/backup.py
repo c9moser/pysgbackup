@@ -13,6 +13,7 @@ import glob
 
 def find_latest_backup(game):
     sgdir = os.path.join(config.CONFIG['backup.dir'],game.savegame_name)
+    latest  = ""
     if os.path.isdir(sgdir):
         archiver=archivers.get_archiver()
         filename = os.path.join(sgdir,'.'.join((game.savegame_name,'final',archiver.extension)))
@@ -24,7 +25,6 @@ def find_latest_backup(game):
             if os.path.isfile(filename):
                 return filename
                     
-        latest  = ""
         latest_ctime = 0
         for i in sorted(os.listdir(sgdir),reverse=True):
             for ext in config.CONFIG['archivers'].keys():

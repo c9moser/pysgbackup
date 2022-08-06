@@ -132,7 +132,7 @@ if plugin_avilable:
             
         if CONFIG['backup.write-listfile']:
             with open(CONFIG['backup.listfile'],'a') as ofile:
-                ofile.write('{0}/{1}\n'.format(game.savegame_name,'.'.join((f,cksum))))
+                ofile.write('{0}/{1}\n'.format(game.savegame_name,'.'.join((os.path.basename(f),cksum))))
     
         os.chdir(cwd)
         return True
