@@ -175,8 +175,8 @@ def parse_config(cparser):
     sect="backup"
     if (cparser.has_section(sect)):
         if cparser.has_option(sect, "dir"):
-            CONFIG['backup.dir.template']=cparser.get_option(sect,"dir")
-            t=Template(cparser.get_option(sect,"dir"))
+            CONFIG['backup.dir.template']=cparser.get(sect,"dir")
+            t=Template(cparser.get(sect,"dir"))
             value = t.substitute(v)
             CONFIG["backup.dir"] = os.path.normpath(value)
             CONFIG["template-variables"]['BACKUP_DIR'] = value
