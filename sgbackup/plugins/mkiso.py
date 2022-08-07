@@ -123,10 +123,10 @@ OPTIONS:
                     'option': 'directory',
                     'type': 'template',
                     'default': '${BACKUP_DIR}'
-                }
+                },
                 'mkiso.maxiso': {
-                    'option': 'maxiso'
-                    'type': 'integer'
+                    'option': 'maxiso',
+                    'type': 'integer',
                     'default': 7
                 }
             }
