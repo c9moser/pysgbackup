@@ -99,6 +99,7 @@ OPTIONS:
             
         for filename,iso_name in iso_files:
             disc.add_file(filename,udf_path=iso_name)
+            
         print(image_name)
         disc.write(image_name)
     # command_mkiso
@@ -122,6 +123,11 @@ OPTIONS:
                     'option': 'directory',
                     'type': 'template',
                     'default': '${BACKUP_DIR}'
+                }
+                'mkiso.maxiso': {
+                    'option': 'maxiso'
+                    'type': 'integer'
+                    'default': 7
                 }
             }
         }
