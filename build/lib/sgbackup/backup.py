@@ -48,10 +48,20 @@ def find_backups(game,reverse=False):
     return ret
 # find_savegames()
 
+def find_all_final_backups(game):
+    sgdir = os.path.join(config.CONFIG['backup.dir'],game.savegame_name)
+    backups = []
+    for ext in config.CONFIG['archivers'].keys():
+        fname = os.path.join(sgdir,'{0}.final.{1}'.format(game.savegame_name,ext))
+        if os.path.isfile(fname):
+            backups.append(fname)
+            
+        for f in glob.glob(os.path.join(sgdir,'{0}.final.*.{1}'.format(game.savegame_name,ext))):
+            backups.append(f)
+            
+    return sorted(backups)
+# find_all_final_backups()
 
-        
-    
-    
 def delete_backup(game,filename):
     if os.path.isfile(config.CONFIG['backup.checksum-database']):
         with shelve.open(config.CONFIG['backup.checksum-database']) as d:
@@ -78,7 +88,7 @@ def delete_backups(game,keep_latest=True):
             continue
             
         ignore_file = False
-        for ext in config.CONFIG['archivers'].keys():
+        for ext in config.CONFIG['archivers']:
             if fnmatch.fnmatch(os.path.basename(i),"{0}.latest.*.{1}".format(game.savegame_name,ext)):
                 ingore_file = True
                 break
