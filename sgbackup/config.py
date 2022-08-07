@@ -117,8 +117,9 @@ CONFIG={
     'restore-callbacks': {},
     'rename-backup-callbacks': {}
 }
+CONFIG['backup.listfile.template']=os.path.join("${BACKUP_DIR}","backups.list")
 CONFIG['backup.listfile']=os.path.join(CONFIG['backup.dir'],"backups.list")
-CONFIG['backup.checksum-database.template']="${BACKUP_DIR}/checksums.db"
+CONFIG['backup.checksum-database.template']=os.path.join("${BACKUP_DIR}","checksums.db")
 CONFIG['backup.checksum-database']=os.path.join(CONFIG['backup.dir'],'checksums.db')
 
 import site
@@ -181,10 +182,10 @@ def parse_config(cparser):
             CONFIG["backup.dir"] = os.path.normpath(value)
             CONFIG["template-variables"]['BACKUP_DIR'] = value
             v["BACKUP_DIR"] = os.path.normpath(value)
-            
-            t = Template(CONFIG['backup-checksum-database.template'])
+            t = Template(CONFIG['backup.checksum-database.template'])
             CONFIG['backup.checksum-database'] = t.substitute(v)
-                
+            t = Template(CONFIG['backup.listfile.template'])
+            CONFIG['backup.listfile'] = t.substitute(v)
         if cparser.has_option(sect,'archiver'):
             CONFIG['backup.archiver'] = cparser.get(sect,'archiver')
         if cparser.has_option(sect, "max-backups"):
