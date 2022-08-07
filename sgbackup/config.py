@@ -140,7 +140,15 @@ CONFIG_DIRS=[
 def add_config(key,spec):
     CONFIG['config'][key] = spec
     if 'default' in spec:
-        CONFIG[key] = spec['default']
+        if 'type' in spec and spec['type'] == 'template':
+            v = dict(os.environ)
+            v.update(CONFIG['template-variables'])
+            v.update({'BACKUP_DIR':CONFIG['backup.dir']})
+            CONFIG['.'.join((key,'template'))] = spec['default']
+            t = Template(spec['default'])
+            CONFIG[key] = t.substitute(v)
+        else:
+            CONFIG[key] = spec['default']
 # _add_config
 
 def parse_config(cparser):

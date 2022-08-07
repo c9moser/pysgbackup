@@ -46,7 +46,7 @@ OPTIONS:
 """
     def command_mkiso(db,argv):
         try:
-            opts,args getopt.getopt(argv,'aVv', ['all-finals','no-verbose','verbose'])
+            opts,args = getopt.getopt(argv,'aVv', ['all-finals','no-verbose','verbose'])
         except getopt.GetoptError as error:
             print(error,file=sys.stderr)
             print(COMMAND_MKISO_HELP)
@@ -68,7 +68,7 @@ OPTIONS:
             
         iso_dirs=['/SaveGames']
         iso_files=[]
-        dt = datetime.DateTime.now()
+        dt = datetime.datetime.now()
         image_name = os.path.join(CONFIG['mkiso.directory'],
                                   "SaveGames.{}.iso".format(dt.strftime('%Y%m%d-%H%M%S')))
         
@@ -77,27 +77,28 @@ OPTIONS:
             game_dir = os.path.join(CONFIG['backup.dir'],game.savegame_name)
             files=[]
             if all_finals:
-                #files+=sgbackup.backup.find_all_final_backups(game)
-                pass
+                files+=sgbackup.backup.find_all_final_backups(game)
+                
             f = sgbackup.backup.find_latest_backup(game)
             if f: 
-                if not f in files:
+                if f not in files:
                     files.append(f)
                 for i in glob.glob('{}.*'.format(f)):
-                    files.append(f)
+                    if i not in files:
+                        files.append(i)
                 
             if files:
                 iso_dirs.append('/'.join(('/SaveGames',game.savegame_name)))
                 for i in files:
-                    iso_files.append((i,'/'.join('/SaveGames',game.savegame_name,os.path.basename(i))))
+                    iso_files.append((i,'/'.join(('/SaveGames',game.savegame_name,os.path.basename(i)))))
                     
         disc = pycdlib.PyCdlib()
-        disc.new(joilet=3,udf='2.60',rock_ridge='1.12')
+        disc.new(udf='2.60')
         for i in iso_dirs:
-            disc.add_directory(rr_name=i,joilet_path=i,udf_path=i)
+            disc.add_directory(udf_path=i)
             
         for filename,iso_name in iso_files:
-            disc.add_file(filename,rr_name=iso_name,joilet_path=iso_name,udf_path=iso_name)
+            disc.add_file(filename,udf_path=iso_name)
             
         disc.write(image_name)
     # command_mkiso
@@ -106,14 +107,19 @@ OPTIONS:
         'name': 'mkiso',
         'description': 'Create ISO files with latest backups.',
         'commands': {
-            'description': 'Create ISO files with latest backups',
-            'function': command_mkiso,
-            'help': COMMAND_MKISO_HELP
-        }
+            'mkiso': {
+                'description': 'Create ISO files with latest backups',
+                'function': command_mkiso,
+                'help-function': lambda x: (COMMAND_MKISO_HELP)
+            }
+        },
         'config': {
-            'section': 'mkiso'
+            'section': 'mkiso',
+            'global': True,
+            'local': True,
             'values': {
-                'directory': {
+                'mkiso.directory': {
+                    'option': 'directory',
                     'type': 'template',
                     'default': '${BACKUP_DIR}'
                 }

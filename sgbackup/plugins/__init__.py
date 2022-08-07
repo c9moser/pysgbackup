@@ -73,7 +73,7 @@ for i in os.listdir(os.path.dirname(__file__)):
     mdoule = None
     if i.endswith('.py'):
         m = i[:-3]
-        module = importlib.import_module(m,__package__)
+        module = importlib.import_module('.' + m,__package__)
         #try:
         #    module = importlib.import_module(i[:-3],__package__)
         #except Exception as error:

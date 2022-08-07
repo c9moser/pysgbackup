@@ -48,6 +48,10 @@ def find_backups(game,reverse=False):
     return ret
 # find_savegames()
 
+
+        
+    
+    
 def delete_backup(game,filename):
     if os.path.isfile(config.CONFIG['backup.checksum-database']):
         with shelve.open(config.CONFIG['backup.checksum-database']) as d:
@@ -74,7 +78,7 @@ def delete_backups(game,keep_latest=True):
             continue
             
         ignore_file = False
-        for ext in config.CONFIG['archivers']:
+        for ext in config.CONFIG['archivers'].keys():
             if fnmatch.fnmatch(os.path.basename(i),"{0}.latest.*.{1}".format(game.savegame_name,ext)):
                 ingore_file = True
                 break
