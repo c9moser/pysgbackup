@@ -15,7 +15,7 @@ class BackupDialog(Gtk.Dialog):
         self.progress = Gtk.ProgressBar()
         self.progress.set_show_text(True)
         self.get_content_area().pack_start(self.progress,False,False,0)
-        self.button_cancel = self.add_button('Cancel',Gtk.ResponseType.CANCEL)
+        #self.button_cancel = self.add_button('Cancel',Gtk.ResponseType.CANCEL)
         self.button_close = self.add_button('Close',Gtk.ResponseType.CLOSE)
         self.show_all()
         
@@ -59,60 +59,11 @@ class BackupDialog(Gtk.Dialog):
     def _on_thread_finished(self):
         self.button_close.set_sensitive(True)
     
-    def do_response(self,response):
-        if response == Gtk.ResponseType.CANCEL:
-            self.__cancel = True
-        elif response == Gtk.ResponseType.CLOSE:
-            self.hide()
-            self.destroy()
-
     def run(self):
         thread = threading.Thread(target=self._backup_thread)
         thread.daemon = True
         thread.start()
         return Gtk.Dialog.run(self)
         
-class FinalBackupDialog(Gtk.Dialog):
-    def __init__(self,parent=None):
-        Gtk.Dialog.__init__(self,parent)
-        self.__game = None
-        self.__undo_final = undo_final
-    
-    @property
-    def game(self):
-        return self.__game
-        
-    @game.setter
-    def game(self,game):
-        if isinstance(game,str):
-            self.game = sgbackup.db.get_game(game)
-        if isinstance(game,sgbackup.games.Game):
-            self.__game = game
-        else:
-            raise TypeError('"game" needs to be an "sgbackup.games.Game" instance or a valid GameID!')
-            
-        
-        
-    def _backup_thread(self):
-        if self.game:
-            self.game.final_backup = True
-            sgbackup.backup.backup(game)
-        GLib.idle_add(self._on_thread_finished)
-        
-    def _on_thread_finished(self):
-        #self.button_close.set_sensitive(True)
-        #if pysgbackup.app.appwindow:
-            #pysgbackup.app.appwindow.update_gameview()
-            #pysgbackup.app.appwindow.update_backupview()
-            
-    def do_response(self,response):
-        if response == Gtk.ResponseType.CLOSE:
-            self.hide()
-            self.destroy()
-        
-    def run(self):
-        thread = threading.Thread(target=self.backup_thread())
-        thread.dameon = True
-        thread.start()
-        self.run()
+
         

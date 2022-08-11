@@ -17,7 +17,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-from . import config,backup,database,archivers,plugins
+from . import config,backup,database,archivers,extension,plugins
 
 import sys
 import os
@@ -47,6 +47,7 @@ _HELPFILES={
     'db': N_('file|command.database.help.txt'),
     'delete-backups': N_('file|command.delete-backups.help.txt'),
     'delete-savegames': N_('file|command.delete-savegames.help.txt'),
+    'extension': N_('file|command.extension.help.txt'),
     'plugin': N_('file|command.plugin.help.txt'),
     'restore': N_('file|command.restore.help.txt'),
     'restore-all': N_('file|command.restore-all.help.txt'),
@@ -218,9 +219,8 @@ def command_backup(db,argv):
             db.add_game(g)
         elif not final_backup and remove_final_backup_flag:
             if g.final_backup:
-                backup.unfinal(g)
-            g.final_backup=False
-            db.add_game(g)
+                backup.unfinal(db,g)
+
 
         backup.backup(g,config.CONFIG['backup.listfile'],config.CONFIG['backup.write-listfile'])
 # command_backup()
@@ -589,6 +589,37 @@ def command_delete_savegames(db,argv):
         backup.delete_savegames(game)
 # command_delete_savegames()
 
+def command_extension(db,argv):
+    if not argv:
+        length=0
+        
+        for name in extension.EXTENSIONS.keys():
+            if len(name) > length:
+                length=len(name)
+                
+        if length > 32:
+            length = 32
+            
+        length = (((length // 4) + 1) * 4)
+        
+        for name,ext in extension.EXTENSIONS.items():
+            if 'description' in ext:
+                if (len(name) < length):
+                    print(name + (' ' * (length - len(name))) + ext['description'])
+                else:
+                    print('{} {}'.format(name,ext['description']))    
+            else:
+                print(name)
+    else:
+        for name in argv:
+            try:
+                for e in extension.get_extensions(name):
+                    print(e)
+            except LookupError as error:
+                print('[sgbackup extension] ERROR: {}'.format(err))
+                sys.exit(2)
+# command_extension
+
 def command_plugin(db,argv):
     if not argv:
         print('[sgbackup plugin] No command given!',file=sys.stderr)
@@ -789,6 +820,11 @@ COMMANDS={
         'description': 'Delete savegames.',
         'help-function': _get_command_help,
         'function': command_delete_savegames
+    },
+    'extension': {
+        'description': 'Show filename extensions.',
+        'help-function': _get_command_help,
+        'function': command_extension
     },
     'help': {
         'description': 'Print help messages.',

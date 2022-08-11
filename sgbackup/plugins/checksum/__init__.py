@@ -23,7 +23,7 @@ import subprocess
 import gettext
 import getopt
 from sgbackup.config import CONFIG
-from sgbackup import backup
+from sgbackup import backup,extension
 
 N_ = lambda s: (s)
 def Q_(msgid):
@@ -89,6 +89,11 @@ if plugin_avilable:
         'checksum-all': N_('file|command.checksum.all.txt')
     }    
 
+    extension.EXTENSIONS['checksum'] = {
+        'description': 'Filename extensions for checksum files.',
+        'extensions': list(sorted(CHECKSUM.keys()))
+    }
+    
     def _get_help(cmd):
         filename = os.path.join(os.path.dirname(__file__),Q_(_HELP[cmd]))
         with open(filename,'r') as ifile:

@@ -23,7 +23,7 @@ from gi.repository import Gtk,Gio,GLib
 import sgbackup
 import os
 
-from . import settings,backupdialog
+from . import settings,backupdialog,dialogs
 
 import pysgbackup
 
@@ -49,6 +49,8 @@ class AppWindow(Gtk.ApplicationWindow):
         self.__create_actions()
         self.set_title('PySGBackup')
         self.set_default_size(600,600)
+        self.set_default_icon_name('media-floppy-symbolic')
+        self.set_icon_name('media-floppy-symbolic')
         builder = Gtk.Builder()
         builder.add_from_file(os.path.join(os.path.dirname(__file__),'menu.ui'))
         builder.connect_signals(self)
@@ -177,6 +179,8 @@ class AppWindow(Gtk.ApplicationWindow):
             
         self._action_backup = add_simple_action('backup',self._on_action_backup)
         self._action_backup_all = add_simple_action('backup-all',self._on_action_backup_all)
+        self._action_unfinal_game = add_simple_action('unfinal-game',self._on_action_unfinal_game)
+        self._action_final_backup = add_simple_action('final-backup',self._on_action_final_backup)
         
         add_simple_action('settings',self._on_action_settings)
             
@@ -186,8 +190,19 @@ class AppWindow(Gtk.ApplicationWindow):
         model,iter = selection.get_selected()
         if iter:
             self._action_backup.set_enabled(True)
+            self.headerbar.set_subtitle(model.get_value(iter,self.GV_COL_NAME))
+            if model.get_value(iter,self.GV_COL_FINAL):
+                self._action_unfinal_game.set_enabled(True)
+                self._action_final_backup.set_enabled(False)
+            else:
+                self._action_unfinal_game.set_enabled(False)
+                self._action_final_backup.set_enabled(True)
         else:
+            self.headerbar.set_subtitle('')
             self._action_backup.set_enabled(False)
+            self._action_final_backup.set_enabled(False)
+            self._action_unfinal_game.set_enabled(False)
+            
         
     def _on_action_backup(self,action,data):
         model,iter = self.gameview.get_selection().get_selected()
@@ -221,11 +236,75 @@ class AppWindow(Gtk.ApplicationWindow):
                     dialog.add_game(game)
             dialog.run()
         
+    def _on_action_final_backup(self,action,data):            
+        model,iter = self.gameview.get_selection().get_selected()
+        if iter:
+            game_id = model.get_value(iter,self.GV_COL_GAMEID)
+            game = sgbackup.db.get_game(game_id)
+            
+            if game:
+                dialog = Gtk.MessageDialog(self,
+                                           Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                                           Gtk.MessageType.QUESTION,
+                                           Gtk.ButtonsType.YES_NO,
+                                           'Finalize game "{0}" and create a final backup?'.format(game.name))
+                dialog.format_secondary_text('Finalized games wont show up in normal backups!')
+                result = dialog.run()
+                dialog.destroy()
+                if result == Gtk.ResponseType.YES:
+                    fb_dialog = dialogs.FinalBackupDialog(game,self)
+                    result = fb_dialog.run()
+                    fb_dialog.destroy()
+                    self.update_gameview()
+                    self.gameview_select_game(game)
+                
+        
+    def _on_action_unfinal_game(self,action,data):
+        model,iter = self.gameview.get_selection().get_selected()
+        if iter:
+            game_id = model.get_value(iter,self.GV_COL_GAMEID)
+            game=sgbackup.db.get_game(game_id)
+            
+            if game:
+                dialog=Gtk.MessageDialog(self,
+                                         Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                                         Gtk.MessageType.QUESTION,
+                                         Gtk.ButtonsType.YES_NO,
+                                         'Do you really want to unfinal Game "{0}"?'.format(game.name))
+                dialog.format_secondary_text('Games that are not finalized show up in normal backups!')
+                result = dialog.run()
+                dialog.destroy()
+                
+                if result == Gtk.ResponseType.YES:
+                    unfinal_dialog = dialogs.UnfinalGameDialog(game,self)
+                    unfinal_dialog.run()
+                    unfinal_dialog.destroy()
+                    self.update_gameview()
+                    self.gameview_select_game(game)
         
     def _on_action_settings(self,action,data):
         dialog = settings.SettingsDialog(parent=self)
-        dialog.run()
+        result = dialog.run()
+        if result == Gtk.ResponseType.APPLY:
+            dialog.save_settings()
+        dialog.destroy()
         
+    def gameview_select_game(self,game):
+        if isinstance(game,str):
+            game_id = game
+        elif isinstance(game,sgbackup.games.Game):
+            game_id = game.game_id
+        else:
+            raise TypeError('game')
+            
+        gv_model = self.gameview.get_model()
+        for i in range(len(gv_model)):
+            path = Gtk.TreePath(i)
+            iter = gv_model.get_iter(path)
+            if gv_model.get_value(self.GV_COL_GAMEID) == game_id:
+                self.gameview.get_selection().select_iter(iter)
+                break
+
     def update_gameview(self):
         self.gameview.set_model(self.__create_gameview_model())
         self.gameview.show()

@@ -17,12 +17,30 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-import gi
-gi.require_version('GLib','2.0')
+from .config import CONFIG
 
-from . import config,database,extension,backup,archivers,games
-from . import plugins
+_archiver_extensions=lambda s: sorted(CONFIG['archivers'].keys())
 
-db = database.Database()
-plugins.init_plugins(db)
+EXTENSIONS={
+    'archiver': {
+        'description': 'Filename extensions for archivers.',
+        'function': _archiver_extensions
+    }
+}
+
+def get_extensions_names():
+    return sorted(EXTENSIONS.keys())
+    
+
+def get_extensions(name):
+    if not name in EXTENSIONS:
+        raise LookupError('Extensions name "{0}" not found!'.format(name))
+        
+    ext = EXTENSIONS[name]
+    if 'function' in ext:
+        return ext['function'](name)
+    elif 'extensions' in ext:
+        return sorted(ext['extensions'])
+    else:
+        raise LookupError('No extension for name "{0}" found!'.format(name))
 

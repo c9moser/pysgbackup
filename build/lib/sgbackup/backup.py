@@ -148,37 +148,44 @@ def get_backup_filename(game,archiver=None):
     return os.path.join(config.CONFIG['backup.dir'],game.savegame_name,fname)
 # get_backup_filename()
 
-def unfinal(game):
+def unfinal(db,game):
+    game.final_backup=False
+    db.add_game(game)
+    
     backup_dir=os.path.join(config.CONFIG['backup.dir'],game.savegame_name)
     #get final max
     globs = ["{0}.final.*.{1}".format(game.savegame_name,i) for i in config.CONFIG['archivers'].keys()]
     globs = tuple(globs)
     sglen=len(game.savegame_name + '.final.')
     cnt=-1
-    for i in glob.iglob(*globs,root_dir=backup_dir):
-        try:
-          num = int(i[sglen:].split('.')[0])
-          if num > cnt:
-            cnt=num
-        except Exception as ex:
-            continue
+    for i in globs:
+        for j in glob.glob(i,root_dir=backup_dir):
+            try:
+              num = int(j[sglen:].split('.')[0])
+              if num > cnt:
+                cnt=num
+            except Exception as ex:
+                continue
 
     cnt += 1
     globs = ["{0}.final.{1}".format(game.savegame_name,i) for i in config.CONFIG['archivers'].keys()]
-    for i in glob.iglob(*globs,root_dir=backup_dir):
-        fname = "{0}.final.{1}.{2}".format(game.savegame_name,cnt,i[sglen:])
-        chk_old = "{0}/{1}".format(game.savegame_name,i)
-        chk_new = "{0}/{1}".format(game.savegame_name,fname)
+    
+    for i in globs:
+        for j in glob.glob(*tuple(globs),root_dir=backup_dir):
+            print('HIT: cnt={}'.format(cnt))
+            fname = "{0}.final.{1}.{2}".format(game.savegame_name,cnt,j[sglen:])
+            chk_old = "{0}/{1}".format(game.savegame_name,i)
+            chk_new = "{0}/{1}".format(game.savegame_name,fname)
         
-        os.rename(os.path.join(backup_dir,i),os.path.join(backup_dir,fname))
+            os.rename(os.path.join(backup_dir,j),os.path.join(backup_dir,fname))
         
-        with shelve.open(config.CONFIG['backup.checksum-database']) as d:
-            d[chk_new] = d[chk_old]
-            del d[chk_old]
+            with shelve.open(config.CONFIG['backup.checksum-database']) as d:
+                d[chk_new] = d[chk_old]
+                del d[chk_old]
             
-        for k,cb in config.CONFIG['rename-backup-callbacks']:
-            if cb:
-                cb(game,os.path.join(backup_dir,i),os.path.join(backup_dir,fname))
+            for k,cb in config.CONFIG['rename-backup-callbacks']:
+                if cb:
+                    cb(game,os.path.join(backup_dir,i),os.path.join(backup_dir,fname))
 # unfinal
 
 def backup(game,listfile=None,write_listfile=False):

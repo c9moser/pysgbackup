@@ -102,6 +102,14 @@ OPTIONS:
             
         print(image_name)
         disc.write(image_name)
+        
+        if CONFIG['sgbackup.maxiso'] > 0:
+            n = CONFIG['sgbackup.maxiso']
+            count = 0
+            for img in sorted(glob.glob(os.path.join(CONFIG['mkiso.directory'],'SaveGames.*.iso')),reverse=True):
+                count += 1
+                if count > n:
+                    os.unlink(img)            
     # command_mkiso
     
     plugin={

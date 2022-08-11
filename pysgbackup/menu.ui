@@ -3,12 +3,20 @@
     <menu id='appmenu'>
         <section>
             <item>
-                <attribute name='label' translatable='yes'>Backup selected Game</attribute>
+                <attribute name='label' translatable='yes'>Backup selected game</attribute>
                 <attribute name='action'>win.backup</attribute>
             </item>
             <item>
-                <attribute name='label' translatable='yes'>Backup all Games</attribute>
+                <attribute name='label' translatable='yes'>Backup all games</attribute>
                 <attribute name='action'>win.backup-all</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>Create final backup</attribute>
+                <attribute name='action'>win.final-backup</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>Unfinal game</attribute>
+                <attribute name='action'>win.unfinal-game</attribute>
             </item>
         </section>
         <section>
