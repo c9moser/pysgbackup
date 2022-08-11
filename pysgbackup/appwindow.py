@@ -181,6 +181,8 @@ class AppWindow(Gtk.ApplicationWindow):
         self._action_backup_all = add_simple_action('backup-all',self._on_action_backup_all)
         self._action_unfinal_game = add_simple_action('unfinal-game',self._on_action_unfinal_game)
         self._action_final_backup = add_simple_action('final-backup',self._on_action_final_backup)
+        self._action_check_backups = add_simple_action('check-backups',self._on_action_check_backups)
+        self._action_check_all_backups = add_simple_action('check-all-backups',self._on_action_check_all_backups)
         
         add_simple_action('settings',self._on_action_settings)
             
@@ -191,6 +193,8 @@ class AppWindow(Gtk.ApplicationWindow):
         if iter:
             self._action_backup.set_enabled(True)
             self.headerbar.set_subtitle(model.get_value(iter,self.GV_COL_NAME))
+            self._action_check_backups.set_enabled(True)
+            
             if model.get_value(iter,self.GV_COL_FINAL):
                 self._action_unfinal_game.set_enabled(True)
                 self._action_final_backup.set_enabled(False)
@@ -202,7 +206,7 @@ class AppWindow(Gtk.ApplicationWindow):
             self._action_backup.set_enabled(False)
             self._action_final_backup.set_enabled(False)
             self._action_unfinal_game.set_enabled(False)
-            
+            self._action_check_backups.set_enabled(False)
         
     def _on_action_backup(self,action,data):
         model,iter = self.gameview.get_selection().get_selected()
@@ -282,6 +286,14 @@ class AppWindow(Gtk.ApplicationWindow):
                     self.update_gameview()
                     self.gameview_select_game(game)
         
+    def _on_action_check_backups(self,action,data):
+        #TODO
+        pass
+    
+    def _on_action_check_all_backups(self,action,data):
+        #TODO
+        pass
+        
     def _on_action_settings(self,action,data):
         dialog = settings.SettingsDialog(parent=self)
         result = dialog.run()
@@ -301,7 +313,7 @@ class AppWindow(Gtk.ApplicationWindow):
         for i in range(len(gv_model)):
             path = Gtk.TreePath(i)
             iter = gv_model.get_iter(path)
-            if gv_model.get_value(self.GV_COL_GAMEID) == game_id:
+            if gv_model.get_value(iter,self.GV_COL_GAMEID) == game_id:
                 self.gameview.get_selection().select_iter(iter)
                 break
 

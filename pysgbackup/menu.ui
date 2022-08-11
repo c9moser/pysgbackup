@@ -21,6 +21,16 @@
         </section>
         <section>
             <item>
+                <attribute name='label' translatable='yes'>Check backups of selected game</attribute>
+                <attribute name='action'>check-backups</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>Check all backups</attribute>
+                <attribute name='action'>check-all-backups</attribute>
+            </item>
+        </section>
+        <section>
+            <item>
                 <attribute name='label' translatable='yes'>_Settings</attribute>
                 <attribute name='action'>win.settings</attribute>
             </item>

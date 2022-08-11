@@ -171,10 +171,9 @@ def unfinal(db,game):
     globs = ["{0}.final.{1}".format(game.savegame_name,i) for i in config.CONFIG['archivers'].keys()]
     
     for i in globs:
-        for j in glob.glob(*tuple(globs),root_dir=backup_dir):
-            print('HIT: cnt={}'.format(cnt))
+        for j in glob.glob(i,root_dir=backup_dir):
             fname = "{0}.final.{1}.{2}".format(game.savegame_name,cnt,j[sglen:])
-            chk_old = "{0}/{1}".format(game.savegame_name,i)
+            chk_old = "{0}/{1}".format(game.savegame_name,j)
             chk_new = "{0}/{1}".format(game.savegame_name,fname)
         
             os.rename(os.path.join(backup_dir,j),os.path.join(backup_dir,fname))

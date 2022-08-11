@@ -48,6 +48,7 @@ class FinalBackupDialog(Gtk.Dialog):
         self.progress = Gtk.ProgressBar()
         self.progress.set_text(game.game_id)
         self.progress.set_pulse_step(0.1)
+        vbox.pack_start(progress,False,False,0)
         
         self.button_close=self.add_button('Close',Gtk.ResponseType.CLOSE)
         self.button_close.set_sensitive(False)
@@ -105,14 +106,13 @@ class FinalBackupDialog(Gtk.Dialog):
         thread.dameon = True
         GLib.timeout_add(100,self._update_progress)
         thread.start()
-        return Gtk.Dialog.run()
+        return Gtk.Dialog.run(self)
 # FinalBackupDialog
 
 class UnfinalGameDialog(Gtk.Dialog):
     def __init__(self,game,parent=None):
         Gtk.Dialog.__init__(self,parent)
-        
-        
+           
         self.game = game
         self.__thread_finished = False
         
