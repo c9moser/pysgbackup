@@ -76,8 +76,9 @@ def delete_backup(game,filename):
     os.unlink(filename)
     
     for k,cb in config.CONFIG['delete-backup-callbacks'].items():
-        print(k)
         if cb:
+            if config.CONFIG['verbose']:
+                print("<sgbackup delete-backup:callback> {}".format(k))
             cb(game,filename)
 # delete_backup()
 
@@ -245,7 +246,7 @@ def backup(game,listfile=None,write_listfile=False):
     if config.CONFIG['backup-callbacks']:
         for k,cb in config.CONFIG['backup-callbacks'].items():
             if config.CONFIG['verbose']:
-                print('[sgbackup backup] callback {0}'.format(k))
+                print('<sgbackup backup:callback> {}'.format(k))
             cb(game,backup_file)
 # backup()
 
@@ -369,7 +370,6 @@ def check(game,create_missing=False,check_deleted=False,delete_failed=False,ask=
 
         if (check_deleted):
             check_key='/'.join((game.savegame_name,game.savegame_name + '.'))
-            check_key += '.'
             
             for k in d.keys():
                 if k.startswith(check_key):

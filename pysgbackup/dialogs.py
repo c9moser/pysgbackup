@@ -30,6 +30,7 @@ import sys
 import os
 import shelve
 import time
+import hashlib
 
 class FinalBackupDialog(Gtk.Dialog):
     def __init__(self,game,parent=None):
@@ -192,6 +193,9 @@ class CheckGamesDialog(Gtk.Dialog):
     def __init__(self,games=[],parent=None):
         Gtk.Dialog.__init__(self)
         self.__games=[]
+        self.__response=0
+        self.__cv = threading.Condition()
+        
         for i in games:
             self.add_game(i)
         
@@ -236,16 +240,13 @@ class CheckGamesDialog(Gtk.Dialog):
     # add_game()
     
     def _on_thread_update(self,data):
-        if 'algorithm' in data:
-            text = '"{}":{}:{}'.format(data['game'].name,data['algorithm'],os.path.basename(data['filename']))
-        else:
-            text = '"{}":{}'.format(data['game'],os.path.basename(data['filename']))
+        text = '<{}> {}'.format(data['game'].name,os.path.basename(data['filename']))
             
         self.progress.set_fraction(data['fraction'])
         self.progress.set_text(text)
         self.progress.show()
         
-    def _on_thread_finihsed(self):
+    def _on_thread_finished(self):
         self.progress.set_fraction(1.0)
         self.progress.set_text('DONE')
         self.button_close.set_sensitive(True)
@@ -255,40 +256,49 @@ class CheckGamesDialog(Gtk.Dialog):
         (MISSING_NONE,MISSING_IGNORE,MISSING_CREATE,MISSING_DELETE) = range(4)
         
         def _get_action_failed(filename):
-            dialog = Gtk.MessageDialog(self,
-                                       Gtk.DialogFlags.DESTROY_WITH_PARENT,
-                                       Gtk.MessageType.ERROR,
-                                       Gtk.ButtonsType.NONE,
-                                       'Checksum for filename "{0}" doeas not match!'.format(os.path.basename(filename)))
-            dialog.set_secondary_markup('What do you want to do?')
-            dialog.add_button('Ignore file',FAILED_IGNORE)
-            dialog.add_button('Delete file',FAILED_DELETE)
-            result = dialog.run()
-            dialog.destroy()
-            if result == Gtk.ResponseType.DELETE_EVENT:
-                self.__failed_response = FAILED_IGNORE
-            else:
-                self.__failed_response = result    
+            with self.__cv:
+                dialog = Gtk.MessageDialog(self,
+                                           Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                                           Gtk.MessageType.ERROR,
+                                           Gtk.ButtonsType.NONE,
+                                           'Checksum for filename "{0}" doeas not match!'.format(os.path.basename(filename)))
+                dialog.format_secondary_markup('What do you want to do?')
+                dialog.add_button('Ignore file',FAILED_IGNORE)
+                dialog.add_button('Delete file',FAILED_DELETE)
+                result = dialog.run()
+                dialog.hide()
+                dialog.destroy()
+                if result == Gtk.ResponseType.DELETE_EVENT:
+                    self.__response = FAILED_IGNORE
+                else:
+                    self.__response = result
+                self.__cv.notify()
         # _get_action_failed()
         
         def _get_action_missing(filename):
-            dialog = Gtk.MessageDialog(self,
-                                       Gtk.DialogFlags.DESTROY_WITH_PARENT, 
-                                       Gtk.MessageType.ERROR,
-                                       Gtk.ButtonsType.NONE,
-                                       'Checksum for filename "{0}" not found!'.format(os.path.basename(filename)))
-            dialog.set_secondary_markup('What do you want to do?')
-            dialog.add_button('Ignore file',MISSING_IGNORE)
-            dialog.add_button('Create missing checksum',MISSING_CREATE)
-            dialog.add_button('Delete file',MISSING_DELETE)
-            result = dialog.run()
-            dialog.destroy()
-            if result == Gtk.ResponseType.DELETE_EVENT:
-                self.__missing_response = MISSING_IGNORE
-            else:
-                self.__missing_response = result
+            with self.__cv:
+                dialog = Gtk.MessageDialog(self,
+                                           Gtk.DialogFlags.DESTROY_WITH_PARENT, 
+                                           Gtk.MessageType.ERROR,
+                                           Gtk.ButtonsType.NONE,
+                                           'Checksum for filename "{0}" not found!'.format(os.path.basename(filename)))
+                dialog.format_secondary_markup('What do you want to do?')
+                dialog.add_button('Ignore file',MISSING_IGNORE)
+                dialog.add_button('Create missing checksum',MISSING_CREATE)
+                dialog.add_button('Delete file',MISSING_DELETE)
+                result = dialog.run()
+                dialog.hide()
+                dialog.destroy()
+                if result == Gtk.ResponseType.DELETE_EVENT:
+                    self.__response = MISSING_IGNORE
+                else:
+                    self.__response = result
+                self.__cv.notify()
         # _get_action_missing()
         
+        def _predicate():
+            return (self.__response != 0)
+            
         backup_dir = CONFIG['backup.dir']
         check_files = []
         for g in self.games:
@@ -302,53 +312,50 @@ class CheckGamesDialog(Gtk.Dialog):
                 data = {
                     'fraction': (count/x),
                     'game': g,
-                    'check_name': cn,
                     'filename': fn
                 }
+                GLib.idle_add(self._on_thread_update,data)
                 count += 1
-                if cn in d:
-                    data['algorithm'] = d[cn]['algorithm']
-                    GLib.idle_add(self._on_thread_update,data)
-                    
-                    h = hashlib.new(d[cn]['algorithm'])
+                if cn in d.keys():
+                    check = d[cn]
+                    h = hashlib.new(check['algorithm'])
                     with open(fn,'rb') as ifile:
                         h.update(ifile.read())
                         
                     digest = h.hexdigest()
-                    if d[cn]['hash'] != digest:
-                        print('d[{}][hash]:{}'.format(cn,d[cn['hash']]))
-                        print('{}:hexdigest:{}'.format(os.path.basename(fn),digest))
-                        self.__failed_response=FAILED_NONE
+                    if check['hash'] != digest:
+                        self.__response=FAILED_NONE
                         GLib.idle_add(_get_action_failed,fn)
                     
-                        while self.__failed_response == FAILED_NONE:
-                            time.sleep(250/1000)
+                        with self.__cv:
+                            self.__cv.wait_for(_predicate)
+                            result = self.__response
                         
-                        if self.__failed_response == FAILED_IGNORE:
+                        if result == FAILED_IGNORE:
                             continue
-                        elif self.__failed_response == FAILED_DELETE:
+                        elif result == FAILED_DELETE:
                             sgbackup.backup.delete_backup(g,fn)
                         else:
                             raise RuntimeError('Unknown response: {}'.format(self.__failed_response))
                     
                 else:
-                    GLib.idle_add(self._on_thread_update,data)
-                    self.__missing_response = MISSING_NONE
+                    self.__response = MISSING_NONE
+                    GLib.idle_add(_get_action_missing,fn)
                     
-                    Glib.idle_add(_get_action_missing,fn)
+                    with self.__cv:
+                        self.__cv.wait_for(_predicate)
+                        result = self.__response
                     
-                    while self.__missing_response == MISSING_NONE:
-                        time.sleep(250/1000)                    
-                    
-                    if self.__missing_response == MISSING_IGNORE:
+                    if result == MISSING_IGNORE:
                         continue
-                    elif self.__missing_response == MISSING_DELETE:
+                    elif result == MISSING_DELETE:
                         sgbackup.delete_backup(g,filename)
-                    elif self.__missing_response == MISSING_CREATE:
+                    elif result == MISSING_CREATE:
+                        algorithm = CONFIG['backup.checksum']
+                        h = hashlib.new(algorithm)
                         with open(fn,'rb') as ifile:
-                            h = hashlib.new(CONFIG['backup.checksum'])
                             h.update(ifile.read())
-                            d[cn]=h.hexdigest()
+                        d[cn]={'algorithm':algorithm, 'hash':h.hexdigest()}
                     else:
                         raise RuntimeError('Unknown response: {}'.format(self.__missing_response))
             

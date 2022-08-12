@@ -370,7 +370,6 @@ def check(game,create_missing=False,check_deleted=False,delete_failed=False,ask=
 
         if (check_deleted):
             check_key='/'.join((game.savegame_name,game.savegame_name + '.'))
-            check_key += '.'
             
             for k in d.keys():
                 if k.startswith(check_key):
