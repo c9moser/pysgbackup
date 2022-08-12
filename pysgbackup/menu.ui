@@ -21,12 +21,8 @@
         </section>
         <section>
             <item>
-                <attribute name='label' translatable='yes'>Check backups of selected game</attribute>
-                <attribute name='action'>check-backups</attribute>
-            </item>
-            <item>
-                <attribute name='label' translatable='yes'>Check all backups</attribute>
-                <attribute name='action'>check-all-backups</attribute>
+                <attribute name='label' translatable='yes'>Refresh</attribute>
+                <attribute name='action'>win.refresh</attribute>
             </item>
         </section>
         <section>
@@ -38,6 +34,33 @@
         <section>
             <submenu>
                 <attribute name='label' translatable='yes'>Games</attribute>
+                <section>
+                    <item>
+                        <attribute name='label' translatable='yes'>Add Game</attribute>
+                        <attribute name='action'>win.add-game</attribute>
+                    </item>
+                    <item>
+                        <attribute name='label' translatable='yes'>Edit Game</attribute>
+                        <attribute name='action'>win.edit-game</attribute>
+                    </item>
+                    <item>
+                        <attribute name='label' translatable='yes'>Delete Game</attribute>
+                        <attribute name='action'>win.delete-game</attribute>
+                    </item>
+                </section>
+                <section>
+                    <item>
+                        <attribute name='label' translatable='yes'>Check backups of selected game</attribute>
+                        <attribute name='action'>win.check-backups</attribute>
+                    </item>
+                    <item>
+                        <attribute name='label' translatable='yes'>Check all backups</attribute>
+                        <attribute name='action'>win.check-all-backups</attribute>
+                    </item>
+                </section>
+            </submenu>
+            <submenu>
+                <attribute name='label' translatable='yes'>Plugins</attribute>
             </submenu>
         </section>
         <section>
@@ -52,34 +75,5 @@
                 <attribute name='action'>app.quit</attribute>
             </item>
         </section>
-    </menu>
-    <menu id='menubar'>
-        <submenu>
-            <attribute name='label' translatable='yes'>_File</attribute>
-            <section>
-                <item>
-                    <attribute name='label' translatable='yes'>_Quit</attribute>
-                    <attribute name='action'>app.quit</attribute>
-                </item>
-            </section>
-        </submenu>
-        <submenu>
-            <attribute name='label' translatable='yes'>_Edit</attribute>
-            <section>
-                <item>
-                    <attribute name='label' translatable='yes'>_Settings</attribute>
-                    <attribute name='action'>win.settings</attribute>
-                </item>
-            </section>
-        </submenu>
-        <submenu>
-            <attribute name='label' translatable='yes'>_Help</attribute>
-            <section>
-                <item>
-                    <attribute name='label' translatable='yes'>_About</attribute>
-                    <attribute name='action'>app.about</attribute>
-                </item>
-            </section>
-        </submenu>
     </menu>
 </interface>

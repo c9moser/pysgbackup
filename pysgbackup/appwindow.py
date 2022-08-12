@@ -151,8 +151,10 @@ class AppWindow(Gtk.ApplicationWindow):
                              game.final_backup])
         if len(model) > 0:
             self._action_backup_all.set_enabled(True)
+            self._action_check_all_backups.set_enabled(True)
         else:
             self._action_backup_all.set_enabled(False)
+            self._action_check_all_backups.set_enabled(False)
             
         return model
         
@@ -287,12 +289,25 @@ class AppWindow(Gtk.ApplicationWindow):
                     self.gameview_select_game(game)
         
     def _on_action_check_backups(self,action,data):
-        #TODO
-        pass
+        model,iter = self.gameview.get_selection().get_selected()
+        if iter:
+            game = sgbackup.db.get_game(model.get_value(iter,self.GV_COL_GAMEID))
+            if game:
+                dialog = dialogs.CheckGamesDialog(games=[game],parent=self)
+                dialog.run()
+                dialog.destroy()                
     
     def _on_action_check_all_backups(self,action,data):
-        #TODO
-        pass
+        games = []
+        for gid in sgbackup.db.get_game_ids():
+            game = sgbackup.db.get_game(gid)
+            if game:
+                games.append(gid)
+                
+        if games:
+            dialog = dialogs.CheckGamesDialog(games=games,parent=self)
+            dialog.run()
+            dialog.destroy()
         
     def _on_action_settings(self,action,data):
         dialog = settings.SettingsDialog(parent=self)
