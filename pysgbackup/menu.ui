@@ -59,7 +59,7 @@
                     </item>
                 </section>
             </submenu>
-            <submenu>
+            <submenu id='appmenu-plugins'>
                 <attribute name='label' translatable='yes'>Plugins</attribute>
             </submenu>
         </section>

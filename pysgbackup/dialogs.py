@@ -28,7 +28,7 @@ import pysgbackup
 import sqlite3
 import sys
 import os
-
+import shelve
 import time
 
 class FinalBackupDialog(Gtk.Dialog):
@@ -191,6 +191,7 @@ class UnfinalGameDialog(Gtk.Dialog):
 class CheckGamesDialog(Gtk.Dialog):
     def __init__(self,games=[],parent=None):
         Gtk.Dialog.__init__(self)
+        self.__games=[]
         for i in games:
             self.add_game(i)
         
@@ -204,7 +205,7 @@ class CheckGamesDialog(Gtk.Dialog):
         
         self.progress = Gtk.ProgressBar()
         self.progress.set_text('Checking checksums')
-        vbox.pack_start(progress,False,False,0)
+        vbox.pack_start(self.progress,False,False,0)
         
         self.button_close = self.add_button('Close',Gtk.ResponseType.CLOSE)
         self.button_close.set_sensitive(False)
@@ -292,7 +293,7 @@ class CheckGamesDialog(Gtk.Dialog):
         check_files = []
         for g in self.games:
             for f in sgbackup.backup.find_backups(g):
-                check_files.append(g,f,'/'.join(game.savegame_name,os.path.dirname(f)))
+                check_files.append((g,f,'/'.join((g.savegame_name,os.path.dirname(f)))))
                 
         x = len(check_files) + 1
         count=1
@@ -312,21 +313,23 @@ class CheckGamesDialog(Gtk.Dialog):
                     h = hashlib.new(d[cn]['algorithm'])
                     with open(fn,'rb') as ifile:
                         h.update(ifile.read())
-                    if d[cn]['hash'] == h.hexdigest():
-                        continue
-                     
-                    self.__failed_response=FAILED_NONE
-                    Glib.idle_add(_get_action_failed,fn)
-                    
-                    while self.__failed_response == FAILED_NONE:
-                        time.sleep(250/1000)
                         
-                    if self.__failed_response == FAILED_IGNORE:
-                        continue
-                    elif self.__failed_response == FAILED_DELETE:
-                        sgbackup.backup.delete_backup(g,fn)
-                    else:
-                        raise RuntimeError('Unknown response: {}'.format(self.__failed_response))
+                    digest = h.hexdigest()
+                    if d[cn]['hash'] != digest:
+                        print('d[{}][hash]:{}'.format(cn,d[cn['hash']]))
+                        print('{}:hexdigest:{}'.format(os.path.basename(fn),digest))
+                        self.__failed_response=FAILED_NONE
+                        GLib.idle_add(_get_action_failed,fn)
+                    
+                        while self.__failed_response == FAILED_NONE:
+                            time.sleep(250/1000)
+                        
+                        if self.__failed_response == FAILED_IGNORE:
+                            continue
+                        elif self.__failed_response == FAILED_DELETE:
+                            sgbackup.backup.delete_backup(g,fn)
+                        else:
+                            raise RuntimeError('Unknown response: {}'.format(self.__failed_response))
                     
                 else:
                     GLib.idle_add(self._on_thread_update,data)
