@@ -22,27 +22,15 @@ from gi.repository import Gtk,GLib,GObject
 
 import sgbackup
 from sgbackup.config import CONFIG
-
-def _create_generic_settings_widget(dialog):
-    def on_save_config(dialog,config,widget):
-        config['verbose'] = widget.verbose_switch.get_active()
-    
-    
-    w = Gtk.ScrolledWindow()
-    w.grid = Gtk.Grid()
-    label = Gtk.Label('Verbose:')
-    w.grid.attach(label,0,0,1,1)
-    w.verbose_switch = Gtk.Switch()
-    w.verbose_switch.set_active(CONFIG['verbose'])
-    
-    return w
+import string
+import os
 
 SETTINGS = {
 }
 
 class SettingsDialog(Gtk.Dialog):
     __gsignals__ = {
-        'save-settings': (GObject.SIGNAL_RUN_CLEANUP,None,[])
+        'save-settings': (GObject.SIGNAL_RUN_FIRST,None,[])
     }
     
     (
@@ -64,14 +52,9 @@ class SettingsDialog(Gtk.Dialog):
         self.content = Gtk.Stack()
         self.paned.pack2(self.content,True,True)
         
-        self.settings_generic = Gtk.ScrolledWindow()
-        grid = Gtk.Grid()
-        label = Gtk.Label('Verbose Messages:')
-        grid.attach(label, 0,0,1,1)
-        self.settings_generic.verbose_switch = Gtk.Switch()
-        self.settings_generic.verbose_switch.set_active(CONFIG['verbose'])
-        grid.attach(self.settings_generic.verbose_switch,1,0,1,1)
-        self.settings_generic.add(grid)
+        self.settings_generic = self.__create_generic_settings()
+        
+        
         self.content.add_titled(self.settings_generic,'generic','Generic Settings')
                 
         
@@ -83,12 +66,122 @@ class SettingsDialog(Gtk.Dialog):
         self.vbox.pack_start(self.paned,True,True,0)
         
         self.add_button('Apply',Gtk.ResponseType.APPLY)
-        self.add_button('Cancel',Gtk.ResponseType.CANCEL)    
+        self.add_button('Cancel',Gtk.ResponseType.CANCEL)
         
         self.show_all()
         
+    def __create_generic_settings(self):
+        def create_label(text):
+            l = Gtk.Label(text)
+            l.set_justify(Gtk.Justification.LEFT)
+            l.set_halign(Gtk.Align.START)
+            l.set_xalign(0.0)
+            
+            return l
+            
+        def _on_db_button_clicked(button,widget):
+            t = string.Template(widget.database_entry.get_text())
+            v = sgbackup.config.get_template_vars()
+            path = t.substitute(v)
+            
+            dialog = Gtk.FileChooserDialog('Set Game-Database',
+                                           self,
+                                           Gtk.FileChooserAction.SAVE)
+            dialog.add_button('Accept',Gtk.ResponseType.ACCEPT)
+            dialog.add_button('Cancel',Gtk.ResponseType.CANCEL)
+            dialog.set_create_folders(True)
+            dialog.set_current_folder(os.path.dirname(path))
+            dialog.set_current_name(os.path.basename(path))
+            result = dialog.run()
+            dialog.hide()
+            dialog.destroy()            
+            if result == Gtk.ResponseType.ACCEPT:
+                widget.database_entry.set_text(dialog.get_filename())
+                widget.database_entry.show()            
+        # _on_db_button_clicked()
+        
+        def _on_gameconf_button_clicked(button,widget):
+            pass
+        # _on_gameconf_button_clicked()
+        
+        def _on_archivers_button_clicked(button,widget):
+            pass
+        # _on_archivers_button_clicked
+        
+        w = Gtk.ScrolledWindow()
+        lb = Gtk.ListBox()
+        w.sizegroup = Gtk.SizeGroup()
+        w.sizegroup.set_mode(Gtk.SizeGroupMode.HORIZONTAL)
+        
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        label = create_label('Verbose Messages:')
+        w.sizegroup.add_widget(label)
+        hbox.pack_start(label,False,False,0)
+        w.verbose_switch = Gtk.Switch()
+        w.verbose_switch.set_active(CONFIG['verbose'])
+        hbox.pack_start(w.verbose_switch,False,False,0)
+        row = Gtk.ListBoxRow()
+        row.add(hbox)
+        lb.add(row)
+
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)        
+        label = create_label('Games Database:')
+        w.sizegroup.add_widget(label)
+        hbox.pack_start(label,False,False,0)
+
+        w.database_entry = Gtk.Entry()
+        if 'database.template' in CONFIG:
+            w.database_entry.set_text(CONFIG['database.template'])
+        else:
+            w.database_entry.set_text(CONFIG['database'])
+        hbox.pack_start(w.database_entry,True,True,0)
+        button = Gtk.Button.new_from_icon_name('document-open',Gtk.IconSize.BUTTON)
+        button.connect('clicked',_on_db_button_clicked,w)
+        hbox.pack_start(button,False,False,0)
+        row = Gtk.ListBoxRow()
+        row.add(hbox)
+        lb.add(row)
+        
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        label = create_label('Gameconf directory:')
+        w.sizegroup.add_widget(label)
+        hbox.pack_start(label,False,False,0)
+        w.gameconf_entry = Gtk.Entry()
+        if 'user-gameconf-dir.template' in CONFIG:
+            w.gameconf_entry.set_text(CONFIG['user-gameconf-dir.template'])
+        else:
+            w.gameconf_entry.set_text(CONFIG['user-gameconf-dir'])
+        hbox.pack_start(w.gameconf_entry,True,True,0)
+        button = Gtk.Button.new_from_icon_name('document-open',Gtk.IconSize.BUTTON)
+        button.connect('clicked',_on_gameconf_button_clicked,w)
+        hbox.pack_start(button,False,False,0)
+        row = Gtk.ListBoxRow()
+        row.add(hbox)
+        lb.add(row)
+
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        label = create_label('Archivers directory:')
+        w.sizegroup.add_widget(label)
+        hbox.pack_start(label,False,False,0)
+        w.archivers_entry = Gtk.Entry()
+        if 'user-archivers-dir.template' in CONFIG:
+            w.archivers_entry.set_text(CONFIG['user-archivers-dir.template'])
+        else:
+            w.archivers_entry.set_text(CONFIG['user-archivers-dir'])
+        hbox.pack_start(w.archivers_entry,True,True,0)
+        button = Gtk.Button.new_from_icon_name('document-open',Gtk.IconSize.BUTTON)
+        button.connect('clicked', _on_archivers_button_clicked,w)
+        hbox.pack_start(button,False,False,0)
+        row = Gtk.ListBoxRow()
+        row.add(hbox)
+        lb.add(row)
+        
+        w.add(lb)
+        return w
+        
     def save_settings(self):
         self.emit('save-settings')
+        #TODO write_config
         
     def do_save_settings(self):
         CONFIG['verbose'] = self.settings_generic.verbose_switch.get_active()
