@@ -137,6 +137,12 @@ CONFIG_DIRS=[
     "user-gameconf-dir"
 ]
 
+def get_template_vars():
+    v = dict(os.environ)
+    v.update(CONFIG['template-variables'])
+    v.update({'BACKUP_DIR': CONFIG['backup.dir']})
+    return v
+
 def add_config(key,spec):
     CONFIG['config'][key] = spec
     if 'default' in spec:
@@ -156,9 +162,7 @@ def parse_config(cparser):
         for opt in cparser.options("variables"):
             CONFIG["template-variables"][opt]=cparser.get_option("variables",opt)
             
-    v=dict(os.environ)
-    v.update(CONFIG["template-variables"])
-    v.update({'BACKUP_DIR': CONFIG['backup.dir']})
+    v=get_template_vars()
      
     sect="config"
     if cparser.has_section(sect):
@@ -512,9 +516,7 @@ def set_config(key,value):
         raise ValueError("Unable to convert '{0}' to bool!")
     # _arg_to_bool
     
-    v=dict(os.environ)
-    v.update(CONFIG['template-variables'])
-    v.update({'BACKUP_DIR': CONFIG['backup.dir']})
+    v=get_template_vars()
 
     # set config    
     if key == 'verbose':
@@ -629,6 +631,7 @@ def write_config_key(key,value,global_config=False):
 
 def version():
     return '.'.join((str(i) for i in CONFIG['version']))
+    
     
 from . import plugins
 from . import archivers
