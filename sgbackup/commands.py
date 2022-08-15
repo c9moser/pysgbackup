@@ -222,7 +222,7 @@ def command_backup(db,argv):
                 backup.unfinal(db,g)
 
 
-        backup.backup(g,config.CONFIG['backup.listfile'],config.CONFIG['backup.write-listfile'])
+        backup.backup(db,g,config.CONFIG['backup.listfile'],config.CONFIG['backup.write-listfile'])
 # command_backup()
 
 def command_backup_all(db,argv):
@@ -558,7 +558,7 @@ def command_delete_backups(db,argv):
             
     for game_id in args:
         game = db.get_game(game_id)
-        backup.delete_backups(game,keep_latest)
+        backup.delete_backups(db,game,keep_latest)
 # command_delete_backups
 
 def command_delete_savegames(db,argv):

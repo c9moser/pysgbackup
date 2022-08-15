@@ -250,6 +250,25 @@ class SettingsDialog(Gtk.Dialog):
             dialog.destroy()
         # _on_checksumdb_button_clicked()
         
+        def _on_listfile_button_clicked(button,widget):
+            t = string.Template(widget.listfile_entry.get_text())
+            path = t.substitute(sgbackup.config.get_template_vars())
+            
+            dialog = Gtk.FileChooserDialog("Select Listfile",self,Gtk.FileChooserAction.SAVE)
+            dialog.set_create_folders(True)
+            dialog.set_current_folder(os.path.dirname(path))
+            dialog.set_current_name(os.path.basename(path))
+            dialog.add_button('Accept',Gtk.ResponseType.ACCEPT)
+            dialog.add_button('Cancel',Gtk.ResponseType.CANCEL)
+            
+            result = dialog.run()
+            dialog.hide()
+            if result == Gtk.ResponseType.ACCEPT:
+                widget.listfile_entry.set_text(dialog.get_filename())
+                widget.listfile_entry.show()
+            dialog.destroy()
+        # _on_listfile_button_clicked
+        
         w = Gtk.ScrolledWindow()
         lb = Gtk.ListBox()
         w.sizegroup = Gtk.SizeGroup()
@@ -317,6 +336,34 @@ class SettingsDialog(Gtk.Dialog):
         row.add(hbox)
         lb.add(row)
         
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        label = create_label('Write Listfile:')
+        w.sizegroup.add_widget(label)
+        hbox.pack_start(label,False,False,5)
+        w.write_listfile_switch = Gtk.Switch()
+        w.write_listfile_switch.set_active(CONFIG['backup.write-listfile'])
+        hbox.pack_end(w.write_listfile_switch,False,False,0)
+        row = Gtk.ListBoxRow()
+        row.add(hbox)
+        lb.add(row)
+        
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        label = create_label('Listfile:')
+        w.sizegroup.add_widget(label)
+        hbox.pack_start(label,False,False,5)
+        w.listfile_entry = Gtk.Entry()
+        if 'backup.listfile.template' in CONFIG:
+            w.listfile_entry.set_text(CONFIG['backup.listfile.template'])
+        else:
+            w.listfile_entry.set_text('backup.listfile')
+        hbox.pack_start(w.listfile_entry,True,True,0)
+        button = Gtk.Button.new_from_icon_name('document-open',Gtk.IconSize.BUTTON)
+        button.connect('clicked',_on_listfile_button_clicked,w)
+        hbox.pack_start(button,False,False,0)
+        row = Gtk.ListBoxRow()
+        row.add(hbox)
+        lb.add(row)
+        
         w.add(lb)
         return w
     # __create_backup_settings()
@@ -327,10 +374,12 @@ class SettingsDialog(Gtk.Dialog):
         
     def do_save_settings(self):
         generic = self.settings_generic
+        backup = self.settings_backup
+        
         CONFIG['verbose'] = generic.verbose_switch.get_active()
         
         CONFIG['backup.dir.template'] = self.settings_backup.backupdir_entry.get_text()
-        t = string.Template(self.settings_backup.backupdir_entry.get_text())
+        t = string.Template(backup.backupdir_entry.get_text())
         CONFIG['backup.dir'] = t.substitute(sgbackup.config.get_template_vars())
         
         CONFIG['database.template'] = generic.database_entry.get_text()
@@ -344,4 +393,12 @@ class SettingsDialog(Gtk.Dialog):
         CONFIG['user-archivers-dir.template'] = generic.archivers_entry.get_text()
         t = string.Template(generic.archivers_entry.get_text())
         CONFIG['user-archivers-dir'] = t.substitute(sgbackup.config.get_template_vars())
+        
+        CONFIG['backup.checksum'] = backup.checksum_cbox.get_active_id()
+        CONFIG['backup.archiver'] = backup.archiver_cbox.get_active_id()
+        CONFIG['backup.write-listfile'] = backup.write_listfile_switch.get_active()
+        CONFIG['backup.listfile.template'] = backup.listfile_entry.get_text()
+        t = string.Template(backup.listfile_entry.get_text())
+        CONFIG['backup.listfile'] = t.substitute(sgbackup.config.get_template_vars())
+        
 

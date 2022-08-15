@@ -50,3 +50,30 @@ CREATE TABLE plugins (
 );
 CREATE INDEX plugins_name_index ON plugins(name);
 
+CREATE TABLE filelist (
+    id INTEGER PRIMARY KEY,
+    game INTEGER NOT NULL,
+    filename VARCHAR(512) UNIQUE NOT NULL,
+    checksum VARCHAR(64) NOT NULL,
+    hash VARCHAR(256) DEFAULT '',
+    ftp_transferred CHAR[1] DEFAULT 'N',
+    FOREIGN KEY (game) REFERENCES games(id)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
+);
+CREATE INDEX filelist_game_index ON filelist(game);
+CREATE INDEX filelist_filename_index ON filelist(filename);
+
+CREATE TABLE filelist_extrafiles (
+    id INTEGER PRIMARY KEY,
+    file INTEGER NOT NULL,
+    filename VARCHAR(512) UNIQUE NOT NULL,
+    use_ftp CHAR(1) DEFAULT 'N',
+    ftp_transferred CHAR(1) DEFAULT 'N',
+    
+    FOREIGN KEY (file) REFERENCES filelist(id)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL
+);
+
+

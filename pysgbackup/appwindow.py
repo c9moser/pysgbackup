@@ -138,9 +138,9 @@ class AppWindow(Gtk.ApplicationWindow):
         
     def __create_gameview_model(self):
         model = Gtk.ListStore(int,str,str,str,str,str,bool)
-        
-        for game_id in sgbackup.db.list_game_ids():
-            game = sgbackup.db.get_game(game_id)
+        db = sgbackup.database.Database()
+        for game_id in db.list_game_ids():
+            game = db.get_game(game_id)
             if game:
                 model.append([game.id,
                              game.game_id,
@@ -163,7 +163,8 @@ class AppWindow(Gtk.ApplicationWindow):
         
         gv_model,iter = self.gameview.get_selection().get_selected()
         if iter:
-            game = sgbackup.db.get_game(gv_model.get_value(iter,self.GV_COL_GAMEID))
+            db = sgbackup.database.Database()
+            game = db.get_game(gv_model.get_value(iter,self.GV_COL_GAMEID))
             if game:
                 latest_backup = sgbackup.backup.find_latest_backup(game)
                 
@@ -213,8 +214,10 @@ class AppWindow(Gtk.ApplicationWindow):
     def _on_action_backup(self,action,data):
         model,iter = self.gameview.get_selection().get_selected()
         if iter:
+            db = sgbackup.database.Database()
             game_id = model.get_value(iter,self.GV_COL_GAMEID)
-            game=sgbackup.db.get_game(game_id)
+            game=db.get_game(game_id)
+            db.close()
             
             if not game:
                 dialog=Gtk.MessageDialog(self,
@@ -225,28 +228,37 @@ class AppWindow(Gtk.ApplicationWindow):
                 dialog.connect('response', lambda d,r: d.destroy())
                 dialog.format_secondary_text('Game was not found in database!')
                 dialog.run()
+                dialog.destroy()
                 return
                 
-            dialog = backupdialog.BackupDialog(self)
+            dialog = dialogs.BackupDialog(self)
             dialog.add_game(game)
             dialog.run()
+            dialog.hide()
+            dialog.destroy()
             self.update_backupview()
         
     def _on_action_backup_all(self,action,data):
-        game_ids = sgbackup.db.list_game_ids()
+        db = sgbackup.database.Database()
+        game_ids = db.list_game_ids()
         if game_ids:
-            dialog = backupdialog.BackupDialog(self)
+            dialog = dialogs.BackupDialog(self)
             for gid in game_ids:
-                game = sgbackup.db.get_game(gid)
+                game = db.get_game(gid)
                 if game and not game.final_backup:
                     dialog.add_game(game)
+            db.close()
             dialog.run()
+            dialog.hide()
+            dialog.destroy()
         
     def _on_action_final_backup(self,action,data):            
         model,iter = self.gameview.get_selection().get_selected()
         if iter:
+            db = sgbackup.database.Database()
             game_id = model.get_value(iter,self.GV_COL_GAMEID)
-            game = sgbackup.db.get_game(game_id)
+            game = db.get_game(game_id)
+            db.close()
             
             if game:
                 dialog = Gtk.MessageDialog(self,
@@ -268,9 +280,10 @@ class AppWindow(Gtk.ApplicationWindow):
     def _on_action_unfinal_game(self,action,data):
         model,iter = self.gameview.get_selection().get_selected()
         if iter:
+            db = sgbackup.database.Database()
             game_id = model.get_value(iter,self.GV_COL_GAMEID)
-            game=sgbackup.db.get_game(game_id)
-            
+            game = db.get_game(game_id)
+            db.close()
             if game:
                 dialog=Gtk.MessageDialog(self,
                                          Gtk.DialogFlags.DESTROY_WITH_PARENT,
@@ -291,19 +304,24 @@ class AppWindow(Gtk.ApplicationWindow):
     def _on_action_check_backups(self,action,data):
         model,iter = self.gameview.get_selection().get_selected()
         if iter:
-            game = sgbackup.db.get_game(model.get_value(iter,self.GV_COL_GAMEID))
+            db = sgbackup.database.Database()
+            game = db.get_game(model.get_value(iter,self.GV_COL_GAMEID))
+            db.close()
             if game:
                 dialog = dialogs.CheckGamesDialog(games=[game],parent=self)
                 dialog.run()
                 dialog.destroy()                
     
     def _on_action_check_all_backups(self,action,data):
+        db = sgbackup.database.Database()
         games = []
-        for gid in sgbackup.db.get_game_ids():
-            game = sgbackup.db.get_game(gid)
+        for gid in db.get_game_ids():
+            game = db.get_game(gid)
             if game:
                 games.append(gid)
                 
+        db.close()
+        
         if games:
             dialog = dialogs.CheckGamesDialog(games=games,parent=self)
             dialog.run()

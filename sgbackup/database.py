@@ -378,6 +378,135 @@ class Database:
         cur.execute(sql,(plugin.version,plugin.name))
         self._db.commit()
     # update_plugin()
+    
+    def add_game_backup(self,game,filename,checksum,hash):
+        if (isinstance(game,str)):
+            g = self.get_game(game)
+        elif (isinstance(game,games.Game)):
+            g = self.get_game(game.game_id)
+        else:
+            raise TypeError('game')
+        if not g:
+            raise LookupError('game')
+            
+        sql='INSERT INTO filelist(game,filename,checksum,hash) VALUES (?,?,?,?);'
+        cur = self._db.cursor()
+        
+        cur.execute(sql,(game.id,os.path.basename(filename),checksum,hash))
+        self._db.commit()  
+    # add_game_backup
+    
+    def add_game_backup_extrafile(self,game,filename,extrafile,use_ftp=False):
+        backup = self.get_game_backup(game,filename)
+        if not backup:
+            raise LookupError('filename')
+            
+        sql = "INSERT INTO filelist_extrafiles (file,filename,use_ftp) VALUES (?,?,?);"
+        cur = self._db.cursor()
+        cur.execute(sql,(backup['id'],extrafile,self._bool_to_db(use_ftp)))
+        self._db.commit()
+    # add_game_backup_extrafile()    
+    
+    def get_game_backups(self,game):
+        if isinstance(game,str):
+            g = self.get_game(game)
+        elif isinstance(game,games.Game):
+            g = self.get_game(game.game_id)
+        else:
+            raise TypeError('game')
+        
+        if not g:
+            raise LookupError('game')
+            
+        backups=[]
+        sql='SELECT id,filename,checksum,hash,ftp_transferred FROM filelist WHERE game=?;'
+        sql2='SELECT id,filename,use_ftp,ftp_transferred FROM filelist_extrafiles WHERE file=?;'
+        cur = self._db.cursor()
+        cur.execute(sql,(game.id,))
+        
+        for row in cursor:
+            extrafiles = []
+            cur2 = self._db.cursor()
+            cur2.execute(sql2,(row[0],))
+            for row2 in cur2:
+                extra = {
+                    'id':int(row2[0]),
+                    'filename':row2[1],
+                    'use_ftp':self._db_to_bool(row2[2]),
+                    'transferred':_db_to_bool(row2[3])
+                }
+                extrafiles.append(extra)
+                
+            fdesc = {
+                'game': g,
+                'id':int(row[0]),
+                'filename':row[1],
+                'checksum': row[2],
+                'hash': row[3],
+                'ftp_transferred': self._db_to_bool(row[4]),
+                'extrafiles': extrafiles}
+            backups.append(fdesc)
+            
+        return backups
+    # get_game_backups()
+        
+    def get_game_backup(self,game,filename):
+        backup = {}
+        
+        if isinstance(game,str):
+            g = self.get_game(game)
+        elif isinstance(game,games.Game):
+            g = self.get_game(game.game_id)
+        else:
+            raise TypeError('game')
+            
+        if not g:
+            raise ValueError('game')
+            
+        sql = "SELECT id,filename,checksum,hash,ftp_transferred FROM filelist WHERE game=? AND filename=?;"
+        sql2 = "SELECT id,filename,use_ftp,ftp_transferred FROM filelist_extrafiles WHERE file=?;"
+        
+        cur = self._db.cursor()
+        cur.execute(sql,(game.id,os.path.basename(filename)))
+        
+        row = cur.fetchone()
+        if row:
+            extrafiles = []
+            cur2 = self._db.cursor()
+            cur2.exexute(sql2,(row[0],))
+            for row2 in cur2:
+                extra = {
+                    'id': int(row2[0]),
+                    'filename': int(row2[1]),
+                    'use_ftp': self._db_to_bool(row2[2]),
+                    'ftp_transferred': self._db_to_bool(row2[3])
+                }
+                extrafiles.append(extra)
+                
+            backup = {
+                'game':g,
+                'id': int(row[0]),
+                'filename':row[1],
+                'checksum':row[2],
+                'hash':row[3],
+                'ftp_transferred': self._db_to_bool(row[4]),
+                'extrafiles': extrafiles
+            }
+            
+        return backup
+    # get_game_backup()
+    
+    def delete_game_backup(self,game,filename):
+        backup = self.get_game_backup(game,filename)
+        
+        if backup:
+            sql1 = "DELETE FROM filelist_extrafiles WHERE file=?;"
+            sql2 = "DELETE FORM filelist WHERE id=?;"
+            cur = self._db.cursor()
+            cur.execute(sql1,(backup['id'],))
+            cur.execute(sql2,(backup['id'],))
+            self._db.commit()
+    # delete_game_backup()
 # Database class
 
 def update(db,force=False):

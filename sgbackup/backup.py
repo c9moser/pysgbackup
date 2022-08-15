@@ -62,24 +62,24 @@ def find_all_final_backups(game):
     return sorted(backups)
 # find_all_final_backups()
 
-def delete_backup(game,filename):
-    if os.path.isfile(config.CONFIG['backup.checksum-database']):
-        with shelve.open(config.CONFIG['backup.checksum-database']) as d:
-            key = '/'.join((game.savegame_name,os.path.basename(filename)))
-            if key in d:
+def delete_backup(db,game,filename):
+    if os.path.isabs(filename):
+        fn = filename
+    else:
+        fn = os.path.join(config.CONFIG['backup.dir'],game.savegame_name,os.path.basename(filename))
+    
+    db.delete_game_backup(game,fn)
+    
+    if os.path.isfile(fn):
+        if config.CONFIG['verbose']:
+            print('[delete] {0}'.format(fn))
+        os.unlink(fn)
+    
+        for k,cb in config.CONFIG['delete-backup-callbacks'].items():
+            if cb:
                 if config.CONFIG['verbose']:
-                    print('[delete checksum] {0}',key)
-                del d[key]
-    
-    if config.CONFIG['verbose']:
-        print('[delete] {0}'.format(filename))
-    os.unlink(filename)
-    
-    for k,cb in config.CONFIG['delete-backup-callbacks'].items():
-        if cb:
-            if config.CONFIG['verbose']:
-                print("<sgbackup delete-backup:callback> {}".format(k))
-            cb(game,filename)
+                    print("<sgbackup delete-backup:callback> {}".format(k))
+                cb(game,fn)
 # delete_backup()
 
 def delete_backups(game,keep_latest=True):
@@ -178,6 +178,9 @@ def unfinal(db,game):
             chk_new = "{0}/{1}".format(game.savegame_name,fname)
         
             os.rename(os.path.join(backup_dir,j),os.path.join(backup_dir,fname))
+            if config.CONFIG['backup.write-listfile']:
+                with open(config.CONFIG['backup.listfile'],'a') as ofile:
+                    ofile.write(chk_new + '\n')
         
             with shelve.open(config.CONFIG['backup.checksum-database']) as d:
                 d[chk_new] = d[chk_old]
@@ -188,7 +191,7 @@ def unfinal(db,game):
                     cb(game,os.path.join(backup_dir,i),os.path.join(backup_dir,fname))
 # unfinal
 
-def backup(game,listfile=None,write_listfile=False):
+def backup(db,game,listfile=None,write_listfile=False):
     archiver=archivers.get_archiver()
     backup_file=get_backup_filename(game,archiver)
     backup_dir=os.path.dirname(backup_file)
@@ -216,15 +219,13 @@ def backup(game,listfile=None,write_listfile=False):
         
         if config.CONFIG['verbose']:
             print("<checksum:{0}> {1}".format(cksum,key))
-            
-        with shelve.open(config.CONFIG['backup.checksum-database']) as d:
-            h = hashlib.new(cksum)
-            with open(backup_file,'rb') as bf:
-                h.update(bf.read())
-            d[key] = {
-                'algorithm': cksum,
-                'hash': h.hexdigest()
-            }
+        
+        h = hashlib.new(cksum)    
+        with open(backup_file,'rb') as bf:
+            h.update(bf.read())
+        digest = h.hexdigest()
+        
+        db.add_game_backup(game,backup_file,cksum,digest)
             
     if write_listfile:
         if not listfile:
@@ -239,9 +240,16 @@ def backup(game,listfile=None,write_listfile=False):
     if max_savegames <= 0:
         return
         
+    count = 0
     if len(savegames) > max_savegames:
-        for i in savegames[max_savegames:]:
-            delete_backup(game,i)
+        for i in savegames:
+            f = os.path.basename(i)
+            if fnmatch.fnmatch(f,'{}.final.*'.format(game.savegame_name)):
+                continue
+                
+            count += 1
+            if count > max_savegames:
+                delete_backup(db,game,i)
             
     if config.CONFIG['backup-callbacks']:
         for k,cb in config.CONFIG['backup-callbacks'].items():
@@ -254,7 +262,7 @@ def backup_all(db,listfile=None,write_listfile=False,include_final=False):
     for i in db.list_game_ids():
         game = db.get_game(i)
         if not game.final_backup or include_final:
-            backup(game,listfile,write_listfile)
+            backup(db,game,listfile,write_listfile)
 # backup_all()          
 
 def get_archiver_for_file(filename):

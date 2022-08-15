@@ -178,6 +178,9 @@ def unfinal(db,game):
             chk_new = "{0}/{1}".format(game.savegame_name,fname)
         
             os.rename(os.path.join(backup_dir,j),os.path.join(backup_dir,fname))
+            if config.CONFIG['backup.write-listfile']:
+                with open(config.CONFIG['backup.listfile'],'a') as ofile:
+                    ofile.write(chk_new + '\n')
         
             with shelve.open(config.CONFIG['backup.checksum-database']) as d:
                 d[chk_new] = d[chk_old]
