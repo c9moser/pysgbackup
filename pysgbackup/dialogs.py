@@ -50,7 +50,7 @@ class BackupDialog(Gtk.Dialog):
         self.progress = Gtk.ProgressBar()
         self.progress.set_show_text(True)
         vbox.pack_start(self.progress,False,False,0)
-        vbox.pack_end(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL),False,False,0)
+        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL),False,False,0)
         
         self.button_cancel = Gtk.Button('Cancel')
         self.button_cancel.connect('clicked',self._on_button_cancel_clicked)
@@ -74,7 +74,14 @@ class BackupDialog(Gtk.Dialog):
         self.button_close.set_sensitive(False)
         
     def _get_label_markup(self):
-        markup = '<span size="large">' + 'Backing up {0} games.'.format(len(self.games)) + '</span>'
+        markup = '<span size="large">'
+        
+        if len(self.games) == 1:
+            markup += 'Backing up 1 game'
+        else:
+             markup += 'Backing up {0} games.'.format(len(self.games))
+             
+        markup += '</span>'
         return markup
         
     def _on_button_cancel_clicked(self,button):

@@ -312,14 +312,12 @@ def command_config(db,argv):
 
 def command_check(db,argv):
     try:
-        opts,args = getopt.getopt(argv,'AaCcdVv',
-                                  ['ask',
-                                  'no-ask',
-                                  'create-missing',
-                                  'check-deleted',
-                                  'remove-deleted',
-                                  'no-verbose',
-                                  'verbose'])
+        opts,args = getopt.getopt(argv,'CcdVv',
+                                  ['create-missing',
+                                   'check-deleted',
+                                   'remove-deleted',
+                                   'no-verbose',
+                                   'verbose'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
         print(COMMANDS['check']['help-function']('check'))
@@ -336,11 +334,7 @@ def command_check(db,argv):
     delete_failed = False
     
     for o,a in opts:
-        if o == '-a' or o == '--ask':
-            ask = True
-        elif o == '-A' or o == '--no-ask':
-            ask = False
-        elif o == '-c' or o == '--create-missing':
+        if o == '-c' or o == '--create-missing':
             create_missing = True
         elif o == '-C' or o == '--check-deleted':
             check_deleted = True
@@ -360,15 +354,13 @@ def command_check(db,argv):
             
     for game_id in args:
         game = db.get_game(game_id)
-        backup.check(game,create_missing,check_deleted,delete_failed,ask)
+        backup.check(db,game,create_missing,check_deleted,delete_failed)
 # command_check()
     
 def command_check_all(db,argv):
     try:
-        opts,args = getopt.getopt(argv,'AaCcdVv', 
-                                  ['ask',
-                                   'no-ask'
-                                   'create-missing',
+        opts,args = getopt.getopt(argv,'CcdVv', 
+                                  ['create-missing',
                                    'check-deleted',
                                    'delete-failed',
                                    'no-verbose',
@@ -389,11 +381,7 @@ def command_check_all(db,argv):
     delete_failed=False
     
     for o,a in opts:
-        if o == '-a' or o == '--ask':
-            ask = True
-        elif o == '-A' or o == '--no-ask':
-            ask = False
-        elif o == '-C' or o == '--check-deleted':
+        if o == '-C' or o == '--check-deleted':
             check_deleted = True
         elif o == '-c' or o == '--create-missing':
             create_missing = True
@@ -407,7 +395,7 @@ def command_check_all(db,argv):
     
     for game_id in db.list_game_ids():
         game = db.get_game(game_id)
-        backup.check(game,create_missing,check_deleted,delete_failed,ask)
+        backup.check(db,game,create_missing,check_deleted,delete_failed)
 # command_check_all()
 
 def command_database(db,argv):
@@ -704,10 +692,10 @@ def command_restore(db,argv):
             continue
             
         if choose:
-            backup.restore_ask(game)
+            backup.restore_ask(db,game)
         else:
             print("[sgbackup restore] {0}".format(game.name))
-            backup.restore(game,latest_backup)
+            backup.restore(db,game,latest_backup)
 # command_restore()
 
 def command_restore_all(db,argv):

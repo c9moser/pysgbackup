@@ -424,7 +424,7 @@ class Database:
         cur = self._db.cursor()
         cur.execute(sql,(game.id,))
         
-        for row in cursor:
+        for row in cur:
             extrafiles = []
             cur2 = self._db.cursor()
             cur2.execute(sql2,(row[0],))
@@ -473,7 +473,7 @@ class Database:
         if row:
             extrafiles = []
             cur2 = self._db.cursor()
-            cur2.exexute(sql2,(row[0],))
+            cur2.execute(sql2,(row[0],))
             for row2 in cur2:
                 extra = {
                     'id': int(row2[0]),
