@@ -26,3 +26,7 @@ from . import plugins
 db = database.Database()
 plugins.init_plugins(db)
 
+db.close()
+del db
+
+

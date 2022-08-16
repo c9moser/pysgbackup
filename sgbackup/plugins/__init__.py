@@ -51,11 +51,11 @@ def _is_package(path):
 if config.CONFIG['user-plugins-enabled']:
     if not os.path.isdir(config.CONFIG['user-plugins-dir']):
         os.makedirs(config.CONFIG['user-plugins-dir'])
-        with os.open(os.path.join(os.path.dirname(__file__),'_plugins_init.py.in'), 'r') as ifile:
+        with open(os.path.join(os.path.dirname(__file__),'_plugins_init.py.in'), 'r') as ifile:
             s = ifile.read()
-        with os.open(os.path.join(config.CONFIG['user-plugins-dir'],'__init__.py'), 'w') as ofile:
+        with open(os.path.join(config.CONFIG['user-plugins-dir'],'__init__.py'), 'w') as ofile:
             ofile.write(s)
-        with os.open(os.path.join(config.CONFIG['user-plugins-dir'],'version'),'w') as ofile:
+        with open(os.path.join(config.CONFIG['user-plugins-dir'],'version'),'w') as ofile:
             ofile.write('.'.join((str(i) for i in config.CONFIG['version'])))
     elif not _check_user_plugin_version():
         with open(os.path.join(os.path.dirname(__file__),'_plugins_init.py.in'),'r') as ifile:

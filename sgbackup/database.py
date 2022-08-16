@@ -501,7 +501,7 @@ class Database:
         
         if backup:
             sql1 = "DELETE FROM filelist_extrafiles WHERE file=?;"
-            sql2 = "DELETE FORM filelist WHERE id=?;"
+            sql2 = "DELETE FROM filelist WHERE id=?;"
             cur = self._db.cursor()
             cur.execute(sql1,(backup['id'],))
             cur.execute(sql2,(backup['id'],))

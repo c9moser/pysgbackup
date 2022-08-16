@@ -62,24 +62,24 @@ def find_all_final_backups(game):
     return sorted(backups)
 # find_all_final_backups()
 
-def delete_backup(game,filename):
-    if os.path.isfile(config.CONFIG['backup.checksum-database']):
-        with shelve.open(config.CONFIG['backup.checksum-database']) as d:
-            key = '/'.join((game.savegame_name,os.path.basename(filename)))
-            if key in d:
-                if config.CONFIG['verbose']:
-                    print('[delete checksum] {0}',key)
-                del d[key]
+def delete_backup(db,game,filename):
+    if os.path.isabs(filename):
+        fn = filename
+    else:
+        fn = os.path.join(config.CONFIG['backup.dir'],game.savegame_name,os.path.basename(filename))
     
-    if config.CONFIG['verbose']:
-        print('[delete] {0}'.format(filename))
-    os.unlink(filename)
+    db.delete_game_backup(game,fn)
+    
+    if os.path.isfile(fn):
+        if config.CONFIG['verbose']:
+            print('[delete] {0}'.format(fn))
+        os.unlink(fn)
     
     for k,cb in config.CONFIG['delete-backup-callbacks'].items():
         if cb:
             if config.CONFIG['verbose']:
                 print("<sgbackup delete-backup:callback> {}".format(k))
-            cb(game,filename)
+            cb(game,fn)
 # delete_backup()
 
 def delete_backups(game,keep_latest=True):
@@ -191,7 +191,7 @@ def unfinal(db,game):
                     cb(game,os.path.join(backup_dir,i),os.path.join(backup_dir,fname))
 # unfinal
 
-def backup(game,listfile=None,write_listfile=False):
+def backup(db,game,listfile=None,write_listfile=False):
     archiver=archivers.get_archiver()
     backup_file=get_backup_filename(game,archiver)
     backup_dir=os.path.dirname(backup_file)
@@ -219,15 +219,13 @@ def backup(game,listfile=None,write_listfile=False):
         
         if config.CONFIG['verbose']:
             print("<checksum:{0}> {1}".format(cksum,key))
-            
-        with shelve.open(config.CONFIG['backup.checksum-database']) as d:
-            h = hashlib.new(cksum)
-            with open(backup_file,'rb') as bf:
-                h.update(bf.read())
-            d[key] = {
-                'algorithm': cksum,
-                'hash': h.hexdigest()
-            }
+        
+        h = hashlib.new(cksum)    
+        with open(backup_file,'rb') as bf:
+            h.update(bf.read())
+        digest = h.hexdigest()
+        
+        db.add_game_backup(game,backup_file,cksum,digest)
             
     if write_listfile:
         if not listfile:
@@ -242,9 +240,16 @@ def backup(game,listfile=None,write_listfile=False):
     if max_savegames <= 0:
         return
         
+    count = 0
     if len(savegames) > max_savegames:
-        for i in savegames[max_savegames:]:
-            delete_backup(game,i)
+        for i in savegames:
+            f = os.path.basename(i)
+            if fnmatch.fnmatch(f,'{}.final.*'.format(game.savegame_name)):
+                continue
+                
+            count += 1
+            if count > max_savegames:
+                delete_backup(db,game,i)
             
     if config.CONFIG['backup-callbacks']:
         for k,cb in config.CONFIG['backup-callbacks'].items():
@@ -257,7 +262,7 @@ def backup_all(db,listfile=None,write_listfile=False,include_final=False):
     for i in db.list_game_ids():
         game = db.get_game(i)
         if not game.final_backup or include_final:
-            backup(game,listfile,write_listfile)
+            backup(db,game,listfile,write_listfile)
 # backup_all()          
 
 def get_archiver_for_file(filename):
@@ -271,7 +276,7 @@ def get_archiver_for_file(filename):
             return archivers.get_archiver(config.CONFIG['archivers'][i]['archiver'])        
 
                 
-def restore(game,filename):
+def restore(db,game,filename):
     archiver = get_archiver_for_file(filename)
     archiver.restore(filename,game.savegame_root)
     
@@ -280,7 +285,7 @@ def restore(game,filename):
             cb(game,filename)
 # restore()
 
-def restore_ask(game):
+def restore_ask(db,game):
     d = {}
     count = 0
     for i in find_backups(game,reverse=True):
@@ -314,71 +319,51 @@ def restore_ask(game):
         except Exception:
             print ("'{0}' is not a valid input!".format(x0))
 
-    restore(game,d[x]['file'])
+    restore(db,game,d[x]['file'])
 
     
 def restore_all(db):
     for game_id in db.list_game_ids():
         game = db.get_game(game_id)
         
-        bdir = os.path.join(config.CONFIG['backup.dir'], game.game_id)
+        bdir = os.path.join(config.CONFIG['backup.dir'], game.savegame_name)
         if not os.path.isdir(bdir):
             continue
             
         filename = find_latest_savegame(game)
         if filename:
-            restore(game,filename)
+            restore(db,game,filename)
 # restore_all()
         
-def check(game,create_missing=False,check_deleted=False,delete_failed=False,ask=True):
-    backup_keys=['/'.join((game.savegame_name,os.path.basename(i))) for i in find_backups(game)]
+def check(db,game,create_missing=False,check_deleted=False,delete_failed=False):
+    backup_files= find_backups(game)
     verbose= config.CONFIG['verbose']
-    with shelve.open(config.CONFIG['backup.checksum-database']) as d:
-        for i in backup_keys:
-            if verbose:
-                print("<checksum:check> {0}".format(i))
-            if i in d:
-                check = d[i]
-                h = hashlib.new(check['algorithm'])
-                with open(os.path.normpath(os.path.join(config.CONFIG['backup.dir'],i)),'rb') as ifile:
-                    h.update(ifile.read())
-                digest = h.hexdigest()
                 
-                if (check['hash'] == digest):   
-                    print('<checksum:{0}:{1}> OK'.format(check['algorithm'],i))
-                else:
-                    print('<checksum:{0}:{1}> FAILED'.format(check['algorithm'],i))
-                    filename = os.path.normpath(os.path.join(config.CONFIG['backup.dir'],i))
-                    if (ask):
-                        ask = input('Delete SaveGame? [Y/N] ')
-                        if (ask.upper() == 'Y'):
-                            if (config.CONFIG['verbose']):
-                                print('<delete> {0}'.format(filename))
-                            os.unlink(filename)
-                    elif delete_failed:
-                        if (config.CONFIG['verbose']):
-                            print('<delete> {0}'.format(filename))
-                        os.unlink(filename)
-            elif create_missing and config.CONFIG['backup.checksum'] != 'None':
-                print('<checksum:{0}:create> {1}'.format(config.CONFIG['backup.checksum'],i))
-                cksum=config.CONFIG['backup.checksum']
-                h = hashlib.new(cksum)
-                with open(os.path.normpath(os.path.join(config.CONFIG['backup.dir'],i)),'rb') as ifile:
-                    h.update(ifile.read())
-                digest = h.hexdigest()
-                d[i] = {'algorithm': cksum, 'hash': digest}
-            elif verbose:
-                print('<checksum> No checksum for "{0}"!'.format(i))
+    if check_deleted:
+        for fdata in db.get_game_backups(game):
+            fn = os.path.join(config.CONFIG['backup.dir'],game.savegame_name,fdata['filename'])
+            if not os.path.isfile(fn):
+                delete_backup(db,game,fn)
                 
-
-        if (check_deleted):
-            check_key='/'.join((game.savegame_name,game.savegame_name + '.'))
-            
-            for k in d.keys():
-                if k.startswith(check_key):
-                    if not os.path.isfile(os.path.normpath(os.path.join(config.CONFIG['backup.dir'],k))):
-                        if verbose:
-                            print('<checksum:delete> {0}'.format(k))
-                        del d[k]
+    for fn in backup_files:
+        backup = db.get_game_backup(game,fn)
+        if backup:
+            print("[sgbackup check:{}] {} ... ".format(backup['checksum'],fn), end='')
+            h = hashlib.new(backup['checksum'])
+            with open(fn,'rb') as ifile:
+                h.update(ifile.read())
+            if h.hexdigest() == backup['hash']:
+                print('OK')
+            else:
+                print('FAILED')
+                if delete_failed:
+                    delete_backup(db,game,fn)
+        elif create_missing:
+            cksum = config.CONFIG['backup.checksum']
+            print("[sgbackup check(create):{}] {}".format(cksum,fn))
+            h = hashlib.new(cksum)
+            with open(fn,'rb') as ifile:
+                h.update(ifile.read())
+            db.add_game_backup(game,fn,cksum,h.hexdigest())
 # check()
 

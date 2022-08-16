@@ -382,7 +382,7 @@ class Database:
     def add_game_backup(self,game,filename,checksum,hash):
         if (isinstance(game,str)):
             g = self.get_game(game)
-        elif (isinstance(g,games.Game)):
+        elif (isinstance(game,games.Game)):
             g = self.get_game(game.game_id)
         else:
             raise TypeError('game')
@@ -424,7 +424,7 @@ class Database:
         cur = self._db.cursor()
         cur.execute(sql,(game.id,))
         
-        for row in cursor:
+        for row in cur:
             extrafiles = []
             cur2 = self._db.cursor()
             cur2.execute(sql2,(row[0],))
@@ -473,7 +473,7 @@ class Database:
         if row:
             extrafiles = []
             cur2 = self._db.cursor()
-            cur2.exexute(sql2,(row[0],))
+            cur2.execute(sql2,(row[0],))
             for row2 in cur2:
                 extra = {
                     'id': int(row2[0]),
@@ -494,7 +494,19 @@ class Database:
             }
             
         return backup
-    # get_game_backup()            
+    # get_game_backup()
+    
+    def delete_game_backup(self,game,filename):
+        backup = self.get_game_backup(game,filename)
+        
+        if backup:
+            sql1 = "DELETE FROM filelist_extrafiles WHERE file=?;"
+            sql2 = "DELETE FROM filelist WHERE id=?;"
+            cur = self._db.cursor()
+            cur.execute(sql1,(backup['id'],))
+            cur.execute(sql2,(backup['id'],))
+            self._db.commit()
+    # delete_game_backup()
 # Database class
 
 def update(db,force=False):
