@@ -40,7 +40,8 @@ def Q_(msgid):
 _HELP={
     'ftp': N_('file|command.ftp.help.txt'),
     'ftp-all': N_('file|command.ftp-all.help.txt'),
-    'ftp-list': N_('file|command.ftp-list.help.txt')
+    'ftp-list': N_('file|command.ftp-list.help.txt'),
+    'fpt-listfile': N_('file|command.ftp-listfile.help.txt')
 }
 
 def _get_help(cmd):
@@ -80,7 +81,7 @@ def _ftp_cwd_directory(ftp,directory=None):
             ftp.cwd(i)
 # _ftp_cwd_backupdir()
 
-def ftp_backup_files(game,filenames=[],connect={}):
+def ftp_backup_file(db,game,filename,connect={}):
     ftp_host=CONFIG['ftp.host']
     ftp_user=CONFIG['ftp.user']
     ftp_password=CONFIG['ftp.password']
@@ -103,11 +104,23 @@ def ftp_backup_files(game,filenames=[],connect={}):
     ftp.login(ftp_user,ftp_password)
     _ftp_cwd_directory(ftp,game_dir)
 
-    for fname in filenames:
-        print('<ftp:put> {0}'.format(fname))            
-        with open(fname,'rb') as ifile:
-            ftp.storbinary("STOR {0}".format(os.path.basename(fname)),fp=ifile)
+    if os.path.isfile(filename):
+        print('<ftp:put> {0}'.format(filename))            
+        with open(filename,'rb') as ifile:
+            ftp.storbinary("STOR {0}".format(os.path.basename(filename)),fp=ifile)
+        db.set_game_backup_ftp_transferred(game,fname,True)
         
+        backupfile = db.get_game_backup(game,os.path.basename(fname))
+        if backupfile:
+            for extrafile in backupfile['extrafiles']:
+                if os.path.isabs(extrafile['filename']):
+                    efname = extrafile['filename']
+                else:
+                    efname = os.path.join(CONFIG['backup.dir'],game.savegame_name,efname)
+                
+                with open(efname,'rb') as ifile:
+                    ftp.storbinary("STOR {0}".format(os.path.basename(efname)),fp=ifile)
+                db.set_game_backup_extrafile_ftp_transferred(game,os.path.basename(fname),extrafile['filename'],True)
     ftp.quit()    
 # ftp_backup_files
 
@@ -145,6 +158,53 @@ def ftp_put_listfile(ftp,ftpdir,listfile):
             
     ftp.cwd(pwd)
 
+def command_ftp_list(db,argv):
+    try:
+        opts,args = getopt.getopt(argv,'d:h:p:u:Vv',
+                                  ['directory='
+                                   'host=',
+                                   'password=',
+                                   'user=',
+                                   'no-verbose',
+                                   'verbose'])
+    except getopt.GetoptError as error:
+        print(error,file=sys.stderr)
+        print(_get_help('ftp-list'))
+        
+    if args:
+        print('[sgbackup ftp-list] Command does not take any arguments!',file=sys.stderr)
+        print(_get_help('ftp-list'))
+        
+    connect = {
+        'directory': CONFIG['ftp.directory'],
+        'host': CONFIG['ftp.host'],
+        'user': CONFIG['ftp.user'],
+        'password': CONFIG['ftp.password']
+    }
+    
+    for o,a in opts:
+        if o == '-d' or o == '--directory':
+            connect['directory'] = a
+        elif o == '-h' or o == '--host':
+            connect['host'] = a
+        elif o == '-p' or o == '--password':
+            connect['password'] = a
+        elif o == '-u' or o == '--user':
+            connect['user'] = a
+        elif o == '-v' or o == '--verbose':
+            CONFIG['verbose'] = True
+        elif o == '-V' or o == '--no-verbose':
+            CONFIG['verbose'] = False
+            
+    for game_id in db.list_game_ids():
+        game = db.get_game(game_id)
+        for game_backup in db.get_game_backups(game):
+            if not game_backup['ftp_transferred']:
+                fname = os.path.join(CONFIG['backup.dir'],game.savegame_name,game_backup['filename'])
+                ftp_backup_file(db,game,fname,connect)
+                                
+# command_ftp_list
+    
 def command_ftp(db,argv):
     try:
         opts,args = getopt.getopt(argv,'d:Dh:p:u:Vv', 
@@ -213,7 +273,8 @@ def command_ftp(db,argv):
                 print('[sgbackup ftp] No backup files for "{0}" found! SKIPPING!'.format(game_id))
                 continue
                 
-            ftp_backup_files(game,backup_files,connect)                           
+            for bf in backup_files:
+                ftp_backup_file(db,game,bf,connect)
     else:
         for game_id in args:
             backup_files=[]
@@ -231,7 +292,8 @@ def command_ftp(db,argv):
                 print('[sgbackup ftp] No backup files for "{0}" found! SKIPPING!'.format(game_id))
                 continue
                 
-            ftp_backup_files(game,backup_files,connect)
+            for bf in backup_files:
+                ftp_backup_file(db,game,bf,connect)
 # command_ftp             
             
             
@@ -301,10 +363,11 @@ def command_ftp_all(db,argv):
             print('[sgbackup ftp] No backups for "{0}" found! SKIPPING!'.format(game_id))
             continue
             
-        ftp_backup_files(game,backup_files)
+        for bf in backup_files:
+            ftp_backup_file(db,game,bf,connect)
 # command_ftp_all()
     
-def command_ftp_list(db,argv):
+def command_ftp_listfile(db,argv):
     try:
         opts,args = getopt.getopt(argv,'d:h:L:p:ru:Vv',
                                   ['directory=',
@@ -368,7 +431,7 @@ def command_ftp_list(db,argv):
                 ftp_put_listfile(ftp,connect['directory'],l)
 
     if remove:
-        os.unlink(listfile)    
+        os.unlink(listfile)
 # command_ftp_list()
         
 
@@ -387,9 +450,14 @@ plugin = {
             'function': command_ftp_all
         },
         'ftp-list': {
+            'help-function': _get_help,
+            'description': 'Put backup files from filelist in database on an FTP-Server',
+            'function': command_ftp_list
+        },
+        'ftp-listfile': {
             'help-function': _get_help, 
             'description': 'Put backup files found in listfile on a FTP-Server.',
-            'function': command_ftp_list
+            'function': command_ftp_listfile
         }
     },
     'config': {

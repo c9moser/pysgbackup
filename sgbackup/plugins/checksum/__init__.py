@@ -109,7 +109,7 @@ if plugin_avilable:
         return ret
     # find_checksum_files()
     
-    def backup_callback(game,filename):
+    def backup_callback(db,game,filename):
         if CONFIG['checksum.algorithm'] == 'None':
             return True
             
@@ -132,18 +132,16 @@ if plugin_avilable:
             os.chdir(cwd)
             return False
         
-        with open('.'.join((f,cksum)),'wb') as ofile:
+        fn = '.'.join((f,cksum))
+        with open(fn,'wb') as ofile:
             ofile.write(proc.stdout)
             
-        if CONFIG['backup.write-listfile']:
-            with open(CONFIG['backup.listfile'],'a') as ofile:
-                ofile.write('{}\n'.format(os.path.join(game.savegame_name,'.'.join((os.path.basename(f),cksum)))))
-    
+        db.add_game_backup_extrafile(game,filename,os.path.basename(fn))
         os.chdir(cwd)
         return True
     # backup_callback()
 
-    def delete_backup_callback(game,filename):
+    def delete_backup_callback(db,game,filename):
         for cksum in CHECKSUM.keys():
             ckfile = '.'.join((filename,cksum))
             if os.path.isfile(ckfile):

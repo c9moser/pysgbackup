@@ -223,30 +223,30 @@ class Plugin(object):
         if callback:
             callback(global_config)
         
-    def backup(self,game,filename):
+    def backup(self,db,game,filename):
         callback = self.backup_callback
         if callback:
-            callback(game,filename)
+            callback(db,game,filename)
             
     def update(self,db,version):
         callback = self.update_callback
         if callback:
             callback(db,version)
     
-    def delete_backup(self,game,filename):
+    def delete_backup(self,db,game,filename):
         callback = self.delete_backup_callback
         if callback:
-            callback(game,filename)
+            callback(db,game,filename)
             
-    def delete_savegames(self,game):
+    def delete_savegames(self,db,game):
         callback = self.delete_savegames_callback
         if callback:
-            callback(game)
+            callback(db,game)
             
-    def restore(self,game,filename):
+    def restore(self,db,game,filename):
         callback = self.restore_callback
         if callback:
-            callback(game,filename)
+            callback(db,game,filename)
             
     def enable(self):
         for cmd,value in self.commands.items():

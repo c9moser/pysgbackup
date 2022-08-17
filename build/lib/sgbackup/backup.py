@@ -79,7 +79,7 @@ def delete_backup(db,game,filename):
         if cb:
             if config.CONFIG['verbose']:
                 print("<sgbackup delete-backup:callback> {}".format(k))
-            cb(game,fn)
+            cb(db,game,fn)
 # delete_backup()
 
 def delete_backups(game,keep_latest=True):
@@ -132,7 +132,7 @@ def delete_savegames(game):
         
     for k,cb in config.CONFIG['delete-savegames-callbacks'].items():
         if cb:
-            cb(game)
+            cb(db,game)
 # delete_savegames()
 
 def get_backup_filename(game,archiver=None):
@@ -188,7 +188,7 @@ def unfinal(db,game):
             
             for k,cb in config.CONFIG['rename-backup-callbacks']:
                 if cb:
-                    cb(game,os.path.join(backup_dir,i),os.path.join(backup_dir,fname))
+                    cb(db,game,os.path.join(backup_dir,i),os.path.join(backup_dir,fname))
 # unfinal
 
 def backup(db,game,listfile=None,write_listfile=False):
@@ -255,7 +255,7 @@ def backup(db,game,listfile=None,write_listfile=False):
         for k,cb in config.CONFIG['backup-callbacks'].items():
             if config.CONFIG['verbose']:
                 print('<sgbackup backup:callback> {}'.format(k))
-            cb(game,backup_file)
+            cb(db,game,backup_file)
 # backup()
 
 def backup_all(db,listfile=None,write_listfile=False,include_final=False):
