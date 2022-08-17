@@ -477,7 +477,7 @@ class Database:
             for row2 in cur2:
                 extra = {
                     'id': int(row2[0]),
-                    'filename': int(row2[1]),
+                    'filename': row2[1],
                     'use_ftp': self._db_to_bool(row2[2]),
                     'ftp_transferred': self._db_to_bool(row2[3])
                 }

@@ -330,7 +330,7 @@ class CheckGamesDialog(Gtk.Dialog):
         self.failed_cbox = Gtk.ComboBoxText()
         for id,text in failed_actions:
             self.failed_cbox.append(id,text)
-        self.failed_cbox.set_active_id('ignore')
+        self.failed_cbox.set_active_id('delete')
         hbox.pack_start(self.failed_cbox,True,True,0)
         vbox.pack_start(hbox,False,False,0)
         
@@ -347,7 +347,7 @@ class CheckGamesDialog(Gtk.Dialog):
         self.missing_cbox = Gtk.ComboBoxText()
         for id,text in missing_actions:
             self.missing_cbox.append(id,text)
-        self.missing_cbox.set_active_id('ignore')
+        self.missing_cbox.set_active_id('create')
         hbox.pack_start(self.missing_cbox,True,True,0)
         self.vbox.pack_start(hbox,False,False,0)
         
@@ -419,7 +419,11 @@ class CheckGamesDialog(Gtk.Dialog):
     
     def _on_thread_update(self,data):
         self.progress.set_fraction(data['fraction'])
-        self.progress.set_text(data['text'])
+        if 'text' in data:
+            text = data['text']
+        else:
+            text = '[{}] {}'.format(data['file']['game'].name,data['file']['basename'])
+        self.progress.set_text(text)
         self.progress.show()
         
     def _on_thread_finished(self):
@@ -432,6 +436,9 @@ class CheckGamesDialog(Gtk.Dialog):
         self.show_all()
         
     def _thread_func(self):
+        db = sgbackup.database.Database()
+        missing_action = self.get_missins_action()
+        failed_action = self.get_failed_action()
         files = []
         count = 0
         data = {'fraction':0.0,'text': 'Creating file-list'}
@@ -439,22 +446,44 @@ class CheckGamesDialog(Gtk.Dialog):
         
         for g in self.games:
             for i in sgbackup.backup.find_backups(g):
-                fdesc = {
-                    'game': g, 
-                    'filename': i, 
-                    'ckname': '/'.join((g.savegame_name,os.path.basename(i)))
-                }
-                files.append(fdesc)
+                files.append({'game':g,'filename': i,'basename':os.path.basename(i)})
             
         steps = (len(files) + 1)
         count=1    
-        for fdesc in files:
+        for f in files:
             data = {
                 'fraction': (count/steps),
-                'text': '<{}> {}'.format(fdesc['game'].name,os.path.basename(fdesc['filename']))
+                'file': f
             }
             GLib.idle_add(self._on_thread_update,data)
+            count += 1
             
+            dbfile = db.get_game_backup(f['game'],f['basename'])
+            if not dbfile:
+                if missing_action == self.MISSING_IGNORE:
+                    continue
+                elif missing_action == self.MISSING_DELETE:
+                    sgbackup.backup.delete_backup(db,f['filename'])
+                elif missing_action == self.MISSING_CREATE:
+                    cksum = CONFIG['backup.checksum']
+                    h = hashlib.new(cksum)
+                    with open(f['filename'],'rb') as ifile:
+                        h.update(ifile.read())
+                    db.add_game_backup(f['game'],f['basename'],cksum,h.hexdigest())
+                else:
+                    raise RuntimeError('should not be reached!')
+                continue
+            
+            h = hashlib.new(dbfile['checksum'])
+            with open(f['filename'],'rb') as ifile:
+                h.update(ifile.read())
+            if h.hexdigest() != dbfile['hash']:
+                if failed_action == self.FAILED_IGNORE:
+                    continue
+                elif failed_action == self.FAILED_DELETE:
+                    sgbackup.backup.delete_backup(f['game'],f['filename'])
+                else:
+                    raise RuntimeError('should not be reached')
         GLib.idle_add(self._on_thread_finished)
     # _thread_func()
     
