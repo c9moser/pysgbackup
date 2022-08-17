@@ -315,7 +315,7 @@ class AppWindow(Gtk.ApplicationWindow):
     def _on_action_check_all_backups(self,action,data):
         db = sgbackup.database.Database()
         games = []
-        for gid in db.get_game_ids():
+        for gid in db.list_game_ids():
             game = db.get_game(gid)
             if game:
                 games.append(gid)
