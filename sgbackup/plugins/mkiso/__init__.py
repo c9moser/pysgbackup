@@ -32,7 +32,7 @@ if plugin_available:
     import datetime
     from sgbackup.config import CONFIG
     import shelve
-    
+    import hashlib
     import gi; from gi.repository import GLib
     
     COMMAND_MKISO_HELP="""sgbackup mkiso
@@ -70,7 +70,12 @@ OPTIONS:
                 CONFIG['verbose'] = True
             
         iso_dirs=['/SaveGames']
-        iso_files=[]
+        iso_files=[
+            (os.path.join(os.path.dirname(__file__),'sgrestore.py'),'/sgrestore.py'),
+            (os.path.join(os.path.dirname(__file__),'sgrestore'),'/sgrestore'),
+            (os.path.join(os.path.dirname(__file__),'sgrestore.bat'), '/sgrestore.bat')
+        ]
+        
         dt = datetime.datetime.now()
         image_name = os.path.join(CONFIG['mkiso.directory'],
                                   "SaveGames.{}.iso".format(dt.strftime('%Y%m%d-%H%M%S')))

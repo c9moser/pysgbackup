@@ -65,6 +65,7 @@ setup(name="pysgbackup",
                  'sgbackup.plugins',
                  'sgbackup.plugins.ftp',
                  'sgbackup.plugins.checksum',
+                 'sgbackup.plugins.mkiso',
                  'pysgbackup'
       ],
       scripts=scripts,
@@ -75,6 +76,7 @@ setup(name="pysgbackup",
                     'sgbackup.plugins': ['_plugins_init.py.in'],
                     'sgbackup.plugins.checksum': ['*.txt'],
                     'sgbackup.plugins.ftp': ['*.txt'],
+                    'sgabckup.plugins.mkiso': ['*.bat','sgrestore','*.txt'],
                     'pysgbackup' : ['*.ui']
       })
 
