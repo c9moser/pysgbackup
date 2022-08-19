@@ -31,6 +31,9 @@ if plugin_available:
     import glob
     import datetime
     from sgbackup.config import CONFIG
+    import shelve
+    
+    import gi; from gi.repository import GLib
     
     COMMAND_MKISO_HELP="""sgbackup mkiso
 
@@ -72,6 +75,8 @@ OPTIONS:
         image_name = os.path.join(CONFIG['mkiso.directory'],
                                   "SaveGames.{}.iso".format(dt.strftime('%Y%m%d-%H%M%S')))
         
+        
+        game_list=[]
         for gid in db.list_game_ids():
             game = db.get_game(gid)
             game_dir = os.path.join(CONFIG['backup.dir'],game.savegame_name)
@@ -88,10 +93,49 @@ OPTIONS:
                         files.append(i)
                 
             if files:
+                game_list.append((gid,game,files))
                 iso_dirs.append('/'.join(('/SaveGames',game.savegame_name)))
                 for i in files:
                     iso_files.append((i,'/'.join(('/SaveGames',game.savegame_name,os.path.basename(i)))))
-                    
+                
+        shelve_file=os.path.join(GLib.get_tmp_dir(),
+                                 'sgbackup-mkiso.{}.{}'.format(GLib.get_user_name(),dt.strftime('%Y%m%d%H%M%S')),
+                                 'games')
+        if not os.path.isdir(os.path.dirname(shelve_file)):
+            os.makedirs(os.path.dirname(shelve_file))
+            
+        with shelve.open(shelve_file) as d:
+            for game_id,game,files in game_list:
+                game_spec_files = {}
+                for f in files:
+                    key = os.path.basename(f)
+                    backup = db.get_game_backup(game,f)
+                    if backup:
+                        cksum = backup['checksum']
+                        digest = backup['hash']
+                    else:
+                        cksum = CONFIG['backup.checksum']
+                        h = hashlib.new(cksum)
+                        with open(f,'rb') as ifile:
+                            h.update(ifile.read())
+                        digest = h.hexdigest()
+                    game_spec_files[key] = {'checksum':cksum,'hash':digest}
+                
+                game_spec={
+                    'game-id': game.game_id,
+                    'name': game.name,
+                    'savegame-root': game.savegame_root,
+                    'savegame-dir': game.savegame_dir,
+                    'savegame-name': game.savegame_name,
+                    'files': game_spec_files
+                }
+                d[game_id]=game_spec
+                
+        for f in os.listdir(os.path.dirname(shelve_file)):
+            if f == '.' or f == '..':
+                continue
+            iso_files.append((os.path.join(os.path.dirname(shelve_file),f),'/'.join(('/SaveGames',f))))
+        
         disc = pycdlib.PyCdlib()
         disc.new(udf='2.60')
         for i in iso_dirs:
@@ -103,8 +147,8 @@ OPTIONS:
         print(image_name)
         disc.write(image_name)
         
-        if CONFIG['sgbackup.maxiso'] > 0:
-            n = CONFIG['sgbackup.maxiso']
+        if CONFIG['mkiso.maxiso'] > 0:
+            n = CONFIG['mkiso.maxiso']
             count = 0
             for img in sorted(glob.glob(os.path.join(CONFIG['mkiso.directory'],'SaveGames.*.iso')),reverse=True):
                 count += 1

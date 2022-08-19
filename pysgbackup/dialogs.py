@@ -385,7 +385,7 @@ class CheckGamesDialog(Gtk.Dialog):
         self.__action_missing = self.get_missins_action()
         
         self.button_run.set_sensitive(False)
-        #self.button_close.set_sensitive(False)
+        self.button_close.set_sensitive(False)
         self.missing_cbox.set_sensitive(False)
         self.failed_cbox.set_sensitive(False)
         
@@ -399,8 +399,9 @@ class CheckGamesDialog(Gtk.Dialog):
         return self.__games
         
     def add_game(self,game):
+        db = sgbackup.database.Database()
         if isinstance(game,str):
-            g = sgbackup.db.get_game(game)
+            g = db.get_game(game)
         elif isinstance(game,sgbackup.games.Game):
             g = game
         else:

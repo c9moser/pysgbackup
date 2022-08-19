@@ -136,7 +136,7 @@ if plugin_avilable:
         with open(fn,'wb') as ofile:
             ofile.write(proc.stdout)
             
-        db.add_game_backup_extrafile(game,filename,os.path.basename(fn))
+        db.add_game_backup_extrafile(game,filename,os.path.basename(fn),True)
         os.chdir(cwd)
         return True
     # backup_callback()
