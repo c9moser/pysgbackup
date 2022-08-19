@@ -1,5 +1,0 @@
-[game]
-name = Divinity Original Sin
-savegame-name = DivinityOriginalSin
-savegame-root = ${USER_DOCUMENTS_DIR}
-savegame-dir = Larian Studios\Divinity Original Sin

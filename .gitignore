@@ -11,3 +11,7 @@ pysgbackup.egg-info/*
 build
 *__pycache__*
 __pycache__
+dist
+dist/*
+build
+build/*

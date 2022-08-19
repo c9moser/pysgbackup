@@ -1,5 +1,0 @@
-[game]
-name = The Witcher
-savegame-name = Witcher
-savegame-root = ${USER_DOCUMENTS_DIR}
-savegame-dir = The Witcher

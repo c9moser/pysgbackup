@@ -1,5 +1,0 @@
-[game]
-name = Assetto Corsa
-savegame-name = AssettoCorsa
-savegame-root = ${USER_DOCUMENTS_DIR}
-savegame-dir = Assetto Corsa

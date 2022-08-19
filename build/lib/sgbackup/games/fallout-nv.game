@@ -1,5 +1,0 @@
-[game]
-name = Fallout New Vegas
-savegame-name=FalloutNV
-savegame-root = ${USER_DOCUMENTS_DIR}
-savegame-dir = My Games\FalloutNV

@@ -1,5 +1,0 @@
-[game]
-name = The Ascent
-savegame-name = TheAscent
-savegame-root = ${LOCALAPPDATA}
-savegame-dir = TheAscent

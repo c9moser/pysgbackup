@@ -1,5 +1,0 @@
-[game]
-name = Metro Exodus
-savegame-name = MetroExodus
-savegame-root = ${USERPROFILE}
-savegame-dir = Saved Games\metro exodus

@@ -1,6 +1,0 @@
-[archiver]
-executable = __EXECUTABLE__
-verbose = -v
-extension = tar.bz2
-create = -cjf "${FILENAME}" ${VERBOSE} -C "${ROOT_DIR}" "${BACKUP_DIR}"
-extract = -xjf "${FILENAME}" ${VERBOSE} -C "${ROOT_DIR}"

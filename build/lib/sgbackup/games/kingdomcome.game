@@ -1,5 +1,0 @@
-[game]
-name = Kingdom Come Deliverance
-savegame-name = KingdomComeDeliverance
-savegame-root = ${USERPROFILE}
-savegame-dir = Saved Games/kingdomcome
