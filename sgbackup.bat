@@ -1,2 +1,0 @@
-@echo off
-__PYTHON_EXEC__ -m sgbackup %*
