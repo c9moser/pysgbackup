@@ -30,14 +30,35 @@ for i in os.listdir(USER_PLUGIN_DIR):
         continue
     elif os.path.isfile(os.path.join(USER_PLUGIN_DIR,i)) and i.endswith('.py'):
         m = i[:-3]
-        mdoule = importlib.import_module('.' + m,__package__)
-        exec('{} = module'.format(m))
-        setattr(plugins,m,module)
+        try:
+            mdoule = importlib.import_module('.' + m,__package__)
+        except ImportError as error:
+            print('Unable to import user-plugin module "{0}"! ({1})'.format(m,error))
+            continue
+            
+        try:
+            exec('{} = module'.format(m))
+        except Exception as error:
+            print('Unable to add user-plugin module "{0}" to sgbackup_plugins! ({1})'.format(m,error),file=sys.stderr)
+        try:
+            setattr(plugins,m,module)
+        except Exception as error:
+            print('Ubale to add user-plugin module "{0}" to sgbackup.plugins! ({1})'.format(m,error),file=sys.stderr)
     elif os.path.isdir(os.path.join(USER_PLUGIN_DIR,i)) and os.path.isfile(os.path.join(USER_PLUGIN_DIR,i,'__init__.py')):
-        module = importlib.import_module('.' + i, __package__)
-        exec('{} = module'.format(i))
-        setattr(plugins,i,module)
-        
+        try:
+            module = importlib.import_module('.' + i, __package__)
+        except ImportError as error:
+            print('Unable to import user-plugin package "{0}"! ({1})'.format(i,error),file=sys.stderr)
+            continue
+        try:
+            exec('{} = module'.format(i))
+        except Exception as error:
+            print('Unable to add user-plugin package "{0}" to sgbackup_plugins! ({1})'.format(i,error),file=sys.stderr)
+        try:
+            setattr(plugins,i,module)
+        except Exception as error:
+            print('Unable to add user-plugin package "{0}" to sgbackup.plugins! ({1})'.format(i,error),file=sys.stderr)
+            
     if module:
         plugin = plugins.loader.load(module)
         if plugin:

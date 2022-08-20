@@ -73,24 +73,29 @@ for i in os.listdir(os.path.dirname(__file__)):
     module = None
     if i.endswith('.py'):
         m = i[:-3]
-        module = importlib.import_module('.' + m,__package__)
-        #try:
-        #    module = importlib.import_module(i[:-3],__package__)
-        #except Exception as error:
-        #    print(error,file=sys.stderr)
-        #    continue        
+        #module = importlib.import_module('.' + m,__package__)
+        try:
+            module = importlib.import_module('.' + m,__package__)
+        except ImportError as error:
+            print('Unable to import plugin-module "{0}"! ({1})'.format(m,error),file=sys.stderr)
+            continue        
         
-        exec("{0}=module".format(m))
+        try:
+            exec("{0}=module".format(m))
+        except Exception as error:
+            print('Unable to add module "{0}" to sgbackup.plugins! ({1})'.format(m,error),file=sys.stderr)
         
     elif _is_package(os.path.join(os.path.dirname(__file__),i)):
-        module = importlib.import_module('.' + i,__package__)
-        #try:
-        #    module = importlib.import_module(i,__package__)
-        #except Exception as error:
-        #    print(error,file=sys.stderr)
-        #    continue
+        try:
+            module = importlib.import_module('.' + i,__package__)
+        except ImportError as error:
+            print('Unable to import plugin-package "{0}"! ({1})'.format(i,error),file=sys.stderr)
+            continue
         
-        exec("{0}=module".format(i))
+        try:
+            exec("{0}=module".format(i))
+        except Exception as error:
+            print('Unable to add package "{0}" to sgbackup.plugins! ({1})'.format(i,error),file=sys.stderr)
         
     if module:
         plugin = loader.load(module)
@@ -102,7 +107,7 @@ if config.CONFIG['user-plugins-enabled']:
         import sgbackup_plugins
     except ImportError:
         print('Unable to import user plugins!',file=sys.stderr)
-    
+
 def get_plugins():
     return sorted(PLUGINS.keys())
     
