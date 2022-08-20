@@ -31,6 +31,7 @@ import os
 import shelve
 import time
 import hashlib
+import configparser
 
 class BackupDialog(Gtk.Dialog):
     def __init__(self,parent=None):
@@ -487,6 +488,118 @@ class CheckGamesDialog(Gtk.Dialog):
                     raise RuntimeError('should not be reached')
         GLib.idle_add(self._on_thread_finished)
     # _thread_func()
-    
 # CheckGamesDialog class
-     
+
+class GameDialog(Gtk.Dialog):
+    def __init__(self,parent=None,game=None,game_id=None):
+        def create_label(text):
+            lbl = Gtk.Label(text)
+            
+            return lbl
+            
+        Gtk.Dialog.__init__(self,parent=parent)
+        
+        vbox = self.get_content_area()
+        self.sizegroup = Gtk.SizeGroup()
+        self.sizegroup.set_mode(Gtk.SizeGroupMode.HORIZONTAL)
+        
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        label = create_label('GameID:')
+        self.sizegroup.add_widget(label)
+        hbox.pack_start(label,False,False,5)
+        self.gameid_entry = Gtk.Entry()
+        hbox.pack_start(self.gameid_entry,True,True,0)
+        vbox.pack_start(hbox,False,False,0)
+        
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        label = create_label('Game Name:')
+        self.sizegroup.add_widget(label)
+        hbox.pack_start(label,False,False,5)
+        self.name_entry = Gtk.Entry()
+        hbox.pack_start(self.name_entry,True,True,0)
+        vbox.pack_start(hbox,False,False,0)
+        
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        label = create_label('Savegame Name:')
+        self.sizegroup.add_widget(label)
+        hbox.pack_start(label,False,False,5)
+        self.savegame_name_entry = Gtk.Entry()
+        hbox.pack_start(self.savegame_name_entry,True,True,0)
+        vbox.pack_start(hbox,False,False,0)
+        
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        label = create_label('Savegame Root:')
+        self.sizegroup.add_widget(label)
+        hbox.pack_start(label,False,False,5)
+        self.savegame_root_entry = Gtk.Entry()
+        hbox.pack_start(self.savegame_root_entry,True,True,0)
+        button = Gtk.Button.new_from_icon_name('document-open',Gtk.IconSize.BUTTON)
+        button.connect('clicked',self._on_savegame_root_button_clicked)
+        hbox.pack_start(button,False,False,0)
+        vbox.pack_start(hbox,False,False,0)
+        
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        label = create_label('Savegame Directory:')
+        self.sizegroup.add_widget(label)
+        hbox.pack_start(label,False,False,5)
+        self.savegame_dir_entry = Gtk.Entry()
+        hbox.pack_start(self.savegame_dir_entry,True,True,0)
+        button = Gtk.Button.new_from_icon_name('document-open',Gtk.IconSize.BUTTON)
+        button.connect('clicked',self._on_savegame_dir_button_clicked)
+        hbox.pack_start(button,False,False,0)
+        vbox.pack_start(hbox,False,False,0)
+        
+        if game:
+            self._set_game_data(game,game_id)
+        
+        self.add_button('Apply',Gtk.ResponseType.APPLY)
+        self.add_button('Cancel',Gtk.ResponseType.CANCEL)
+        self.show_all()
+    # __init__()
+        
+    def _set_game_data(self,game,game_id):
+        if isinstance(game,sgbackup.games.Game):
+            self.gameid_entry.set_text(game.game_id)
+            self.name_entry.set_text(game.name)
+            self.savegame_name_entry.set_text(game.savegame_name)
+            self.savegame_root_entry.set_text(game.raw_savegame_root)
+            self.savegame_dir_entry.set_text(game.raw_savegame_dir)
+        elif isinstance(game,configparser.ConfigParser):
+            if not game_id:
+                raise ValueError('"game_id" not set!')
+            sect='game'
+            
+            self.gameid_entry.set_text(game_id)
+            if game.has_section(sect):
+                if game.has_option(sect,'name'):
+                    self.name_entry(game.get(sect,'name'))
+                if game.has_option(sect,'savegame-name'):
+                    self.savegame_name_entry.set_text(sect,'savegame-name')
+                if game.has_option(sect,'savegame-root'):
+                    self.savegame_root_entry.set_text(sect,'savegame-root')
+                if game.has_option(sect,'savegame-dir'):
+                    self.savegame_dir_entry.set_text(sect,'savegame-dir')
+        elif isinstance(game,dict):
+            if 'game-id' in game:
+                self.gameid_entry.set_text(game['game-id'])
+            elif game_id:
+                self.gameid_entry.set_text(game_id)
+                
+            if 'name' in game:
+                self.name_entry.set_text(game['name'])
+            if 'savegame-name' in game:
+                self.savegame_name_entry.set_text(game['savegame-name'])
+            if 'savegame-root' in game:
+                self.savegame_root_entry.set_text(game['savegame-root'])
+            if 'savegame-dir' in game:
+                self.savegame_dir_entry.set_text(game['savegame-dir'])
+        else:
+            raise TypeError('Unknown "game"-type!')
+            
+    def _on_savegame_root_button_clicked(self,button):
+        pass
+        
+    def _on_savegame_dir_button_clicked(self,button):
+        pass
+# GameDialog class
+

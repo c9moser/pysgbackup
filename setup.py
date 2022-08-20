@@ -73,10 +73,9 @@ setup(name="pysgbackup",
       package_data={'sgbackup':["*.sql","*.txt"],
                     'sgbackup.games': ['*.game'],
                     'sgbackup.archivers': ['*.archiver.in','*.archiver.w32.in'],
-                    'sgbackup.plugins': ['_plugins_init.py.in'],
                     'sgbackup.plugins.checksum': ['*.txt'],
                     'sgbackup.plugins.ftp': ['*.txt'],
-                    'sgabckup.plugins.mkiso': ['*.bat','sgrestore','*.txt'],
+                    'sgbackup.plugins.mkiso': ['*.bat','*.sh','*.txt'],
                     'pysgbackup' : ['*.ui']
       })
 

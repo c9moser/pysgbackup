@@ -22,6 +22,7 @@ from gi.repository import Gtk,Gio,GLib
 
 import sgbackup
 import os
+import configparser
 
 from . import settings,backupdialog,dialogs
 
@@ -186,7 +187,12 @@ class AppWindow(Gtk.ApplicationWindow):
         self._action_final_backup = add_simple_action('final-backup',self._on_action_final_backup)
         self._action_check_backups = add_simple_action('check-backups',self._on_action_check_backups)
         self._action_check_all_backups = add_simple_action('check-all-backups',self._on_action_check_all_backups)
+        self._action_edit_game = add_simple_action('edit-game',self._on_action_edit_game)
+        self._action_delete_game = add_simple_action('delete-game',self._on_action_delete_game)
         
+        add_simple_action('update-database',self._on_action_update_database)
+        add_simple_action('refresh',self._on_action_refresh)
+        add_simple_action('add-game',self._on_action_add_game)
         add_simple_action('settings',self._on_action_settings)
             
     
@@ -197,7 +203,8 @@ class AppWindow(Gtk.ApplicationWindow):
             self._action_backup.set_enabled(True)
             self.headerbar.set_subtitle(model.get_value(iter,self.GV_COL_NAME))
             self._action_check_backups.set_enabled(True)
-            
+            self._action_edit_game.set_enabled(True)
+            self._action_delete_game.set_enabled(True)
             if model.get_value(iter,self.GV_COL_FINAL):
                 self._action_unfinal_game.set_enabled(True)
                 self._action_final_backup.set_enabled(False)
@@ -210,6 +217,8 @@ class AppWindow(Gtk.ApplicationWindow):
             self._action_final_backup.set_enabled(False)
             self._action_unfinal_game.set_enabled(False)
             self._action_check_backups.set_enabled(False)
+            self._action_edit_game.set_enabled(False)
+            self._action_delete_game.set_enabled(False)
         
     def _on_action_backup(self,action,data):
         model,iter = self.gameview.get_selection().get_selected()
@@ -237,6 +246,26 @@ class AppWindow(Gtk.ApplicationWindow):
             dialog.hide()
             dialog.destroy()
             self.update_backupview()
+        
+    def _on_action_update_database(self,action,data):
+        pass
+        
+    def _on_action_refresh(self,action,data):
+        pass
+        
+    def _on_action_add_game(self,action,data):
+        dialog = dialogs.GameDialog(self)
+        result = dialog.run()
+        dialog.hide()
+        if result == Gtk.ResponseType.APPLY:
+            pass
+        dialog.destroy()        
+        
+    def _on_action_edit_game(self,action,data):
+        pass
+    
+    def _on_action_delete_game(self,action,data):
+        pass
         
     def _on_action_backup_all(self,action,data):
         db = sgbackup.database.Database()

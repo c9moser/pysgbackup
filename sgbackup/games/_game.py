@@ -1,6 +1,6 @@
 #-*- coding:utf-8 -*-
 
-from sgbackup import config
+from sgbackup import config,backup
 import os
 from string import Template
 
@@ -84,12 +84,7 @@ class Game(object):
         
     @property
     def savegame_root(self):
-        v = dict(os.environ)
-        v.update(config.CONFIG["template-variables"])
-        v.update({'BACKUP_DIR':config.CONFIG['backup.dir']})
-        v.update(self.variables)
-        
-        return os.path.normpath(Template(self.__sg_root).substitute(v))
+        return os.path.normpath(Template(self.__sg_root).substitute(self.variables))
         
     
     @savegame_root.setter
@@ -104,14 +99,12 @@ class Game(object):
 
     @property
     def savegame_dir(self):
-        v = dict(os.environ)
-        v.update(config.CONFIG['template-variables'])
-        v.update(self.variables)
-        
-        return os.path.normpath(Template(self.__sg_dir).substitute(v))
+        return os.path.normpath(Template(self.__sg_dir).substitute(self.variables))
         
     @savegame_dir.setter
     def savegame_dir(self,x):
+        if not isinstance(x,str):
+            raise TypeError("'savegame_dir' is not a string!")
         self.__sg_dir=x
        
     @property
@@ -126,8 +119,16 @@ class Game(object):
             self.__final_backup = False
             
     @property
+    def raw_variables(self):
+        return self.__variables
+        
+    @property
     def variables(self):
-        return self.__variables     
+        v = config.get_template_vars()
+        v.update(self.__variables)
+        
+        return v
+         
 # Game class
 
 class GameConf(object):

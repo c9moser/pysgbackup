@@ -28,7 +28,7 @@ from . _loader import PluginLoader
 
 PLUGINS={}
 
-def _check_user_plugin_version():
+def _check_user_plugins_version():
     if not os.path.isfile(os.path.join(config.CONFIG['user-plugins-dir'],'version')):
         return False
         
@@ -51,14 +51,14 @@ def _is_package(path):
 if config.CONFIG['user-plugins-enabled']:
     if not os.path.isdir(config.CONFIG['user-plugins-dir']):
         os.makedirs(config.CONFIG['user-plugins-dir'])
-        with open(os.path.join(os.path.dirname(__file__),'_plugins_init.py.in'), 'r') as ifile:
+        with open(os.path.join(os.path.dirname(__file__),'_user_plugins_init.py'), 'r') as ifile:
             s = ifile.read()
         with open(os.path.join(config.CONFIG['user-plugins-dir'],'__init__.py'), 'w') as ofile:
             ofile.write(s)
         with open(os.path.join(config.CONFIG['user-plugins-dir'],'version'),'w') as ofile:
             ofile.write('.'.join((str(i) for i in config.CONFIG['version'])))
-    elif not _check_user_plugin_version():
-        with open(os.path.join(os.path.dirname(__file__),'_plugins_init.py.in'),'r') as ifile:
+    elif not _check_user_plugins_version():
+        with open(os.path.join(os.path.dirname(__file__),'_user_plugins_init.py'),'r') as ifile:
             s = ifile.read()
         with open(os.path.join(config.CONFIG['user-plugins-dir'],'__init__.py'), 'w') as ofile:
             ofile.write(s)
@@ -70,7 +70,7 @@ for i in os.listdir(os.path.dirname(__file__)):
     if i.startswith('.') or i.startswith('_'):
         continue
         
-    mdoule = None
+    module = None
     if i.endswith('.py'):
         m = i[:-3]
         module = importlib.import_module('.' + m,__package__)
@@ -98,7 +98,10 @@ for i in os.listdir(os.path.dirname(__file__)):
             PLUGINS[plugin.name] = plugin
             
 if config.CONFIG['user-plugins-enabled']:
-    import sgbackup_plugins
+    try:
+        import sgbackup_plugins
+    except ImportError:
+        print('Unable to import user plugins!',file=sys.stderr)
     
 def get_plugins():
     return sorted(PLUGINS.keys())

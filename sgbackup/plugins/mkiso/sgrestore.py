@@ -59,7 +59,7 @@ def get_game_list():
     
     with shelve.open(CONFIG['game-shelve']) as d:
         for game_id in sorted(d.keys()):
-            game_spec = d['game_id']
+            game_spec = d[game_id]
             gl.append(game_spec)
             
     return gl

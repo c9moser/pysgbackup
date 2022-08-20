@@ -72,7 +72,7 @@ OPTIONS:
         iso_dirs=['/SaveGames']
         iso_files=[
             (os.path.join(os.path.dirname(__file__),'sgrestore.py'),'/sgrestore.py'),
-            (os.path.join(os.path.dirname(__file__),'sgrestore'),'/sgrestore'),
+            (os.path.join(os.path.dirname(__file__),'sgrestore.sh'),'/sgrestore'),
             (os.path.join(os.path.dirname(__file__),'sgrestore.bat'), '/sgrestore.bat')
         ]
         
