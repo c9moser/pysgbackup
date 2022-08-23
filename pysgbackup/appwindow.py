@@ -356,13 +356,17 @@ class AppWindow(Gtk.ApplicationWindow):
                 g = dialog.game
                 db = sgbackup.database.Database()
                 db.add_game(g)
-                if g.game_id != model.get_value(iter,GV_COL_GAMEID):
+                if g.game_id != model.get_value(iter,self.GV_COL_GAMEID):
                     gc = os.path.join(CONFIG['user-gameconf-dir'],'.'.join((gameid,'game')))
                     if os.path.isfile(gc):
                         os.unlink(gc)
                 gc = os.path.join(CONFIG['user-gameconf-dir'],'.'.join((g.game_id,'game')))
                 cparser = configparser.ConfigParser()
                 dialog.write_game_config(cparser)
+                if g.savegame_name != model.get_value(iter,self.GV_COL_SAVEGAME_NAME):
+                    #move and rename savegame-backups
+                    pass
+                    #TODO: Move and rename savegame-backups
                 with open(gc,'w') as ofile:
                     cparser.write(gc)                    
             dialog.destroy()

@@ -757,7 +757,7 @@ class GameDialog(Gtk.Dialog):
         return self.steam_appid_switch.get_active()
     @steam_appid_enabled.setter
     def steam_appid_enabled(self,b):
-        self.steam_appid_enabled.set_active(bool(b))
+        self.steam_appid_switch.set_active(bool(b))
         
     @property
     def steam_appid(self):
