@@ -21,13 +21,14 @@
         </section>
         <section>
             <item>
-                <attribute name='label' translatable='yes'>Update database</attribute>
-                <attribute name='action'>win.update-database</attribute>
-            </item>
-            <item>
                 <attribute name='label' translatable='yes'>Refresh</attribute>
                 <attribute name='action'>win.refresh</attribute>
             </item>
+            <item>
+                <attribute name='label' translatable='yes'>Run VACUUM on database</attribute>
+                <attribute name='action'>win.database-vacuum</attribute>
+            </item>
+
         </section>
         <section>
             <item>

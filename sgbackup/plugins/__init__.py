@@ -105,8 +105,8 @@ for i in os.listdir(os.path.dirname(__file__)):
 if config.CONFIG['user-plugins-enabled']:
     try:
         import sgbackup_plugins
-    except ImportError:
-        print('Unable to import user plugins!',file=sys.stderr)
+    except ImportError as error:
+        print('Unable to import user plugins! ({0})'.format(error),file=sys.stderr)
 
 def get_plugins():
     return sorted(PLUGINS.keys())

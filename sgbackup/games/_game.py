@@ -5,7 +5,7 @@ import os
 from string import Template
 
 class Game(object):
-    def __init__(self,game_id,name,sg_name,sg_root,sg_dir,id=0,final_backup=False,variables={}):
+    def __init__(self,game_id,name,sg_name,sg_root,sg_dir,id=0,final_backup=False,steam_appid=None,variables={}):
         object.__init__(self)
         
         if id:
@@ -19,6 +19,7 @@ class Game(object):
         self.savegame_root = sg_root
         self.savegame_dir = sg_dir
         self.final_backup = final_backup
+        self.steam_appid=steam_appid
         self.__variables = dict(variables)
         
     @property
@@ -118,6 +119,17 @@ class Game(object):
         else:
             self.__final_backup = False
             
+    @property
+    def steam_appid(self):
+        if self.__steam_appid:
+            return self.__steam_appid
+        else:
+            return ""
+            
+    @steam_appid.setter
+    def steam_appid(self,appid):
+        self.__steam_appid = appid
+        
     @property
     def raw_variables(self):
         return self.__variables

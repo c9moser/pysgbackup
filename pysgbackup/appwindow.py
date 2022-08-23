@@ -21,8 +21,11 @@ import gi
 from gi.repository import Gtk,Gio,GLib
 
 import sgbackup
+from sgbackup.config import CONFIG
+
 import os
 import configparser
+import threading
 
 from . import settings,backupdialog,dialogs
 
@@ -36,8 +39,9 @@ class AppWindow(Gtk.ApplicationWindow):
         GV_COL_SAVEGAME_NAME,
         GV_COL_SAVEGAME_ROOT,
         GV_COL_SAVEGAME_DIR,
-        GV_COL_FINAL
-    ) = range(7)
+        GV_COL_FINAL,
+        GV_COL_STEAM_APPID
+    ) = range(8)
     
     (
         BV_COL_FILENAME,
@@ -138,7 +142,7 @@ class AppWindow(Gtk.ApplicationWindow):
         
         
     def __create_gameview_model(self):
-        model = Gtk.ListStore(int,str,str,str,str,str,bool)
+        model = Gtk.ListStore(int,str,str,str,str,str,bool,str)
         db = sgbackup.database.Database()
         for game_id in db.list_game_ids():
             game = db.get_game(game_id)
@@ -149,7 +153,8 @@ class AppWindow(Gtk.ApplicationWindow):
                              game.savegame_name,
                              game.savegame_root,
                              game.savegame_dir,
-                             game.final_backup])
+                             game.final_backup,
+                             game.steam_appid])
         if len(model) > 0:
             self._action_backup_all.set_enabled(True)
             self._action_check_all_backups.set_enabled(True)
@@ -190,7 +195,7 @@ class AppWindow(Gtk.ApplicationWindow):
         self._action_edit_game = add_simple_action('edit-game',self._on_action_edit_game)
         self._action_delete_game = add_simple_action('delete-game',self._on_action_delete_game)
         
-        add_simple_action('update-database',self._on_action_update_database)
+        add_simple_action('database-vacuum',self._on_action_database_vacuum)
         add_simple_action('refresh',self._on_action_refresh)
         add_simple_action('add-game',self._on_action_add_game)
         add_simple_action('settings',self._on_action_settings)
@@ -247,25 +252,142 @@ class AppWindow(Gtk.ApplicationWindow):
             dialog.destroy()
             self.update_backupview()
         
-    def _on_action_update_database(self,action,data):
-        pass
-        
     def _on_action_refresh(self,action,data):
-        pass
+        self.gameview.set_model(self.__create_gameview_model())
+        self.gameview.show()        
+
+    def _on_action_database_vacuum(self,action,data):
+        def on_timeout(dialog):
+            if not dialog.thread_finished:
+                dialog.progress.pulse()
+                return True
+            return False
+            
+        def on_thread_finished(dialog):
+            dialog.thread_finished = True
+            dialog.progress.set_text('DONE')
+            dialog.progress.set_fraction(1.0)
+            dialog.close_button.set_sensitive(True)
+            
+        def thread_func(dialog):
+            db = sgbackup.database.Database()
+            db._db.execute('VACUUM;')
+            GLib.idle_add(on_thread_finished,dialog)
+        
+        dialog = Gtk.MessageDialog(self,
+                                   Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                                   Gtk.MessageType.INFO,
+                                   Gtk.ButtonsType.NONE,
+                                   "Running VACUUM on database.")
+        dialog.thread_finished = False
+        vbox = dialog.get_content_area()
+        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL),False,False,0)
+        dialog.progress = Gtk.ProgressBar()
+        dialog.progress.set_pulse_step(0.2)
+        dialog.progress.set_text('Running VACUUM')
+        vbox.pack_start(dialog.progress,False,False,0)
+        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL),False,False,0)
+        dialog.close_button = dialog.add_button('Close',Gtk.ResponseType.CLOSE)
+        dialog.close_button.set_sensitive(False)
+        dialog.show_all()
+        
+        thread = threading.Thread(target=thread_func,args=(dialog,),daemon=True)
+        GLib.timeout_add(125,on_timeout,dialog)
+        thread.start()
+        
+        dialog.run()
+        dialog.hide()
+        dialog.destroy()
         
     def _on_action_add_game(self,action,data):
         dialog = dialogs.GameDialog(self)
         result = dialog.run()
         dialog.hide()
         if result == Gtk.ResponseType.APPLY:
-            pass
+            db = sgbackup.database.Database()
+            db.add_game(dialog.game)
+            cparser = configparser.ConfigParser()
+            dialog.write_game_config(cparser)
+            with open(os.path.join(CONFIG['user-gameconf-dir'],'.'.join((dialog.game_id,'game'))), 'w') as ofile:
+                cparser.write(ofile)
+            self.gameview.set_model(self.__create_gameview_model())
+            self.gameview.show()        
         dialog.destroy()        
         
+        
+    # _on_action_add_game()
+    
     def _on_action_edit_game(self,action,data):
-        pass
+        model,iter = self.gameview.get_selection().get_selected()
+        if iter:
+            db = sgbackup.database.Database()
+            gameid = model.get_value(iter,self.GV_COL_GAMEID)
+            game = db.get_game(gameid)
+            if not game:
+                (
+                    name,
+                    sgname,
+                    sgroot,
+                    sgdir,
+                    final,
+                    steam_appid
+                ) = model.get(iter,
+                              self.GV_COL_NAME,
+                              self.GV_COL_SAVEGAME_NAME,
+                              self.GV_COL_SAVEGAME_ROOT,
+                              self.GV_COL_SAVEGAME_DIR,
+                              self.GV_COL_FINAL,
+                              self.GV_COL_STEAM_APPID)
+                game = {
+                    'game-id': gameid,
+                    'name': name,
+                    'savegame-name': sgname,
+                    'savegame-root': sgroot,
+                    'savegame-dir': sgdir,
+                    'final-backup': final,
+                }
+                if steam_appid:
+                    game['steam-appid'] = steam_appid
+
+            dialog = dialogs.GameDialog(parent=self,game=game)
+            result = dialog.run()
+            dialog.hide()
+            if result == Gtk.ResponseType.APPLY:
+                g = dialog.game
+                db = sgbackup.database.Database()
+                db.add_game(g)
+                if g.game_id != model.get_value(iter,GV_COL_GAMEID):
+                    gc = os.path.join(CONFIG['user-gameconf-dir'],'.'.join((gameid,'game')))
+                    if os.path.isfile(gc):
+                        os.unlink(gc)
+                gc = os.path.join(CONFIG['user-gameconf-dir'],'.'.join((g.game_id,'game')))
+                cparser = configparser.ConfigParser()
+                dialog.write_game_config(cparser)
+                with open(gc,'w') as ofile:
+                    cparser.write(gc)                    
+            dialog.destroy()
+            
+    # _on_action_edit_game()
     
     def _on_action_delete_game(self,action,data):
-        pass
+        iter,model = self.gameview.get_selection().get_selected()
+        if iter:
+            gameid = model.get_value(iter,self.GV_COL_GAMEID)
+            gc = os.path.join(CONFIG['user-gameconf-dir'],'.'.join(gameid,'game'))
+            if os.path.isfile(gc):
+                dialog = Gtk.MessageDialog(self,
+                                           Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                                           Gtk.MessageType.QUESTION,
+                                           Gtk.ButtonsType.YES_NO,
+                                           'Delete GameConf for game "{}"?'.format(model.get_value(iter,GV_COL_NAME)))
+                result = dialog.run()
+                dialog.hide()
+                if result == Gtk.ResponseType.YES:
+                    os.unlink(gc)
+            db = sgbackup.database.Database()
+            db.delete_game(gameid)
+            model.remove(iter)
+            self.gameview.show()
         
     def _on_action_backup_all(self,action,data):
         db = sgbackup.database.Database()

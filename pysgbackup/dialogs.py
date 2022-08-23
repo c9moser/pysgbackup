@@ -32,6 +32,7 @@ import shelve
 import time
 import hashlib
 import configparser
+import string
 
 class BackupDialog(Gtk.Dialog):
     def __init__(self,parent=None):
@@ -490,46 +491,120 @@ class CheckGamesDialog(Gtk.Dialog):
     # _thread_func()
 # CheckGamesDialog class
 
-class GameDialog(Gtk.Dialog):
-    def __init__(self,parent=None,game=None,game_id=None):
+class VariableDialog(Gtk.Dialog):
+    def __init__(self,parent=None,name='',value=''):
         def create_label(text):
             lbl = Gtk.Label(text)
-            
+            lbl.set_xalign(0.0)
+            self.sizegroup.add_widget(lbl)
             return lbl
-            
+        # create_label()
+        
         Gtk.Dialog.__init__(self,parent=parent)
+        self.set_title('Game Variables')
         
         vbox = self.get_content_area()
         self.sizegroup = Gtk.SizeGroup()
         self.sizegroup.set_mode(Gtk.SizeGroupMode.HORIZONTAL)
         
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        label = create_label('GameID:')
-        self.sizegroup.add_widget(label)
+        label = create_label('Name:')
+        hbox.pack_start(label,False,False,5)
+        self.name_entry = Gtk.Entry()
+        self.name_entry.set_text(name)
+        self.name_entry.connect('changed',self._on_name_entry_changed)
+        hbox.pack_start(self.name_entry,True,True,0)
+        vbox.pack_start(hbox,False,False,0)
+        
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        label = create_label('Value')
+        hbox.pack_start(label,False,False,5)
+        self.value_entry = Gtk.Entry()
+        self.value_entry.set_text(value)
+        hbox.pack_start(self.value_entry,True,True,0)
+        vbox.pack_start(hbox,False,False,0)
+        
+        self.apply_button = self.add_button('Apply', Gtk.ResponseType.APPLY)
+        if not self.name:
+            self.apply_button.set_sensitive(False)
+            
+        self.cancel_button = self.add_button('Cancel',Gtk.ResponseType.CANCEL)
+        
+        self.show_all()
+        
+    @property
+    def name(self):
+        return self.name_entry.get_text()
+    @name.setter
+    def name(self,s):
+        self.name_entry.set_text(s)
+        self.name_entry.show()
+        
+    @property
+    def value(self):
+        return self.value_entry.get_text()
+    @value.setter
+    def value(self,s):
+        self.value_entry.set_text(s)
+        self.value_entry.show()
+        
+    def _on_name_entry_changed(self,entry):
+        if self.name:
+            self.apply_button.set_sensitive(True)
+        else:
+            self.apply_button.set_sensitive(False)
+# VariableDialog class
+
+class GameDialog(Gtk.Dialog):
+    (COL_NAME,COL_VALUE) = range(2)
+    
+    def __init__(self,parent=None,game=None,game_id=None):
+        def create_label(text,sizegroup):
+            lbl = Gtk.Label(text)
+            lbl.set_xalign(0.0)
+            sizegroup.add_widget(lbl)
+            return lbl
+            
+        Gtk.Dialog.__init__(self,parent=parent)
+        
+        self.__final_backup = False
+        
+        self.set_default_size(400,400)
+        vbox = self.get_content_area()
+        self.sizegroup = Gtk.SizeGroup()
+        self.sizegroup.set_mode(Gtk.SizeGroupMode.HORIZONTAL)
+        
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        label = create_label('Database ID:',self.sizegroup)
+        hbox.pack_start(label,False,False,5)
+        self.dbid_label = Gtk.Label('0')
+        hbox.pack_start(self.dbid_label,True,True,0) 
+        vbox.pack_start(hbox,False,False,0)
+        
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        label = create_label('GameID:',self.sizegroup)
         hbox.pack_start(label,False,False,5)
         self.gameid_entry = Gtk.Entry()
         hbox.pack_start(self.gameid_entry,True,True,0)
         vbox.pack_start(hbox,False,False,0)
         
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        label = create_label('Game Name:')
-        self.sizegroup.add_widget(label)
+        label = create_label('Game Name:',self.sizegroup)
+
         hbox.pack_start(label,False,False,5)
         self.name_entry = Gtk.Entry()
         hbox.pack_start(self.name_entry,True,True,0)
         vbox.pack_start(hbox,False,False,0)
         
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        label = create_label('Savegame Name:')
-        self.sizegroup.add_widget(label)
+        label = create_label('Savegame Name:',self.sizegroup)
         hbox.pack_start(label,False,False,5)
         self.savegame_name_entry = Gtk.Entry()
         hbox.pack_start(self.savegame_name_entry,True,True,0)
         vbox.pack_start(hbox,False,False,0)
         
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        label = create_label('Savegame Root:')
-        self.sizegroup.add_widget(label)
+        label = create_label('Savegame Root:',self.sizegroup)
         hbox.pack_start(label,False,False,5)
         self.savegame_root_entry = Gtk.Entry()
         hbox.pack_start(self.savegame_root_entry,True,True,0)
@@ -539,8 +614,7 @@ class GameDialog(Gtk.Dialog):
         vbox.pack_start(hbox,False,False,0)
         
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        label = create_label('Savegame Directory:')
-        self.sizegroup.add_widget(label)
+        label = create_label('Savegame Directory:',self.sizegroup)
         hbox.pack_start(label,False,False,5)
         self.savegame_dir_entry = Gtk.Entry()
         hbox.pack_start(self.savegame_dir_entry,True,True,0)
@@ -549,6 +623,63 @@ class GameDialog(Gtk.Dialog):
         hbox.pack_start(button,False,False,0)
         vbox.pack_start(hbox,False,False,0)
         
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.steam_appid_label = create_label('Steam AppID:',self.sizegroup)
+        self.steam_appid_label.set_sensitive(False)
+        hbox.pack_start(self.steam_appid_label,False,False,5)
+        self.steam_appid_entry = Gtk.Entry()
+        self.steam_appid_entry.set_sensitive(False)
+        hbox.pack_start(self.steam_appid_entry,True,True,0)
+        self.steam_appid_switch = Gtk.Switch()
+        self.steam_appid_switch.connect('notify::active',self._on_steam_appid_switch_notify_active)
+        self.steam_appid_switch.set_active(False)
+        hbox.pack_start(self.steam_appid_switch,False,False,0)
+        vbox.pack_start(hbox,False,False,0)
+        
+        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL),False,False,0)
+        
+        # Variables
+        self.variables_toolbar = Gtk.Toolbar()
+        self.variables_toolbar.set_icon_size(Gtk.IconSize.SMALL_TOOLBAR)
+        self.add_variable_button = Gtk.ToolButton()
+        self.add_variable_button.set_icon_name('list-add')
+        self.add_variable_button.set_label('Add Variable')
+        self.add_variable_button.connect('clicked',self._on_add_variable_clicked)
+        self.variables_toolbar.insert(self.add_variable_button,-1)
+        
+        self.edit_variable_button = Gtk.ToolButton()
+        self.edit_variable_button.set_icon_name('document-edit-symbolic')
+        self.edit_variable_button.set_label('Edit Variable')
+        self.edit_variable_button.connect('clicked',self._on_edit_variable_clicked)
+        self.variables_toolbar.insert(self.edit_variable_button,-1)
+        
+        self.remove_variable_button = Gtk.ToolButton()
+        self.remove_variable_button.set_icon_name('list-remove')
+        self.remove_variable_button.set_label('Remove Variable')
+        self.remove_variable_button.connect('clicked',self._on_remove_variable_clicked)
+        self.variables_toolbar.insert(self.remove_variable_button,-1)
+        
+        vbox.pack_start(self.variables_toolbar,False,False,0)
+        
+        scrolled = Gtk.ScrolledWindow()
+        model = Gtk.ListStore(str,str)
+        self.variables_view = Gtk.TreeView(model)
+        self.variables_view.get_selection().connect('changed',self._on_varaibles_view_selection_changed)
+        renderer = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn(cell_renderer=renderer,text=self.COL_NAME)
+        column.set_sort_column_id(self.COL_NAME)
+        self.variables_view.append_column(column)
+        
+        renderer = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn(cell_renderer=renderer,text=self.COL_VALUE)
+        self.variables_view.append_column(column)
+        scrolled.add(self.variables_view)
+        self._on_varaibles_view_selection_changed(self.variables_view.get_selection())
+        
+        vbox.pack_start(scrolled,True,True,0)
+            
+        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL),False,False,0)
+        
         if game:
             self._set_game_data(game,game_id)
         
@@ -556,50 +687,304 @@ class GameDialog(Gtk.Dialog):
         self.add_button('Cancel',Gtk.ResponseType.CANCEL)
         self.show_all()
     # __init__()
+    
+    @property
+    def game_id(self):
+        return self.gameid_entry.get_text()
+    @game_id.setter
+    def game_id(self,s):
+        self.gameid_entry.set_text(s)
+        self.gameid_entry.show()
         
+    @property
+    def name(self):
+        return self.name_entry.get_text()   
+    @name.setter
+    def name(self,s):
+        self.name_entry.set_text(s)
+        self.name_entry.show()
+        
+    @property
+    def savegame_name(self):
+        return self.savegame_name_entry.get_text()
+    @savegame_name.setter
+    def savegame_name(self,s):
+        self.savegame_name_entry.set_text(s)
+        self.savegame_name_entry.show()
+        
+    @property
+    def savegame_root(self):
+        t = string.Template(self.savegame_root_entry.get_text())
+        return t.substitute(self.variables)
+        
+    @savegame_root.setter
+    def savegame_root(self,s):
+        self.savegame_root_entry.set_text(s)
+        self.savegame_root_entry.show()
+    @property
+    def raw_savegame_root(self):
+        return self.savegame_root_entry.get_text()
+        
+    @property
+    def savegame_dir(self):
+        t = string.Template(self.savegame_dir_entry.get_text())
+        return t.substitute(self.variables)
+        
+    @savegame_dir.setter
+    def savegame_dir(self,s):
+        self.savegame_dir_entry.set_text(s)
+    @property
+    def raw_savegame_dir(self):
+        return self.savegame_dir_entry.get_text()
+    
+    @property
+    def variables(self):
+        ret = sgbackup.config.get_template_vars()
+        
+        for row in self.variables_view.get_model():
+            ret[row[self.COL_NAME]] = row[self.COL_VALUE]
+            
+        return ret
+    @property
+    def raw_variables(self):
+        ret = {}
+        for row in self.variables_view.get_value():
+            ret[row[self.COL_NAME]] = row[self.COL_VALUE]
+        return ret        
+        
+    @property
+    def steam_appid_enabled(self):
+        return self.steam_appid_switch.get_active()
+    @steam_appid_enabled.setter
+    def steam_appid_enabled(self,b):
+        self.steam_appid_enabled.set_active(bool(b))
+        
+    @property
+    def steam_appid(self):
+        if not self.steam_appid_enabled:
+            return None
+
+        s = self.steam_appid_entry.get_text()
+        if not s:
+            return None
+        return s
+    @steam_appid.setter
+    def steam_appid(self,s):
+        if s:
+            self.steam_appid_enabled = True
+            self.steam_appid_entry.set_text(s)
+        else:
+            self.steam_appid_enabled = False
+            self.steam_appid_entry.set_text('')
+   
+    @property            
+    def game(self):
+        return sgbackup.games.Game(self.game_id,
+                                   self.name,
+                                   self.savegame_name,
+                                   self.raw_savegame_root,
+                                   self.raw_savegame_dir,
+                                   id = int(self.dbid_label.get_text()),
+                                   final_backup = self.__final_backup,
+                                   steam_appid = self.steam_appid)
+
     def _set_game_data(self,game,game_id):
         if isinstance(game,sgbackup.games.Game):
-            self.gameid_entry.set_text(game.game_id)
-            self.name_entry.set_text(game.name)
-            self.savegame_name_entry.set_text(game.savegame_name)
-            self.savegame_root_entry.set_text(game.raw_savegame_root)
-            self.savegame_dir_entry.set_text(game.raw_savegame_dir)
-        elif isinstance(game,configparser.ConfigParser):
-            if not game_id:
-                raise ValueError('"game_id" not set!')
-            sect='game'
+            self.dbid_label.set_text(str(game.id))
+            self.game_id = game.game_id
+            self.name = game.name
+            self.savegame_name = game.savegame_name
+            self.savegame_root = game.raw_savegame_root
+            self.savegame_dir = game.raw_savegame_dir
+            self.__final_backup = game.final_backup
             
-            self.gameid_entry.set_text(game_id)
+            if game.steam_appid:
+                self.steam_appid = game.steam_appid
+            
+            model = self.variables_view.get_model()
+            for k,v in game.raw_variables.items():
+                model.append((k,v))
+                
+            
+        elif isinstance(game,configparser.ConfigParser):
+            sect='game'
+            if game_id:
+                self.game_id = game_id
             if game.has_section(sect):
                 if game.has_option(sect,'name'):
-                    self.name_entry(game.get(sect,'name'))
+                    self.name = game.get(sect,'name')
                 if game.has_option(sect,'savegame-name'):
-                    self.savegame_name_entry.set_text(sect,'savegame-name')
+                    self.savegame_name = game.get(sect,'savegame-name')
                 if game.has_option(sect,'savegame-root'):
-                    self.savegame_root_entry.set_text(sect,'savegame-root')
+                    self.savegame_root = game.get(sect,'savegame-root')
                 if game.has_option(sect,'savegame-dir'):
-                    self.savegame_dir_entry.set_text(sect,'savegame-dir')
+                    self.savegame_dir = game.get(sect,'savegame-dir')
+                if game.has_option(sect,'final-backup'):
+                    self.__final_backup = game.getboolean(sect,'final-backup')
+                    
+            sect = 'steam'
+            if game.has_section(sect):
+                if game.has_option(sect,'appid'):
+                    self.steam_appid = game.get(sect,'appid')
+                    
+            sect = 'game-variables'
+            if game.has_section(sect):
+                model = self.variables_view.get_model()
+                for k in game.options(sect):
+                    model.append((k,game.get(k)))                
+            
         elif isinstance(game,dict):
+            if 'id' in game:
+                self.dbid_label.set_text(str(game['id']))
             if 'game-id' in game:
-                self.gameid_entry.set_text(game['game-id'])
+                self.game_id = game['game-id']
             elif game_id:
-                self.gameid_entry.set_text(game_id)
-                
+                self.game_id = game_id
             if 'name' in game:
-                self.name_entry.set_text(game['name'])
+                self.name = game['name']
             if 'savegame-name' in game:
-                self.savegame_name_entry.set_text(game['savegame-name'])
+                self.savegame_name = game['savegame-name']
             if 'savegame-root' in game:
-                self.savegame_root_entry.set_text(game['savegame-root'])
+                self.savegame_root = game['savegame-root']
             if 'savegame-dir' in game:
-                self.savegame_dir_entry.set_text(game['savegame-dir'])
+                self.savegame_dir = game['savegame-dir']
+            if 'final-backup' in game:
+                self.__final_backup = game['final-backup']
+            if 'steam-appid' in game:
+                self.steam_appid = game['steam_appid']
+            if 'game-variables' in game:
+                model = self.variables_view.get_model()
+                for k,v in dict['game-variables'].items():
+                    model.append((k,v))  
         else:
             raise TypeError('Unknown "game"-type!')
+    # _set_game_data()
+        
+    def _on_steam_appid_switch_notify_active(self,switch,state):
+        if switch.get_active():
+            self.steam_appid_label.set_sensitive(True)
+            self.steam_appid_entry.set_sensitive(True)
+        else:
+            self.steam_appid_label.set_sensitive(False)
+            self.steam_appid_entry.set_sensitive(False)
             
+    def _on_add_variable_clicked(self,button):
+        dialog = VariableDialog(parent=self)
+        result = dialog.run()
+        dialog.hide()
+        
+        if result == Gtk.ResponseType.APPLY:
+            if dialog.name:
+                model = self.variables_view.get_model()
+                model.append([dialog.name,dialog.value])
+                self.variables_view.show()
+        dialog.destroy()
+        
+    def _on_edit_variable_clicked(self,button):
+        model,iter = self.variables_view.get_selection().get_selected()
+        if iter:
+            v_name,v_value = model.get(iter,self.COL_NAME,self.COL_VALUE)
+            dialog = VariableDialog(parent=self,name=v_name,value=v_value)
+            result = dialog.run()
+            dialog.hide()
+            if result == Gtk.ResponseType.APPLY:
+                model.set(iter,(self.COL_NAME,self.COL_VALUE),(dialog.name,dialog.value))
+                self.variables_view.show()
+            dialog.destroy()
+        
+    def _on_remove_variable_clicked(self,button):
+        model,iter = self.variables_view.get_selection().get_selected()
+        if iter:
+            model.remove(iter)
+        
+    def _on_varaibles_view_selection_changed(self,selection):
+        model,iter = selection.get_selected()
+        if iter:
+            self.edit_variable_button.set_sensitive(True)
+            self.remove_variable_button.set_sensitive(True)
+        else:
+            self.edit_variable_button.set_sensitive(False)
+            self.remove_variable_button.set_sensitive(False)
+    
     def _on_savegame_root_button_clicked(self,button):
-        pass
+        dialog = Gtk.FileChooserDialog("Select Savegame Root-Directory",
+                                       self,
+                                       Gtk.FileChooserAction.SELECT_FOLDER)
+        dialog.add_button('Accept', Gtk.ResponseType.ACCEPT)
+        dialog.add_button('Cancel', Gtk.ResponseType.CANCEL)
+        if self.savegame_root:
+            t = string.Template(self.savegame_root)
+            path = t.substitute(sgbackup.config.get_template_vars())
+            dialog.set_current_folder(path)
+            
+        else:
+            dialog.set_current_folder(GLib.get_home_dir())
+        
+        result = dialog.run()
+        dialog.hide()
+        if result == Gtk.ResponseType.ACCEPT:
+            self.savegame_root_entry.set_text(dialog.get_filename())
+        dialog.destroy()
         
     def _on_savegame_dir_button_clicked(self,button):
-        pass
+        if not self.savegame_root:
+            return
+            
+        def on_dialog_file_selection_changed(dialog):
+            fn = dialog.get_filename()
+            if os.path.normpath(fn).startswith(os.path.normpath(os.path.join(self.savegame_root,''))):
+                dialog.accept_button.set_sensitive(True)
+            else:
+                dialog.accept_button.set_sensitive(False)
+        # on_dialog_file_selection_changed()
+            
+        dialog = Gtk.FileChooserDialog('Select SaveGame Directory',
+                                       self,
+                                       Gtk.FileChooserAction.SELECT_FOLDER)
+        dialog.accept_button = dialog.add_button('Accept',Gtk.ResponseType.ACCEPT)
+        dialog.cancel_button = dialog.add_button('Cancel',Gtk.ResponseType.CANCEL)
+        dialog.set_create_folders(False)
+        dialog.connect('selection-changed',on_dialog_file_selection_changed)
+        if self.savegame_dir:
+            if os.path.isabs(self.savegame_dir):
+                dialog.set_current_folder(self.savegame_dir)
+            else:
+                dialog.set_current_folder(os.path.join(self.savegame_root,self.savegame_dir))
+        else:
+            dialog.set_current_folder(self.savegame_root)
+            
+        result = dialog.run()
+        dialog.hide()
+        if result == Gtk.ResponseType.ACCEPT:
+            prefix = os.path.join(os.path.normpath(self.savegame_root),'')
+            fn = os.path.normpath(dialog.get_filename())
+            if fn.startswith(prefix):
+                self.savegame_dir = fn[len(prefix):]
+            else:
+                self.savegame_dir = fn
+        dialog.destroy()
+        
+    def write_game_config(self,cparser):
+        section = 'game'
+        if not cparser.has_section(section):
+            cparser.add_section(section)
+        cparser.set(section,'name',self.name)
+        cparser.set(section,'savegame-name',self.savegame_name)
+        cparser.set(section,'savegame-root',self.raw_savegame_root)
+        cparser.set(section,'savegame-dir',self.raw_savegame_dir)
+        
+        if self.steam_appid_enabled and self.steam_appid:
+            section = 'steam'
+            if not cparser.has_section(section):
+                cparser.add_section(section)
+            cparser.set(section,'appid',self.steam_appid)
+            
+        var_model = self.variables_view.get_model()
+        if len(var_model) > 0:
+            section = 'game-variables'
+            if not cparser.has_section(section):
+                cparser.add_section(section)
+            for row in var_model:
+                cparser.set(section,row[self.COL_NAME],row[self.COL_VALUE])        
 # GameDialog class
 

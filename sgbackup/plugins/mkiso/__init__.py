@@ -80,7 +80,12 @@ OPTIONS:
         image_name = os.path.join(CONFIG['mkiso.directory'],
                                   "SaveGames.{}.iso".format(dt.strftime('%Y%m%d-%H%M%S')))
         
-        
+        #FIX msys bug with burn software
+        if sys.platform == 'win32':
+            print(image_name.replace('/','\\'))
+        else:
+            print(image_name)
+
         game_list=[]
         for gid in db.list_game_ids():
             game = db.get_game(gid)
@@ -106,6 +111,9 @@ OPTIONS:
         shelve_file=os.path.join(GLib.get_tmp_dir(),
                                  'sgbackup-mkiso.{}.{}'.format(GLib.get_user_name(),dt.strftime('%Y%m%d%H%M%S')),
                                  'games')
+                                 
+        if CONFIG['verbose']:
+            print("creating game database ... ",end="")
         if not os.path.isdir(os.path.dirname(shelve_file)):
             os.makedirs(os.path.dirname(shelve_file))
             
@@ -135,12 +143,16 @@ OPTIONS:
                     'files': game_spec_files
                 }
                 d[game_id]=game_spec
-                
+        if CONFIG['verbose']:
+            print('Done')
+    
         for f in os.listdir(os.path.dirname(shelve_file)):
             if f == '.' or f == '..':
                 continue
             iso_files.append((os.path.join(os.path.dirname(shelve_file),f),'/'.join(('/SaveGames',f))))
-        
+    
+        if CONFIG['verbose']:
+            print('creating ISO-file ... ',end='')
         disc = pycdlib.PyCdlib()
         disc.new(udf='2.60')
         for i in iso_dirs:
@@ -149,15 +161,21 @@ OPTIONS:
         for filename,iso_name in iso_files:
             disc.add_file(filename,udf_path=iso_name)
             
-        print(image_name)
         disc.write(image_name)
+        if CONFIG['verbose']:
+            print('DONE')
         
+        # checking for max .iso files        
         if CONFIG['mkiso.maxiso'] > 0:
+            if CONFIG['verbose']:
+                print('Check for max iso-files')
             n = CONFIG['mkiso.maxiso']
             count = 0
             for img in sorted(glob.glob(os.path.join(CONFIG['mkiso.directory'],'SaveGames.*.iso')),reverse=True):
                 count += 1
                 if count > n:
+                    if CONFIG['verbose']:
+                        print('Deleting "{}"'.format(img))
                     os.unlink(img)            
     # command_mkiso
     

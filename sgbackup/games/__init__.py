@@ -41,11 +41,22 @@ def parse_gameconf(game_id):
             if parser.has_option(sect,'savegame-dir'):
                 sg_dir=parser.get(sect,'savegame-dir')
             
+        steam_appid = None
+        sect = 'steam'
+        if parser.has_section(sect):
+            if parser.has_option(sect,'appid'):
+                steam_appid = parser.get(sect,'appid')
         
+        sect='game-variables'
+        variables = {}
+        if parser.has_section(sect):
+            for var in parser.get_options(sect):
+                variables[var] = parser.get(sect,var)
+                
         if not game:
             if not name or not sg_name or not sg_dir or not sg_root:
                 return None
-            return Game(game_id,name,sg_name,sg_root,sg_dir)
+            return Game(game_id,name,sg_name,sg_root,sg_dir,variables=variables,steam_appid=steam_appid)
         
         if game_id:
             game.game_id = game_id
@@ -55,6 +66,10 @@ def parse_gameconf(game_id):
             game.savegame_name = sg_name
         if sg_root:
             game.savegame_root = sg_root
+        if steam_appid:
+            game.steam_appid = steam_appid
+        if variables:
+            game.raw_variables.update(variables)
             
         return game
     # _real_parse_file()

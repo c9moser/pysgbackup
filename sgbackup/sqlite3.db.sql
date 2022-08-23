@@ -5,7 +5,8 @@ CREATE TABLE games (
     savegame_name VARCHAR(256),
     savegame_root VARCHAR(512) NOT NULL,
     savegame_dir VARCHAR(512) NOT NULL,
-    final_backup CHAR(1) DEFAULT 'N'
+    final_backup CHAR(1) DEFAULT 'N',
+    steam_appid VARCHAR(128)
 );
 CREATE INDEX games_game_id_index ON games(game_id);
 CREATE INDEX games_savegame_name ON games(savegame_name);

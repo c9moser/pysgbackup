@@ -136,7 +136,7 @@ class Database:
         return False
         
     def get_game(self,game_id):
-        sql = "SELECT id,name,savegame_name,savegame_root,savegame_dir,final_backup FROM games WHERE game_id=?;"
+        sql = "SELECT id,name,savegame_name,savegame_root,savegame_dir,final_backup,steam_appid FROM games WHERE game_id=?;"
         var_sql="SELECT name,value FROM game_variables WHERE game=?;"
         
         ret = None
@@ -150,7 +150,7 @@ class Database:
             for i in cur:
                 var[i[0]] = i[1]
                 
-            ret = games.Game(game_id,row[1],row[2],row[3],row[4],row[0],self._db_to_bool(row[5]),var)
+            ret = games.Game(game_id,row[1],row[2],row[3],row[4],row[0],self._db_to_bool(row[5]),variables=var,steam_appid=row[6])
             
         return ret
     # get_game()
@@ -214,9 +214,43 @@ class Database:
         cur = self._db.cursor()
         cur.execute(sql,(filename,))
         self._db.commit()
+    # delete_gameconf()
         
+    def add_game_variables(self,game):
+        if game.id > 0:
+            g = game
+        else:
+            g = self.get_game(game.game_id)
+            
+        if game.raw_variables:
+            cur = self._db.cursor()
+            cur.execute('SELECT name FROM game_variables WHERE game=?;',(g.id))
+            for row in cur:
+                if row[0] not in game.raw_variables:
+                    cur2 = self._db.cursor()
+                    cur2.execute('DELETE FROM game_variables WHERE game=? AND name=?;',(g.id,row[0]))
+            
+            for k,v in game.raw_variables.items():
+                sql_args = (v,g.id,k)
+                if _has_game_variable(g,k):
+                    sql = "UPDATE game_variables SET value=? WHERE game=? AND name=?;"
+                else:
+                    sql = "INSERT INTO game_variables (value,game,name) VALUES (?,?,?);"      
+                cur.execute(sql,sql_args)
+        self._db.commit()
+    # add_game_variables()
         
     def add_game(self,game,gameconf=[]):
+        def _has_game_variable(game,varname):
+            sql = 'SELECT id FROM game_variables WHERE game=? AND name=?;'
+            cur = self._db.cursor()
+            cur.execute(sql,(game.id,varname))
+            row = cur.fetchone()
+            if row and row[0] > 0:
+                return True
+            return False
+        # _has_game_variable()
+        
         if game.id:
             sql_args = (
                 game.game_id,
@@ -225,8 +259,9 @@ class Database:
                 game.raw_savegame_root,
                 game.raw_savegame_dir,
                 self._bool_to_db(game.final_backup),
+                game.steam_appid,
                 game.id)
-            sql = "UPDATE games SET game_id=?,name=?,savegame_name=?,savegame_root=?,savegame_dir=?,final_backup=? WHERE id=?;"
+            sql = "UPDATE games SET game_id=?,name=?,savegame_name=?,savegame_root=?,savegame_dir=?,final_backup=?,steam_appid=? WHERE id=?;"
         else:
             g=self.get_game(game.game_id)
             if (g):
@@ -241,8 +276,9 @@ class Database:
                     game.raw_savegame_root,
                     game.raw_savegame_dir,
                     self._bool_to_db(final_backup),
+                    game.steam_appid,
                     game.game_id)
-                sql = "UPDATE games SET name=?,savegame_name=?,savegame_root=?,savegame_dir=?,final_backup=? WHERE game_id=?;"
+                sql = "UPDATE games SET name=?,savegame_name=?,savegame_root=?,savegame_dir=?,final_backup=?,steam_appid=? WHERE game_id=?;"
             else:
                 sql_args = (
                     game.game_id,
@@ -250,24 +286,21 @@ class Database:
                     game.savegame_name,
                     game.raw_savegame_root,
                     game.raw_savegame_dir,
-                    self._bool_to_db(game.final_backup))
-                sql = "INSERT INTO games (game_id,name,savegame_name,savegame_root,savegame_dir,final_backup) VALUES(?,?,?,?,?,?);"
+                    self._bool_to_db(game.final_backup),
+                    game.steam_appid)
+                sql = "INSERT INTO games (game_id,name,savegame_name,savegame_root,savegame_dir,final_backup,steam_appid) VALUES(?,?,?,?,?,?,?);"
 
         cur = self._db.cursor()
         cur.execute(sql,sql_args)
         self._db.commit()
         
-        if game.id:
-            g=game
-        else:
-            g=self.get_game(game.game_id)
-            
-        for n,v in game.variables.items():
-            pass
-        
+        if game.raw_variables:
+            self.add_game_variables(game)
+                
         for i in gameconf:
             self.add_gameconf(i.filename,g)
     # add_game()
+    
     
     def delete_game(self,game_id):
         sql = "DELETE FROM games WHERE game_id=?;"
