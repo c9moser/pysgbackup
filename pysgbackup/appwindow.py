@@ -53,7 +53,7 @@ class AppWindow(Gtk.ApplicationWindow):
         super().__init__(*args,**kwargs)
         self.__create_actions()
         self.set_title('PySGBackup')
-        self.set_default_size(600,600)
+        self.set_default_size(800,600)
         self.set_default_icon_name('media-floppy-symbolic')
         self.set_icon_name('media-floppy-symbolic')
         builder = Gtk.Builder()
@@ -87,24 +87,30 @@ class AppWindow(Gtk.ApplicationWindow):
         self.gameview.get_selection().connect('changed',self._on_gameview_selection_changed)
         
         renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn('ID',renderer,text=self.GV_COL_ID)
-        column.set_sort_column_id(self.GV_COL_ID)
-        self.gameview.append_column(column)
+        self.gameview.column_id = Gtk.TreeViewColumn('ID',renderer,text=self.GV_COL_ID)
+        self.gameview.column_id.set_sort_column_id(self.GV_COL_ID)
+        self.gameview.append_column(self.gameview.column_id)
         
         renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn('GameID',renderer,text=self.GV_COL_GAMEID)
-        column.set_sort_column_id(self.GV_COL_GAMEID)
-        self.gameview.append_column(column)
+        self.gameview.column_gameid = Gtk.TreeViewColumn('GameID',renderer,text=self.GV_COL_GAMEID)
+        self.gameview.column_gameid.set_sort_column_id(self.GV_COL_GAMEID)
+        self.gameview.append_column(self.gameview.column_gameid)
         
         renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn('Name', renderer,text=self.GV_COL_NAME)
-        column.set_sort_column_id(self.GV_COL_NAME)
-        self.gameview.append_column(column)
+        self.gameview.column_name = Gtk.TreeViewColumn('Name', renderer,text=self.GV_COL_NAME)
+        self.gameview.column_name.set_sort_column_id(self.GV_COL_NAME)
+        self.gameview.append_column(self.gameview.column_name)
         
         renderer = Gtk.CellRendererToggle()
         renderer.set_activatable(False)
-        column = Gtk.TreeViewColumn('Final',renderer,active=self.GV_COL_FINAL)
-        self.gameview.append_column(column)
+        self.gameview.column_final = Gtk.TreeViewColumn('Final',renderer,active=self.GV_COL_FINAL)
+        self.gameview.append_column(self.gameview.column_final)
+        
+        renderer = Gtk.CellRendererText()
+        self.gameview.column_steam_appid = Gtk.TreeViewColumn('Steam AppID',renderer,text=self.GV_COL_STEAM_APPID)
+        self.gameview.column_steam_appid.set_sort_column_id(self.GV_COL_STEAM_APPID)
+        self.gameview.column_steam_appid.set_visible(CONFIG['pysgbackup.show-steam-appid'])
+        self.gameview.append_column(self.gameview.column_steam_appid)
         
         self.gameview_scrolled.add(self.gameview)
         self.paned.pack1(self.gameview_scrolled,True,False)
@@ -124,6 +130,7 @@ class AppWindow(Gtk.ApplicationWindow):
         renderer.set_radio(True)
         column = Gtk.TreeViewColumn('Latest',renderer,active=self.BV_COL_LATEST)
         self.backupview.append_column(column)
+        
         
         self.backupview_scrolled.add(self.backupview)
         self.paned.pack2(self.backupview_scrolled,False,True)

@@ -24,6 +24,7 @@ import sgbackup
 from sgbackup.config import CONFIG
 import string
 import os
+import pysgbackup
 
 SETTINGS = {
 }
@@ -52,6 +53,9 @@ class SettingsDialog(Gtk.Dialog):
         self.content = Gtk.Stack()
         self.paned.pack2(self.content,True,True)
         
+        self.settings_app = self.__create_app_settings()
+        self.content.add_titled(self.settings_app,'app','App Settings')
+        
         self.settings_generic = self.__create_generic_settings()
         self.content.add_titled(self.settings_generic,'generic','Generic Settings')
         
@@ -70,6 +74,32 @@ class SettingsDialog(Gtk.Dialog):
         
         self.show_all()
         
+    def __create_app_settings(self):
+        def create_label(text,sizegroup):
+            l = Gtk.Label(text)
+            l.set_xalign(0.0)
+            sizegroup.add_widget(l)
+            return l
+        # create_label()
+        
+        w = Gtk.ScrolledWindow()
+        w.sizegroup = Gtk.SizeGroup()
+        w.sizegroup.set_mode(Gtk.SizeGroupMode.HORIZONTAL)
+        lb = Gtk.ListBox()
+        
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        hbox.pack_start(create_label('Show Steam-AppIDs:',w.sizegroup),False,False,5)
+        w.steam_appid_switch = Gtk.Switch()
+        w.steam_appid_switch.set_active(CONFIG['pysgbackup.show-steam-appid'])
+        hbox.pack_end(w.steam_appid_switch,False,False,0)
+        row = Gtk.ListBoxRow()
+        row.add(hbox)
+        lb.add(row)
+        
+        w.add(lb)
+        return w
+        
+            
     def __create_generic_settings(self):
         def create_label(text):
             l = Gtk.Label(text)
@@ -370,9 +400,11 @@ class SettingsDialog(Gtk.Dialog):
     
     def save_settings(self):
         self.emit('save-settings')
-        #TODO write_config
+        filename = CONFIG['user-config']
+        sgbackup.config.write_config(filename,False)
         
     def do_save_settings(self):
+        app = self.settings_app
         generic = self.settings_generic
         backup = self.settings_backup
         
@@ -401,4 +433,7 @@ class SettingsDialog(Gtk.Dialog):
         t = string.Template(backup.listfile_entry.get_text())
         CONFIG['backup.listfile'] = t.substitute(sgbackup.config.get_template_vars())
         
+        CONFIG['pysgbackup.show-steam-appid'] = app.steam_appid_switch.get_active()
+        pysgbackup.app.appwindow.gameview.column_steam_appid.set_visible(app.steam_appid_switch.get_active())
+                
 
