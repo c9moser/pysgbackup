@@ -171,13 +171,13 @@ class Database:
         
     def get_gameconf_by_filename(self,filename):
         sql = """SELECT t2.game_id,t1.checksum,t1.user_file 
-            FROM gameconf AS t1 JOIN games AS t2 ON t1.game = t2.id 
-            WHERE t1.filename = ?;"""
+            FROM gameconf AS t1 JOIN games AS t2 ON t1.game=t2.id 
+            WHERE t1.filename=?;"""
     
         ret = None
         
         cur = self._db.cursor()
-        cur.execute(sql,(os.path.normpath(filename),))
+        cur.execute(sql,(filename,))
         
         row = cur.fetchone();
         
@@ -192,9 +192,10 @@ class Database:
             game = self.get_game(game.game_id)
         assert(game)
             
-        gc = self.get_gameconf_by_filename(filename)
+        fn = os.path.normpath(filename)
+        gc = self.get_gameconf_by_filename(fn)
         
-        new_gc = games.get_gameconf_data_by_filename(os.path.normpath(filename),game.game_id)
+        new_gc = games.get_gameconf_data_by_filename(fn,game.game_id)
         
         if gc:
             sql="UPDATE gameconf SET checksum=?,user_file=? WHERE filename=?;"

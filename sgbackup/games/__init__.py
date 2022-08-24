@@ -50,7 +50,7 @@ def parse_gameconf(game_id):
         sect='game-variables'
         variables = {}
         if parser.has_section(sect):
-            for var in parser.get_options(sect):
+            for var in parser.options(sect):
                 variables[var] = parser.get(sect,var)
                 
         if not game:
