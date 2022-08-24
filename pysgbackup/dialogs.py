@@ -718,7 +718,7 @@ class GameDialog(Gtk.Dialog):
     @property
     def savegame_root(self):
         t = string.Template(self.savegame_root_entry.get_text())
-        return t.substitute(self.variables)
+        return t.safe_substitute(self.variables)
         
     @savegame_root.setter
     def savegame_root(self,s):
@@ -731,7 +731,7 @@ class GameDialog(Gtk.Dialog):
     @property
     def savegame_dir(self):
         t = string.Template(self.savegame_dir_entry.get_text())
-        return t.substitute(self.variables)
+        return t.safe_substitute(self.variables)
         
     @savegame_dir.setter
     def savegame_dir(self,s):
