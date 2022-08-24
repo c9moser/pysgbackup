@@ -177,7 +177,7 @@ class Database:
         ret = None
         
         cur = self._db.cursor()
-        cur.execute(sql,(filename,))
+        cur.execute(sql,(os.path.normpath(filename),))
         
         row = cur.fetchone();
         
@@ -194,7 +194,7 @@ class Database:
             
         gc = self.get_gameconf_by_filename(filename)
         
-        new_gc = games.get_gameconf_data_by_filename(filename,game.game_id)
+        new_gc = games.get_gameconf_data_by_filename(os.path.normpath(filename),game.game_id)
         
         if gc:
             sql="UPDATE gameconf SET checksum=?,user_file=? WHERE filename=?;"
@@ -217,6 +217,15 @@ class Database:
     # delete_gameconf()
         
     def add_game_variables(self,game):
+        def _has_game_variable(game,name):
+            cur = self._db.cursor()
+            cur.execute('SELECT id FROM game_variables WHERE game=? AND name=?;',(game.id,name))
+            row = cur.fetchone()
+            if row and row[0] > 0:
+                return True
+            return False
+        # _has_game_variable()
+            
         if game.id > 0:
             g = game
         else:
@@ -224,7 +233,7 @@ class Database:
             
         if game.raw_variables:
             cur = self._db.cursor()
-            cur.execute('SELECT name FROM game_variables WHERE game=?;',(g.id))
+            cur.execute('SELECT name FROM game_variables WHERE game=?;',(g.id,))
             for row in cur:
                 if row[0] not in game.raw_variables:
                     cur2 = self._db.cursor()

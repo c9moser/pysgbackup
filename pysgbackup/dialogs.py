@@ -124,7 +124,10 @@ class BackupDialog(Gtk.Dialog):
         
             data = {'game': g, 'fraction': (count/len(games))}
             GLib.idle_add(self._on_thread_update,data)
-            sgbackup.backup.backup(db,g)
+            try:
+                sgbackup.backup.backup(db,g)
+            except Exception as error:
+                print(error,file=sys.stderr)
             count += 1
             
         GLib.idle_add(self._on_thread_finished)
@@ -157,7 +160,7 @@ class FinalBackupDialog(Gtk.Dialog):
         self.progress = Gtk.ProgressBar()
         self.progress.set_text(game.game_id)
         self.progress.set_pulse_step(0.1)
-        vbox.pack_start(progress,False,False,0)
+        vbox.pack_start(self.progress,False,False,0)
         
         self.button_close=self.add_button('Close',Gtk.ResponseType.CLOSE)
         self.button_close.set_sensitive(False)
@@ -189,7 +192,7 @@ class FinalBackupDialog(Gtk.Dialog):
             db = sgbackup.database.Database()
             self.game.final_backup = True
             db.add_game(self.game)
-            sgbackup.backup.backup(self.game)
+            sgbackup.backup.backup(db,self.game)
             
         GLib.idle_add(self._on_thread_finished)
         
@@ -748,7 +751,7 @@ class GameDialog(Gtk.Dialog):
     @property
     def raw_variables(self):
         ret = {}
-        for row in self.variables_view.get_value():
+        for row in self.variables_view.get_model():
             ret[row[self.COL_NAME]] = row[self.COL_VALUE]
         return ret        
         
@@ -786,7 +789,8 @@ class GameDialog(Gtk.Dialog):
                                    self.raw_savegame_dir,
                                    id = int(self.dbid_label.get_text()),
                                    final_backup = self.__final_backup,
-                                   steam_appid = self.steam_appid)
+                                   steam_appid = self.steam_appid,
+                                   variables = self.raw_variables)
 
     def _set_game_data(self,game,game_id):
         if isinstance(game,sgbackup.games.Game):

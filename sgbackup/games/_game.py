@@ -85,7 +85,7 @@ class Game(object):
         
     @property
     def savegame_root(self):
-        return os.path.normpath(Template(self.__sg_root).substitute(self.variables))
+        return os.path.normpath(Template(self.__sg_root).safe_substitute(self.variables))
         
     
     @savegame_root.setter
@@ -100,7 +100,7 @@ class Game(object):
 
     @property
     def savegame_dir(self):
-        return os.path.normpath(Template(self.__sg_dir).substitute(self.variables))
+        return os.path.normpath(Template(self.__sg_dir).safe_substitute(self.variables))
         
     @savegame_dir.setter
     def savegame_dir(self,x):

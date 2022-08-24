@@ -82,7 +82,7 @@ def delete_backup(db,game,filename):
             cb(db,game,fn)
 # delete_backup()
 
-def delete_backups(game,keep_latest=True):
+def delete_backups(db,game,keep_latest=True):
     latest = find_latest_backup(game)
     for i in find_backups(game):
         if keep_latest and i == latest:
@@ -96,7 +96,7 @@ def delete_backups(game,keep_latest=True):
         if ignore_file:
             continue
         
-        delete_backup(game,i)
+        delete_backup(db,game,i)
 # delete_savegames()
 
 def delete_savegames(game):

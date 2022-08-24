@@ -368,9 +368,9 @@ class AppWindow(Gtk.ApplicationWindow):
                     pass
                     #TODO: Move and rename savegame-backups
                 with open(gc,'w') as ofile:
-                    cparser.write(gc)                    
+                    cparser.write(ofile)
+                self.update_gameview()                   
             dialog.destroy()
-            
     # _on_action_edit_game()
     
     def _on_action_delete_game(self,action,data):
