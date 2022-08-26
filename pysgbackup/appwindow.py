@@ -89,11 +89,13 @@ class AppWindow(Gtk.ApplicationWindow):
         renderer = Gtk.CellRendererText()
         self.gameview.column_id = Gtk.TreeViewColumn('ID',renderer,text=self.GV_COL_ID)
         self.gameview.column_id.set_sort_column_id(self.GV_COL_ID)
+        self.gameview.column_id.set_visible(CONFIG['pysgbackup.gameview.show-id'])
         self.gameview.append_column(self.gameview.column_id)
         
         renderer = Gtk.CellRendererText()
         self.gameview.column_gameid = Gtk.TreeViewColumn('GameID',renderer,text=self.GV_COL_GAMEID)
         self.gameview.column_gameid.set_sort_column_id(self.GV_COL_GAMEID)
+        self.gameview.column_gameid.set_visible(CONFIG['pysgbackup.gameview.show-gameid'])
         self.gameview.append_column(self.gameview.column_gameid)
         
         renderer = Gtk.CellRendererText()
@@ -104,12 +106,13 @@ class AppWindow(Gtk.ApplicationWindow):
         renderer = Gtk.CellRendererToggle()
         renderer.set_activatable(False)
         self.gameview.column_final = Gtk.TreeViewColumn('Final',renderer,active=self.GV_COL_FINAL)
+        self.gameview.column_final.set_visible(CONFIG['pysgbackup.gameview.show-final'])
         self.gameview.append_column(self.gameview.column_final)
         
         renderer = Gtk.CellRendererText()
         self.gameview.column_steam_appid = Gtk.TreeViewColumn('Steam AppID',renderer,text=self.GV_COL_STEAM_APPID)
         self.gameview.column_steam_appid.set_sort_column_id(self.GV_COL_STEAM_APPID)
-        self.gameview.column_steam_appid.set_visible(CONFIG['pysgbackup.show-steam-appid'])
+        self.gameview.column_steam_appid.set_visible(CONFIG['pysgbackup.gameview.show-steam-appid'])
         self.gameview.append_column(self.gameview.column_steam_appid)
         
         self.gameview_scrolled.add(self.gameview)
@@ -345,16 +348,9 @@ class AppWindow(Gtk.ApplicationWindow):
                               self.GV_COL_SAVEGAME_DIR,
                               self.GV_COL_FINAL,
                               self.GV_COL_STEAM_APPID)
-                game = {
-                    'game-id': gameid,
-                    'name': name,
-                    'savegame-name': sgname,
-                    'savegame-root': sgroot,
-                    'savegame-dir': sgdir,
-                    'final-backup': final,
-                }
-                if steam_appid:
-                    game['steam-appid'] = steam_appid
+                if not steam_appid:
+                    steam_appid=None
+                game = sgbackup.games.Game(gameid,name,sgname,sgroot,sgdir,final_backup=final,steam_appid=steam_appid)
 
             dialog = dialogs.GameDialog(parent=self,game=game)
             result = dialog.run()
@@ -362,7 +358,6 @@ class AppWindow(Gtk.ApplicationWindow):
             if result == Gtk.ResponseType.APPLY:
                 g = dialog.game
                 db = sgbackup.database.Database()
-                db.add_game(g)
                 if g.game_id != model.get_value(iter,self.GV_COL_GAMEID):
                     gc = os.path.join(CONFIG['user-gameconf-dir'],'.'.join((gameid,'game')))
                     if os.path.isfile(gc):
@@ -370,13 +365,17 @@ class AppWindow(Gtk.ApplicationWindow):
                 gc = os.path.join(CONFIG['user-gameconf-dir'],'.'.join((g.game_id,'game')))
                 cparser = configparser.ConfigParser()
                 dialog.write_game_config(cparser)
-                if g.savegame_name != model.get_value(iter,self.GV_COL_SAVEGAME_NAME):
-                    #move and rename savegame-backups
-                    pass
-                    #TODO: Move and rename savegame-backups
+                db.add_game(g)
+                    
                 with open(gc,'w') as ofile:
                     cparser.write(ofile)
-                self.update_gameview()                   
+                    
+                if g.savegame_name != game.savegame_name:
+                    dialog2 = dialogs.RenameBackupsDialog(game,g,self)
+                    dialog2.run()
+                    dialog2.destroy()
+                    
+                self.update_gameview()
             dialog.destroy()
     # _on_action_edit_game()
     

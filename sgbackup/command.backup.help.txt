@@ -9,8 +9,6 @@ OPTIONS:
   -F | --no-final           Create a normal backup and remove final_backup flag
                             if set.
   -f | --final              Create a final backup and set final_backup flag.
-  -L | --listfile=file      Set listfile to filename.
   -V | --no-verbose         Disable verbose output.
   -v | --verbose            Enable verbose output.
-  -W | --no-write-listfile  Don't write a listfile.
-  -w | --write-listfile     Write a listfile.
+

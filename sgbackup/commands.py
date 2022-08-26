@@ -166,14 +166,11 @@ def command_archiver(db,argv):
 def command_backup(db,argv):
     try:
         opts,args = getopt.getopt(argv, 
-                                  "FfL:WwVv",
+                                  "FfVv",
                                   ["final",
-                                   "listfile=",
                                    "no-final",
-                                   "no-write-listfile",
                                    "verbose",
-                                   "no-verbose",
-                                   "write-listfile"])
+                                   "no-verbose"])
     except getopt.GetoptError as err:
         print(err,file=sys.stderr)
         print(COMMANDS['backup']['help-function']('backup'))
@@ -187,17 +184,11 @@ def command_backup(db,argv):
             remove_final_backup_flag = True
         elif (o == '-f' or o == '--final'):
             final_backup = True
-        elif (o == '-L' or o == '--listfile'):
-            config.CONFIG['backup.write-listfile']=True
-            config.CONFIG['backup.listfile']=a
         elif (o == '-V' or o == '--no-verbose'):
             config.CONFIG['verbose'] = False
         elif (o == '-v' or o == '--verbose'):
             config.CONFIG['verbose']=True
-        elif (o == '-W' or o == '--no-write-listfile'):
-            config.CONFIG['backup.write-listfile']=False
-        elif (o == '-w' or o == '--write-listfile'):
-            config.CONFIG['backup.write_listfile']=True
+        
             
     if not args:
         print("[sgbackup backup] No GameIDs given!",file=sys.stderr)
@@ -222,18 +213,15 @@ def command_backup(db,argv):
                 backup.unfinal(db,g)
 
 
-        backup.backup(db,g,config.CONFIG['backup.listfile'],config.CONFIG['backup.write-listfile'])
+        backup.backup(db,g)
 # command_backup()
 
 def command_backup_all(db,argv):
     try:
-        opts,args = getopt.getopt(argv,'fL:VvWw',
+        opts,args = getopt.getopt(argv,'fVv',
                                   ['force',
-                                   'listfile=',
-                                   'no-write_listfile',
                                    'verbose',
-                                   'no-verbose',
-                                   'write-listfile'])
+                                   'no-verbose'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
         print(COMMANDS['backup-all']['help-function']('backup-all'))
@@ -245,23 +233,15 @@ def command_backup_all(db,argv):
         sys.exit(2)
         
     force = False
-    listfile = config.CONFIG['backup.listfile']
-    write_listfile = config.CONFIG['backup.write-listfile']
     for o,a in opts:
         if o == '-f' or o == '--force':
             force = True
-        elif o == '-L' or o == '--listfile':
-            listfile = a
-        elif o == '-W' or o == '--no-write-listfile':
-            write_listfile = False
-        elif o == '-w' or o == '--write-listfile':
-            write_listfile = True
         elif o == '-V' or o == '--no-verbose':
             config.CONFIG['verbose'] = False
         elif o == '-v' or o == '--verbose':
             config.CONFIG['verbose'] = True
             
-    backup.backup_all(db,listfile,write_listfile,force)
+    backup.backup_all(db,force)
 # command_backup_all()
 
 def command_config(db,argv):

@@ -59,7 +59,7 @@ def _get_user_plugin_dir():
     return os.path.join(site.USER_SITE,'sgbackup_plugins')
     
 CONFIG={
-    "version":(0,0,14),
+    "version":(0,0,15),
     "global-config": os.path.join(os.path.dirname(__file__),"sgbackup.conf"),
     "global-archivers-dir": os.path.join(os.path.dirname(__file__),"archivers"),
     "global-gameconf-dir": os.path.join(os.path.dirname(__file__),"games"),
@@ -81,7 +81,6 @@ CONFIG={
     "backup.checksum.values": _get_checksum_values(),
     "backup.archiver": "zipfile",
     "backup.dir": os.path.join(GLib.get_home_dir(), "SaveGames"),
-    "backup.write-listfile": False,
     "backup.archiver": "zipfile",
     
     "zipfile.compression": zipfile.ZIP_DEFLATED,
@@ -117,10 +116,6 @@ CONFIG={
     'restore-callbacks': {},
     'rename-backup-callbacks': {}
 }
-CONFIG['backup.listfile.template']=os.path.join("${BACKUP_DIR}","backups.list")
-CONFIG['backup.listfile']=os.path.join(CONFIG['backup.dir'],"backups.list")
-CONFIG['backup.checksum-database.template']=os.path.join("${BACKUP_DIR}","checksums.db")
-CONFIG['backup.checksum-database']=os.path.join(CONFIG['backup.dir'],'checksums.db')
 
 import site
 if site.ENABLE_USER_SITE:
@@ -152,7 +147,7 @@ def add_config(key,spec):
             v.update({'BACKUP_DIR':CONFIG['backup.dir']})
             CONFIG['.'.join((key,'template'))] = spec['default']
             t = Template(spec['default'])
-            CONFIG[key] = t.substitute(v)
+            CONFIG[key] = t.safe_substitute(v)
         else:
             CONFIG[key] = spec['default']
 # _add_config
@@ -171,33 +166,29 @@ def parse_config(cparser):
         if cparser.has_option(sect,'user-config'):
             CONFIG['user-config-template']=cparser.get(sect,'user-config')
             t=Template(cparser.get(sect,'user-config'))
-            CONFIG['user-config']=os.path.normpath(t.substitute(v))
+            CONFIG['user-config']=os.path.normpath(t.safe_substitute(v))
         if cparser.has_option(sect,'user-achivers-dir'):
             CONFIG['user-archivers-dir-template']=cparser.get(sect,"user-archivers-dir")
             t=Template(cparser.get(sect,"user-archivers-dir"))
-            CONFIG["user-achivers-dir"] = os,path.normpath(t.substitute(v))
+            CONFIG["user-achivers-dir"] = os,path.normpath(t.safe_substitute(v))
         if cparser.has_option(sect,"user-db"):
             CONFIG["database-template"]=cparser.get(sect,"database")
             t=Template(cparser.get(sect,"database"))
-            CONFIG["database"] = os.path.normpath(t.substitute(v))
+            CONFIG["database"] = os.path.normpath(t.safe_substitute(v))
         if cparser.has_option(sect,"user-gameconf-dir"):
             CONFIG["user-gameconf-dir-template"]=cparser.get(sect,"user-gameconf-dir")
             t=Template(cparser.get(sect,"user-gameconf-dir"))
-            CONFIG["user-gameconf-dir"]=os.path.normpath(t.substitute(v))
+            CONFIG["user-gameconf-dir"]=os.path.normpath(t.safe_substitute(v))
         
     sect="backup"
     if (cparser.has_section(sect)):
         if cparser.has_option(sect, "dir"):
             CONFIG['backup.dir.template']=cparser.get(sect,"dir")
             t=Template(cparser.get(sect,"dir"))
-            value = t.substitute(v)
+            value = t.safe_substitute(v)
             CONFIG["backup.dir"] = os.path.normpath(value)
             CONFIG["template-variables"]['BACKUP_DIR'] = value
             v["BACKUP_DIR"] = os.path.normpath(value)
-            t = Template(CONFIG['backup.checksum-database.template'])
-            CONFIG['backup.checksum-database'] = t.substitute(v)
-            t = Template(CONFIG['backup.listfile.template'])
-            CONFIG['backup.listfile'] = t.substitute(v)
         if cparser.has_option(sect,'archiver'):
             CONFIG['backup.archiver'] = cparser.get(sect,'archiver')
         if cparser.has_option(sect, "max-backups"):
@@ -208,16 +199,6 @@ def parse_config(cparser):
                 CONFIG["backup.checksum"] = None
             elif (x in hashlib.algorithms_available):
                 CONFIG["backup.checksum"] = x
-        if cparser.has_option(sect,'listfile'):
-            CONFIG['backup.listfile.template']=cparser.get(sect,"listfile")
-            t=Template(cparser.get(sect,"listfile"))
-            CONFIG['backup.listfile'] = os.path.normpath(t.substitute(v))
-        if cparser.has_option(sect,'write-listfile'):
-            CONFIG['backup.write-listfile'] = cparser.getboolean(sect,'write-listfile')
-        if cparser.has_option(sect,'checksum-database'):
-            CONFIG['backup.checksum-database.template'] = cparser.get(sect,'checksum-database')
-            t = Template(cparser.get(sect,'checksum-database'))
-            CONFIG['backup.checksum-database'] = os.path.normpath(t.substitute(v))
             
     sect="zipfile"
     if cparser.has_section(sect):
@@ -246,7 +227,7 @@ def parse_config(cparser):
                 elif cfg['type'] == 'template':
                     CONFIG['.'.join((key,'template'))] = cparser.get(cfg['section'],cfg['option'])
                     t = Template(cparser.get(cfg['section'],cfg['option']))
-                    CONFIG[key] = t.substitute(v)
+                    CONFIG[key] = t.safe_substitute(v)
                 else:
                     CONFIG[key] = cparser.get(cfg['section'],cfg['option'])
             else:
@@ -303,11 +284,6 @@ def write_config(filename,global_config=False):
     cparser.set(sect,'archiver',CONFIG['backup.archiver'])
     if 'backup.dir.template' in CONFIG.keys():
         cparser.set(sect,'dir',CONFIG['backup.dir.template'])
-    if 'backup.listfile.template' in CONFIG.keys():
-        cparser.set(sect,'listfile',CONFIG['backup.listfile.template'])
-    if 'backup.checksum-database.template' in CONFIG:
-        cparser.set(sect,'checksum-database',CONFIG['backup.checksum-database.template'])
-    cparser.set(sect,'write-listfile',_bool_to_config(CONFIG['backup.write-listfile']))
 
     zf_compress={}
     for k,v in CONFIG['zipfile.compression.values'].items():
@@ -361,9 +337,6 @@ def _get_config_dict(global_config=False):
         'backup.dir': _get_config_fallback('backup.dir.template','backup.dir'),
         'backup.checksum': CONFIG['backup.checksum'],
         'backup.archiver': CONFIG['backup.archiver'],
-        'backup.listfile': _get_config_fallback('backup.listfile.template','backup.listfile'),
-        'backup.checksum-database': _get_config_fallback('backup.checksum-database.template','backup.checksum-database'),
-        'backup.write-listfile': _bool_to_config(CONFIG['backup.write-listfile']),
         'zipfile.compression': CONFIG['zipfile.compression'],
         'zipfile.compresslevel': CONFIG['zipfile.compresslevel']
     }
@@ -438,16 +411,10 @@ def print_config_value(key,global_config=False):
         value = 'string [{0}]'.format('|'.join(archivers.ARCHIVERS.keys()))
     elif key == 'backup.checksum':
         value = 'string [{0}]'.format('|'.join(CONFIG['backup.checksum.values']))
-    elif key == 'backup.checksum-database':
-        value = path_template
-    elif key == 'backup.listfile':
-        value = path_template
-    elif key == 'backup.write-listfile':
-        value = boolean
     elif key == 'zipfile.compression':
         value = 'string [{0}]'.format(CONFIG['zipfile.compression.values'].keys())
     elif key == 'zipfile.compresslevel':
-        if CONFIG['zipfile.compression'] == zifile.ZIP_BZIP2:
+        if CONFIG['zipfile.compression'] == zipfile.ZIP_BZIP2:
             CONFIG[key] = "integer [1-9]"
         else:
             CONFIG[key] = "integer [0-9]"
@@ -524,24 +491,24 @@ def set_config(key,value):
     elif key == 'database':
         CONFIG['database-template'] = value
         t = Template(value)
-        CONFIG[key] = t.substitute(v)
+        CONFIG[key] = t.safe_substitute(v)
     elif key == 'user-config':
         CONFIG['user-config-template'] = value
         t = Template(value)
-        CONFIG[key] = t.substitute(v)
+        CONFIG[key] = t.safe_substitute(v)
     elif key == 'user-archivers-dir':
         CONFIG['user-archivers-dir-template'] = v
         t = Template(value)
-        CONFIG[key] = t.substitute(v)
+        CONFIG[key] = t.save_substitute(v)
     elif key == 'user-gameconf-dir':
         CONFIG['user-gameconf-dir-template'] = value
         t = Template(value)
-        CONFIG[key] = t.substitute(v)
+        CONFIG[key] = t.safe_substitute(v)
     elif key == 'backup.dir':
         CONFIG['backup.dir.template'] = value
         t = Template(value)
-        CONFIG['backup.dir'] = t.substitute(v)
-        v['BACKUP_DIR'] = t.substitute(v)
+        CONFIG['backup.dir'] = t.safe_substitute(v)
+        v['BACKUP_DIR'] = t.safe_substitute(v)
     elif key == 'backup.max':
         CONFIG[key] = int(value)
     elif key == 'backup.archiver':
@@ -554,23 +521,13 @@ def set_config(key,value):
             CONFIG[key] = value
         else:
             raise ValueError('{0} needs to be a valid checksum algorithm!'.format(key))
-    elif key == 'backup.checksum-database':
-        CONFIG['backup.checksum-database.template'] = value
-        t = Template(value)
-        CONFIG['backup.checksum-database'] = t.substitute(v)
-    elif key == 'backup.listfile':
-        CONFIG['backup.listfile.template'] = value
-        t = Template(value)
-        CONFIG[key] = t.substitute(v)
-    elif key == 'backup.write-listfile':
-        CONFIG[key] = _bool_to_config(value)
     elif key == 'zipfile.compression':
         if value in CONFIG['zipfile.compression.values']:
             CONFIG[key] = CONFIG['zipfile.compression.values'][value]
         else:
             raise ValueError('{0} needs to be a valid zipfile compression!'.format(key))
     elif key == 'zipfile.compresslevel':
-        if CONFIG['zipfile.compression'] == zifile.ZIP_BZIP2:
+        if CONFIG['zipfile.compression'] == zipfile.ZIP_BZIP2:
             CONFIG[key] = _min_max(int(value),1,9)
         else:
             CONFIG[key] = _min_max(int(value),0,9)
@@ -596,7 +553,7 @@ def set_config(key,value):
             elif cfg['type'] == 'template':
                 CONFIG['.'.join((key,'template'))] = value
                 t = Template(value)
-                CONFIG[key] = t.substitute(v)
+                CONFIG[key] = t.safe_substitute(v)
             elif cfg['type'] == 'string':
                 if 'values' in cfg:
                     if value not in cfg['values']:
@@ -632,9 +589,9 @@ def write_config_key(key,value,global_config=False):
 def version():
     return '.'.join((str(i) for i in CONFIG['version']))
     
-    
+
+from . import archivers    
 from . import plugins
-from . import archivers
 
 _init_config()
 _init_config_dirs()

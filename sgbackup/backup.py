@@ -191,7 +191,7 @@ def unfinal(db,game):
                     cb(db,game,os.path.join(backup_dir,i),os.path.join(backup_dir,fname))
 # unfinal
 
-def backup(db,game,listfile=None,write_listfile=False):
+def backup(db,game):
     archiver=archivers.get_archiver()
     backup_file=get_backup_filename(game,archiver)
     backup_dir=os.path.dirname(backup_file)
@@ -227,14 +227,6 @@ def backup(db,game,listfile=None,write_listfile=False):
         
         db.add_game_backup(game,backup_file,cksum,digest)
             
-    if write_listfile:
-        if not listfile:
-            listfile=config.CONFIG['backup.listfile']
-            
-        rel_path=os.path.join(game.savegame_name,os.path.basename(backup_file))
-        with open(listfile,'a') as lf:
-            lf.write('{0}\n'.format(rel_path))
-            
     savegames = find_backups(game,reverse=True)
     max_savegames = config.CONFIG['backup.max']
     if max_savegames <= 0:
@@ -258,11 +250,11 @@ def backup(db,game,listfile=None,write_listfile=False):
             cb(db,game,backup_file)
 # backup()
 
-def backup_all(db,listfile=None,write_listfile=False,include_final=False):
+def backup_all(db,include_final=False):
     for i in db.list_game_ids():
         game = db.get_game(i)
         if not game.final_backup or include_final:
-            backup(db,game,listfile,write_listfile)
+            backup(db,game)
 # backup_all()          
 
 def get_archiver_for_file(filename):

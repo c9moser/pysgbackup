@@ -732,7 +732,6 @@ class GameDialog(Gtk.Dialog):
     def savegame_dir(self):
         t = string.Template(self.savegame_dir_entry.get_text())
         return t.safe_substitute(self.variables)
-        
     @savegame_dir.setter
     def savegame_dir(self,s):
         self.savegame_dir_entry.set_text(s)
@@ -992,3 +991,97 @@ class GameDialog(Gtk.Dialog):
                 cparser.set(section,row[self.COL_NAME],row[self.COL_VALUE])        
 # GameDialog class
 
+class RenameBackupsDialog(Gtk.MessageDialog):
+    def __init__(self,old_game,new_game,parent=None):
+        Gtk.MessageDialog.__init__(self,parent,
+                                   Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                                   Gtk.ButtonsType.NONE,
+                                   'Renaming SaveGame-Backups from "{0}" to "{1}".'.format(old_game.savegame_name,new_game.savegame_name))
+                              
+        self.__old_game = old_game
+        self.__new_game = new_game
+             
+        self.close_button = self.add_button('Close',Gtk.ResponseType.CLOSE)
+        self.close_button.set_sensitive(False)
+        
+        vbox = self.get_content_area()
+        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL),False,False,5)
+        
+        self.progress = Gtk.ProgressBar()
+        self.progress.set_text('Renaming Files ...')
+        self.vbox.pack_start(self.progress,False,False,0)
+        
+        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL),False,False,5)
+        
+        self.show_all()
+
+    @property
+    def old_game(self):
+        return self.__old_game
+    @property
+    def new_game(self):
+        return self.__new_game
+    
+    def _on_thread_update(self,data):
+        self.progress.set_text(data['text'])
+        self.progress.set_fraction(data['fraction'])
+        self.progress.show()
+        
+    def _on_thread_finished(self):
+        self.progress.set_text('DONE')
+        self.progress.set_fraction(1.0)
+        self.progress.show()
+        self.close_button.set_sensitive(True)
+        
+    def _thread_func(self):
+        old_dir = os.path.join(CONFIG['backup.dir'],self.old_game.savegame_name)
+        if not os.path.isdir(old_dir):
+            GLib.idle_add(self._on_thread_finished)
+            return
+            
+        db = sgbackup.database.Database()
+        backups = sgbackup.backup.find_backups()
+        
+        
+        n_steps = len(backups+2)
+        count=0
+        
+        for old_fn in backups:
+            count += 1
+            new_fn = os.path.join(os.path.dirname(old_fn),
+                                  os.path.basename(old_fn).replace(self.old_game.savegame_name,self.new_game.savegame_name))
+            idle_data={
+                'text': 'Renaming File: {0} -> {1}'.format(os.path.basename(old_fn),os.path.basename(new_fn)),
+                'fraction': (count/n_steps)
+            }
+            GLib.idle_add(self._on_thread_update,idle_data)
+            os.rename(old_fn,new_fn)
+            sql = "UPDATE filelist SET filename=? WHERE filename=?;"
+            try:
+                db._db.execute(sql,(os.path.basename(new_fn),os.path.basename(old_fn)))
+                db._db.commit()
+            except Exception as error:
+                print('Unable to change filename in database! ({0})'.format(error))
+        count += 1
+        new_dir=os.path.join(CONFIG['backup.dir'],new_game.savegame_name)
+        idle_data = {
+            'text': 'Renaming Directory: {0} -> {1}'.format(old_dir,new_dir),
+            'fraction': (count/n_steps)
+        }
+        GLib.idle_add(self._on_thread_update,idle_data)
+        try:
+            os.rename(old_dir,new_dir)
+        except Exception as error:
+            print("Unable to rename backup dir! ({})".format(error),file=sys.stderr)
+        
+        GLib.idle_add(self._on_thread_finished)
+    # _thread_func()
+    
+    def run(self):
+        self.present()
+        thread = threading.Thread(target=self._thread_func,dameon=True)
+        thread.start()
+        return Gtk.MessageDialog.run(self)
+# RenameBackupsDialog class
+
+        

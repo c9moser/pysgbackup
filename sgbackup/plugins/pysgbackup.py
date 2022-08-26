@@ -29,8 +29,23 @@ plugin = {
         'local': True,
         'section': 'pysgbackup',
         'values': {
-            'pysgbackup.show-steam-appid': {
-                'option': 'show-steam-appid',
+            'pysgbackup.gameview.show-id': {
+                'option': 'gameview.show-id',
+                'type': 'boolean',
+                'default': True
+            },
+            'pysgbackup.gameview.show-gameid': {
+                'option': 'gameview.show-game-id',
+                'type': 'boolean',
+                'default': True
+            },
+            'pysgbackup.gameview.show-final': {
+                'option': 'gameview.show-final',
+                'type': 'boolean',
+                'default': True
+            },
+            'pysgbackup.gameview.show-steam-appid': {
+                'option': 'gameview.show-steam-appid',
                 'default': False,
                 'type': 'boolean'
             }
