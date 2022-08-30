@@ -18,11 +18,12 @@
 ################################################################################
 
 import gi
-from gi.repository import Gtk,GLib,GObject
+from gi.repository import Gtk,Gdk,GLib,GObject
 
 import threading
 import sgbackup
 from sgbackup.config import CONFIG
+from . import utility
 import pysgbackup
 
 import sqlite3
@@ -33,6 +34,7 @@ import time
 import hashlib
 import configparser
 import string
+import subprocess
 
 class BackupDialog(Gtk.Dialog):
     def __init__(self,parent=None):
@@ -1084,4 +1086,125 @@ class RenameBackupsDialog(Gtk.MessageDialog):
         return Gtk.MessageDialog.run(self)
 # RenameBackupsDialog class
 
+class UpdateDatabaseDialog(Gtk.Dialog):
+    def __init__(self,parent=None):
+        Gtk.Dialog.__init__(self,parent=parent)
         
+        self.set_default_size(600,400)
+        
+        self.__thread_finished = False
+        self.__stderr_fd,self.__thread_stderr_fd = os.pipe()
+        utility.pipe_nowait(self.__stderr_fd)
+        self.__thread_stderr = os.fdopen(self.__thread_stderr_fd,'ab')
+        
+        self.__stdout_fd,self.__thread_stdout_fd = os.pipe()
+        utility.pipe_nowait(self.__stdout_fd)
+        self.__thread_stdout = os.fdopen(self.__thread_stdout_fd,'ab')
+        
+        self.close_button=self.add_button('Close',Gtk.ResponseType.CLOSE)
+        
+        vbox = self.get_content_area()
+        label = Gtk.Label()
+        label.set_markup('<span size="x-large">' + 'Updating Database' + '</span>')
+        vbox.pack_start(label,False,False,0)
+        
+        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL),False,False,5)
+        
+        self.progress = Gtk.ProgressBar()
+        self.progress.set_pulse_step(0.025)
+        self.progress.set_show_text(True)
+        self.progress.set_text('Updating ...')
+        vbox.pack_start(self.progress,False,False,0)
+        
+        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL),False,False,5)
+        
+        buf = Gtk.TextBuffer()
+        self.stdout_tag = buf.create_tag('stdout',foreground='green')
+        self.stderr_tag = buf.create_tag('stderr',foreground='red')
+
+        
+        self.progressview_scrolled = Gtk.ScrolledWindow()
+        
+        
+        self.progressview = Gtk.TextView()
+        self.progressview.set_buffer(buf)
+        self.progressview.set_editable(False)
+        
+        self.progressview_scrolled.add(self.progressview)
+        vbox.pack_start(self.progressview_scrolled,True,True,0)
+        
+        vbox.pack_end(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL),False,False,5)
+        
+        self.show_all()                         
+        
+    def __del__(self):
+        self.__thread_stderr.close()
+        self.__thread_stdout.close()
+        os.close(self.__stderr_fd)
+        os.close(self.__stdout_fd)
+        
+    def _on_timeout(self):
+        buf = self.progressview.get_buffer()
+        encoding = sys.getdefaultencoding()
+        try:
+            if self.__sterr_fd:
+                err_str = os.read(self.__stderr_fd,4096).decode(encoding)
+                if (err_str):
+                    buf.insert_with_tags(buf.get_end_iter(),err_str,self.stderr_tag)            
+        except Exception:
+            pass
+            
+        try:
+            if self.__stdout_fd:
+                out_str = os.read(self.__stdout_fd,4096).decode(encoding)
+                if (out_str):
+                    buf.insert_with_tags(buf.get_end_iter(),out_str,self.stdout_tag)
+        except Exception:
+            pass
+            
+        self.progressview.show()
+        self.progressview_scrolled.set_placement(Gtk.CornerType.BOTTOM_LEFT)
+        self.progressview_scrolled.show()
+        
+        if self.__thread_finished:
+            return False
+           
+        self.progress.pulse()
+        return True
+        
+    def _spawn_finish_cb(self,pid,status,data):
+        self.__thread_finished = True
+        self.progress.set_fraction(1.0)
+        self.progress.set_text('Done')
+        self.close_button.set_sensitive(True)
+        GLib.spawn_close_pid(pid)
+    
+    def run(self):
+        GLib.timeout_add(25,self._on_timeout)
+        command = [sys.executable,'-m','sgbackup','database','update','--verbose',None]
+        (
+            spawn_ok,
+            pid,
+            stdin_fd,
+            self.__stdout_fd,
+            self.__stderr_fd
+        ) = GLib.spawn_async_with_pipes(None,command,None,GLib.SpawnFlags.DO_NOT_REAP_CHILD)
+        if spawn_ok:
+            if self.__stdout_fd:
+                utility.pipe_nowait(self.__stdout_fd)
+            if self.__stderr_fd:
+                utility.pipe_nowait(self.__stderr_fd)
+            GLib.child_watch_add(GLib.PRIORITY_DEFAULT,pid,self._spawn_finish_cb,None)
+        else:
+            self.__thread_finished = True
+            if self.__stdout_fd:
+                os.close(self.__stdout_fd)
+                self.__stdout_fd = 0
+            if self.__stderr_fd:
+                os.close(self.__stderr_fd)
+                self.__stderr_fd = 0
+            buf = self.progressview.get_buffer()
+            buf.insert_with_tags(buf.get_end_iter(),"Unable to start process!",self.stderr_tag)
+            
+        return Gtk.Dialog.run(self)
+# UpdateDatabaseDialog()     

@@ -199,10 +199,10 @@ class Database:
         
         if gc:
             sql="UPDATE gameconf SET checksum=?,user_file=? WHERE filename=?;"
-            sql_args=(new_gc.checksum,self._bool_to_db(new_gc.user_file),filename)
+            sql_args=(new_gc.checksum,self._bool_to_db(new_gc.user_file),fn)
         else:
             sql="INSERT INTO gameconf (game,filename,checksum,user_file) VALUES (?,?,?,?);"
-            sql_args=(game.id,filename,new_gc.checksum,self._bool_to_db(new_gc.user_file))
+            sql_args=(game.id,fn,new_gc.checksum,self._bool_to_db(new_gc.user_file))
             
         cur = self._db.cursor()
         cur.execute(sql,sql_args)

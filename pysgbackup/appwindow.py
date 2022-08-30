@@ -206,6 +206,7 @@ class AppWindow(Gtk.ApplicationWindow):
         self._action_delete_game = add_simple_action('delete-game',self._on_action_delete_game)
         
         add_simple_action('database-vacuum',self._on_action_database_vacuum)
+        add_simple_action('database-update',self._on_action_database_update)
         add_simple_action('refresh',self._on_action_refresh)
         add_simple_action('add-game',self._on_action_add_game)
         add_simple_action('settings',self._on_action_settings)
@@ -307,6 +308,11 @@ class AppWindow(Gtk.ApplicationWindow):
         
         dialog.run()
         dialog.hide()
+        dialog.destroy()
+        
+    def _on_action_database_update(self,action,data):
+        dialog = dialogs.UpdateDatabaseDialog(self)
+        dialog.run()
         dialog.destroy()
         
     def _on_action_add_game(self,action,data):
