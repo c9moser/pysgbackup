@@ -11,7 +11,8 @@ from ._game import Game, GameConf
 def get_conf_dirs():
     ret = [
         os.path.dirname(__file__),
-        config.CONFIG['user-gameconf-dir']]
+        config.CONFIG['user-gameconf-dir']
+    ]
         
     return ret
 
@@ -89,7 +90,7 @@ def get_gameconf_data(game_id):
     ret=[]
     
     for d in get_conf_dirs():
-        f = os.path.join(d,'.'.join((game_id,'game')))
+        f = os.path.normpath(os.path.join(d,'.'.join((game_id,'game'))))
         if os.path.isfile(f):
             with open(f,'rb') as conf:
                 checksum=hashlib.md5(conf.read()).hexdigest()
@@ -97,23 +98,27 @@ def get_gameconf_data(game_id):
                     user_file=True
                 else:
                     user_file=False
-                ret.append(GameConf(f,checksum,user_file))                            
+                
+                gc = GameConf(f,checksum,user_file)
+                gc.game_id = game_id
+                ret.append(gc)
     return ret     
 # get_gameconf_data            
 
 def get_gameconf_data_by_filename(filename,game_id=""):
     ret = None
     
-    if (os.path.isfile(filename)):
-        if os.path.dirname(filename) == config.CONFIG["user-gameconf-dir"]:
+    fn = os.path.normpath(filename)
+    if (os.path.isfile(fn)):
+        if os.path.normpath(os.path.dirname(filename)) == os.path.normpath(config.CONFIG["user-gameconf-dir"]):
             user_file=True
         else:
             user_file=False
             
-        with open(filename,"rb") as conf:
+        with open(fn,"rb") as conf:
             checksum = hashlib.md5(conf.read()).hexdigest()
             
-        ret = GameConf(filename,checksum,user_file)
+        ret = GameConf(fn,checksum,user_file)
         
         if game_id:
            ret.game_id = game_id

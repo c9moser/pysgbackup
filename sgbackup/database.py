@@ -175,14 +175,14 @@ class Database:
             WHERE t1.filename=?;"""
     
         ret = None
-        
+        fn = os.path.normpath(filename)
         cur = self._db.cursor()
-        cur.execute(sql,(filename,))
+        cur.execute(sql,(fn,))
         
         row = cur.fetchone();
         
         if row:
-            ret = games.GameConf(filename,row[1],row[2],row[0])
+            ret = games.GameConf(fn,row[1],row[2],row[0])
         
         return ret
     # get_gameconf_by_filename()
@@ -213,7 +213,7 @@ class Database:
         sql="DELETE FROM gameconf WHERE filename=?;"
         
         cur = self._db.cursor()
-        cur.execute(sql,(filename,))
+        cur.execute(sql,(os.path.normpath(filename),))
         self._db.commit()
     # delete_gameconf()
         

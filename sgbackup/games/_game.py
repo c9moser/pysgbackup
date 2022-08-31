@@ -167,7 +167,7 @@ class GameConf(object):
         
     @property
     def filename(self):
-        return self.__filename
+        return os.path.normpath(self.__filename)
     
     @property
     def checksum(self):
