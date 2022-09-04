@@ -3,6 +3,7 @@
 from sgbackup import config,backup
 import os
 from string import Template
+import hashlib
 
 class Game(object):
     def __init__(self,game_id,name,sg_name,sg_root,sg_dir,id=0,final_backup=False,steam_appid=None,variables={}):
@@ -144,7 +145,7 @@ class Game(object):
 # Game class
 
 class GameConf(object):
-    def __init__(self,filename,checksum,user_file=False,game_id=""):
+    def __init__(self,filename,checksum=None,user_file=False,game_id=""):
         if not os.path.isabs(filename):
             raise TypeError('\'filename\' needs to ba an absolute path!')
         self.__filename = filename
@@ -154,7 +155,14 @@ class GameConf(object):
         else:
             self.__game_id = game_id
             
-        self.checksum=checksum
+        if checksum:
+            self.checksum=checksum
+        else:
+            h = hexdigest.md5()
+            with open(self.filename,'rb') as ifile:
+                h.update(ifile.read())
+            self.checksum = h.hexdigest()
+            
         self.user_file=user_file
         
     @property

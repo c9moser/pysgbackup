@@ -154,7 +154,25 @@ class Database:
             
         return ret
     # get_game()
+    
+    def get_game_by_steam_appid(self,appid):
+        sql = "SELECT id,game_id,name,savegame_name,savegame_root,savegame_dir,final_backup FROM games WHERE steam_appid=?;"
+        var_sql="SELECT name,value FROM game_variables WHERE game=?;"
         
+        ret = None
+        cur = self._db.cursor()
+        cur.execute(sql,(appid,))
+        row = cur.fetchone()
+        
+        if row:
+            cur.execute(var_sql,(row[0],))
+            var={}
+            for i in cur:
+                var[i[0]] = i[1]
+                
+            ret = games.Game(row[1],row[2],row[3],row[4],row[5],row[0],self._db_to_bool(row[6]),variables=var,steam_appid=appid)
+        return ret
+    
     def get_gameconf(self,game_id):
         sql = "SELECT filename,checksum,user_file FROM gameconf WHERE game=(SELECT id FROM games WHERE game_id=?);"
         
@@ -576,6 +594,28 @@ class Database:
             self._db.commit()
     # set_game_backup_extrafile_ftp_transferred()
     
+    def add_ignore_steamapp(self,appid):
+        if not self.ignore_steamapp(appid):
+            sql = 'INSERT INTO steamapp_ignore (steam_appid) VALUES (?);'
+            cur = self._db.cursor()
+            cur.execute(sql,(appid,))
+            self._db.commit()
+            
+    def remove_ignore_steamapp(self,appid):
+        sql = 'DELETE FROM steamapp_ignore WHERE steam_appid=?;'
+        cur = self._db.cursor()
+        cur.execute(sql,(appid,))
+        self,_db.commit()
+        
+    def ignore_steamapp(self,appid):
+        sql = 'SELECT id FROM steamapp_ignore WHERE steam_appid=?;'
+        cur = self._db.cursor()
+        cur.execute(sql,(appid,))
+        
+        row = cur.fetchone()
+        if row and row[0] > 0:
+            return True
+        return False
 # Database class
 
 def update(db,force=False):

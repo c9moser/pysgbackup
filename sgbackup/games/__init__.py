@@ -7,6 +7,7 @@ import configparser
 import hashlib
 
 from ._game import Game, GameConf
+from .. import database
 
 def get_conf_dirs():
     ret = [
@@ -15,6 +16,54 @@ def get_conf_dirs():
     ]
         
     return ret
+# get_conf_dirs()
+
+def parse_config(parser,game_id=''):
+    cfg = {
+        'id': 0,
+        'game_id': 'game',
+        'name': '',
+        'savegame_name': '',
+        'savegame_dir': '',
+        'savegame_root': '',
+        'steam_appid': None,
+        'variables': {}
+    }
+    if game_id:
+        cfg['game_id'] = game_id
+    
+    sect = 'game'
+    if parser.has_section(sect):
+        if parser.has_option(sect,'game-id'):
+            cfg['game_id'] = parser.get(sect,'game-id')
+        if parser.has_option(sect,'name'):
+            cfg['name'] = parser.get(sect,'name')
+        if parser.has_option(sect,'savegame-name'):
+            cfg['savegame_name'] = parser.get(sect,'savegame-name')
+        if parser.has_option(sect,'savegame-root'):
+            cfg['savegame_root'] = parser.get(sect,'savegame-root')
+        if parser.has_option(sect,'savegame-dir'):
+            cfg['savegame_dir'] = parser.get(sect,'savegame-dir')
+         
+    sect = 'steam'
+    if parser.has_section(sect):
+        if parser.has_option(sect,'appid'):
+            cfg['steam_appid'] = parser.get(sect,'appid')
+            
+    sect = 'variables'
+    if parser.has_section(sect):
+        for var in parser.options(sect):
+            cfg['variables'][var] = parser.get(sect,var)
+            
+    return Game(
+        cfg['game_id'],
+        cfg['name'],
+        cfg['savegame_name'],
+        cfg['savegame_root'],
+        cfg['savegame_dir'],
+        steam_appid = cfg['steam_appid'],
+        variables = cfg['variables'])
+# parse_config()
 
 def parse_gameconf(game_id):
     def _real_parse_file(f,game=None):
@@ -141,4 +190,94 @@ def get_games():
     gameconf.sort()
     return gameconf
     
-
+def add_game(db,game=None,ask=True):
+    if ask:
+        if not game:
+            game = Game('game','','','','')
+           
+        game_ok = False 
+        settings=[
+            {'name':'GameID','attr':'game_id','raw':False},
+            {'name': 'Name','attr':'name','raw':False},
+            {'name':'SaveGame Name','attr':'savegame_name','raw':False},
+            {'name': 'SaveGame Root','attr':'savegame_root','raw':True},
+            {'name': 'SaveGame Dir','attr':'savegame_dir','raw':True},
+            {'name': 'Steam Appid', 'attr':'steam_appid','raw':False}
+        ]
+        while not game_ok:
+            for i in settings:
+                print('{0}: [{1}]'.format(i['name'],getattr(game,i['attr'])))
+                if i['raw']:
+                    print('{0} RAW: [{1}]'.format(i['name'],getattr(game,'_'.join(('raw',i['attr'])))))
+                value = input('>> ')
+                if value:
+                    setattr(game,i['attr'],value)
+        
+            run_again = False
+            add_var = False
+            while not run_again:
+                value = input('Add a variable? [Y/n]: ')
+                if value.lower() == 'n' or value.lower() == 'no':
+                    run_again = True
+                    add_var = False
+                    break
+                elif value.lower() == 'y' or value.lower() == 'yes':
+                    run_again = False
+                    add_var = True
+                else:
+                    run_again = False
+                    add_var = False
+                    continue
+                
+                if add_var:
+                    var_name = input('Variable Name: ')
+                    var_value = input('Variable Value: ')
+                    game.raw_variables[var_name] = var_value
+                
+            for i in settings:
+                print('{0}: {1}'.format(i['name'],getattr(game,i['attr'])))
+                if i['raw']:
+                    print('{0} RAW: {1}'.format(i['name'],getattr(game,'_'.join(('raw',(i['attr']))))))
+            print('VARIABLES:')
+            for k,v in game.raw_variables.items():
+                print('  {0}={1}'.format(k,v))
+            input_ok = False
+            while not input_ok:
+                value = input("Are the game-settings OK? [yes/no]")
+                if value.lower() == 'y' or value.lower() == 'yes':
+                    input_ok = True
+                    game_ok = True
+                    break
+                elif value.lower() == 'n' or value.lower() == 'no':
+                    input_ok = True
+                    game_ok = False
+                    break
+                else:
+                    input_ok = False
+                    
+    if not game:
+        raise ValueError('Value "game" not set!')
+        
+    parser=configparser.ConfigParser()
+    sect = 'game'
+    parser.add_section(sect)
+    parser.set(sect,'name',game.name)
+    parser.set(sect,'savegame_name',game.savegame_name)
+    parser.set(sect,'savegame_root',game.raw_savegame_root)
+    parser.set(sect,'savegame_dir',game.raw_savegame_dir)
+    
+    if game.steam_appid:
+        parser.add_section('steam')
+        parser.set('steam','appid',game.steam_appid)
+    
+    if game.raw_variables:
+        sect='game-variables'
+        parser.add_section(sect)
+        for k,v in game.raw_variables.items():
+            parser.set(sect,k,v)
+    gcf = os.path.normpath(os.path.join(config.CONFIG['user-gameconf-dir'],'.'.join((game.game_id,'game'))))
+    with open(gcf,'w') as ofile:
+        parser.write(ofile)
+                
+    db.add_game(game,gameconf=[GameConf(gcf,user_file=True)])
+# add_game()

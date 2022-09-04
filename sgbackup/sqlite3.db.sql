@@ -77,4 +77,9 @@ CREATE TABLE filelist_extrafiles (
         ON DELETE SET NULL
 );
 
+CREATE TABLE steamapp_ignore (
+    id INTEGER PRIMARY KEY,
+    steam_appid VARCHAR(128) UNIQUE NOT NULL
+);
+CREATE INDEX steamapp_ignore_steam_appid ON steamapp_ignore(steam_appid);
 
