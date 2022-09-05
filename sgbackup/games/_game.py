@@ -158,7 +158,7 @@ class GameConf(object):
         if checksum:
             self.checksum=checksum
         else:
-            h = hexdigest.md5()
+            h = hashlib.md5()
             with open(self.filename,'rb') as ifile:
                 h.update(ifile.read())
             self.checksum = h.hexdigest()

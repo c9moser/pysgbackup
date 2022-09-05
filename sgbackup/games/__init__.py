@@ -262,9 +262,9 @@ def add_game(db,game=None,ask=True):
     sect = 'game'
     parser.add_section(sect)
     parser.set(sect,'name',game.name)
-    parser.set(sect,'savegame_name',game.savegame_name)
-    parser.set(sect,'savegame_root',game.raw_savegame_root)
-    parser.set(sect,'savegame_dir',game.raw_savegame_dir)
+    parser.set(sect,'savegame-name',game.savegame_name)
+    parser.set(sect,'savegame-root',game.raw_savegame_root)
+    parser.set(sect,'savegame-dir',game.raw_savegame_dir)
     
     if game.steam_appid:
         parser.add_section('steam')

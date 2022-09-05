@@ -324,6 +324,8 @@ class Database:
         
         if game.raw_variables:
             self.add_game_variables(game)
+            
+        g = self.get_game(game.game_id)
                 
         for i in gameconf:
             self.add_gameconf(i.filename,g)
@@ -674,6 +676,7 @@ def update(db,force=False):
         return True
                 
     for gid in games.get_games():
+        print('GameID: {0}'.format(gid))
         game = games.parse_gameconf(gid)
         if not game:
             continue
