@@ -17,7 +17,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-from . import config,backup,database,archivers,extension,plugins
+from . import config,backup,database,archivers,extension,plugins,games
 
 import sys
 import os
@@ -48,6 +48,7 @@ _HELPFILES={
     'delete-backups': N_('file|command.delete-backups.help.txt'),
     'delete-savegames': N_('file|command.delete-savegames.help.txt'),
     'extension': N_('file|command.extension.help.txt'),
+    'game': N_('file|command.game.help.txt'),
     'plugin': N_('file|command.plugin.help.txt'),
     'restore': N_('file|command.restore.help.txt'),
     'restore-all': N_('file|command.restore-all.help.txt'),
@@ -588,6 +589,87 @@ def command_extension(db,argv):
                 sys.exit(2)
 # command_extension
 
+def command_game(db,argv):
+    commands = ['add','list','remove','show']
+    
+    if not argv:
+        print(_get_command_help('game'))
+        sys.exit(0)
+    
+    cmd = argv[0]
+    
+    if not cmd in commands:
+        print('[sgbackup game] ERROR: Unknown command "{0}"!'.format(cmd),file=sys.stderr)
+        print(_get_command_help('game'))
+        sys.exit(2)
+        
+    try:
+        opts,args = getopt.getopt(argv[1:],'fVv',['force','no-verbose','verbose'])
+    except getopt.GetoptError as error:
+        print(error,file=sys.stderr)
+        print(_get_command_help('game'))
+        sys.exit(2)
+    
+    force = False
+    for o,a in opts:
+        if o == '-f' or o == '--force':
+            force = True
+        elif o == '-V' or o == '--no-verbose':
+            config.CONFIG['verbose'] = False
+        elif o == '-v' or o == '--verbose':
+            config.CONFIG['verbose'] = True
+            
+    if cmd == 'list':
+        gameconf_dirs = games.get_conf_dirs()
+        game_ids = []
+        game_list=[]
+        for d in gameconf_dirs:
+            for f in os.listdir(d):
+                if f.startswith('.') or f.startswith('_'):
+                    continue
+                if f.endswith('.game'):
+                    gid = f[:-5]
+                    if gid not in game_ids:
+                        game_ids.append(gid)
+        for gid in sorted(game_ids):
+            game = games.parse_gameconf(gid)
+            if game:
+                game_list.append(game)
+                
+        gid_len = 0
+        for game in game_list:
+            length = len(game.game_id)
+            if length > gid_len:
+                gid_len = length
+                
+        for game in game_list:
+            if db.has_game(game.game_id):
+                x = '+'
+            else:
+                x = '-'
+            print('{0} {1} {2}'.format(game.game_id + (' ' * (gid_len - len(game.game_id))),x, game.name))
+            
+        return
+    elif cmd == 'show':
+        game_list = db.list_games()
+                
+        gid_len = 0
+        for gid,name in game_list:
+            length = len(gid)
+            if length > gid_len:
+                gid_len = length
+                
+        for gid,name in game_list:
+            print('{} {}'.format(gid + (' ' * (gid_len - len(gid))),name))
+        return
+    elif cmd == 'add':
+        #TODO
+        pass
+    elif cmd == 'remove':
+        #TODO
+        pass
+# command_game()
+
 def command_plugin(db,argv):
     if not argv:
         print('[sgbackup plugin] No command given!',file=sys.stderr)
@@ -793,6 +875,11 @@ COMMANDS={
         'description': 'Show filename extensions.',
         'help-function': _get_command_help,
         'function': command_extension
+    },
+    'game': {
+        'description': 'Show/Add/Remove games.',
+        'help-function': _get_command_help,
+        'function': command_game
     },
     'help': {
         'description': 'Print help messages.',

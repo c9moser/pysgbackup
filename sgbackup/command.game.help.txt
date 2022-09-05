@@ -1,0 +1,18 @@
+sgbackup game
+
+USAGE:
+======
+  sgbackup game <COMMAND> [OPTIONS] [args ...]
+  
+OPTIONS:
+========
+  -f | --force          Force delete operation.
+  -V | --no-verbose     Disable verbose messages.
+  -v | --verbose        Enable verbose messages.
+  
+COMMANDS:
+=========
+  add       Add a game.
+  list      List games found in .game files.
+  remove    Remove a game.
+  show      Show games in database.

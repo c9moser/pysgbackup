@@ -6,7 +6,7 @@ from distutils.core import setup
 import os
 import sys
 
-import sgbackup
+from . import sgbackup
 
 try:
     import gi

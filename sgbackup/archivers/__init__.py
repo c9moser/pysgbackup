@@ -130,4 +130,110 @@ def get_archiver(archiver_id=None):
 def list_archivers():
     return sorted(ARCHIVERS.keys())
     
-
+def update_archivers(global_archivers=False):
+    # check for tar archiver
+    tar_exe = None
+    archiver_dir = os.path.dirname(__file__)
+    if global_archivers:
+        odir = config.CONFIG['global-archivers-dir']
+    else:
+        odir = config.CONFIg['user-archivers-dir']
+                
+    if sys.platform == 'win32':
+        cygpath_exe = None
+        cygpath_ck_exe = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(sys.executable))),'usr','bin','cygpath.exe')
+        if os.path.isfile(cygpath_ck_exe):
+            cygpath_exe = cygpath_ck_exe
+        
+        tar_ck_exe = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(sys.executable))),'usr','bin','tar.exe')
+        if os.path.isfile(tar_ck_exe):
+            tar_exe = tar_ck_exe
+    else:
+        for p in os.environ['PATH'].split(':'):
+            if os.path.isfile(os.path.join(p,'tar')):
+               tar_exe = os.path.join(p,'tar')
+               break 
+            
+    if tar_exe and sys.platform == 'win32':
+        if cygpath_exe:
+            archiver_in = [
+                'tar.archiver.w32.in',
+                'tar.bz2.archiver.w32.in',
+                'tar.gz.archiver.w32.in',
+                'tar.xz.archiver.w32.in',
+                'tbz.archiver.w32.in',
+                'tgz.archiver.w32.in',
+                'txz.archiver.w32.in'
+            ]
+        
+            for i in archiver_in:
+                with open(os.path.join(archiver_dir,i),'r') as ifile:
+                    s=ifile.read()
+                s = s.replace('__CYGPATH__',cygpath_exe)
+                s = s.replace('__EXECUTABLE__',tar_exe)
+                
+                try:
+                    with open(os.path.join(odir,i[:-7]),'w') as ofile:
+                        ofile.write(s)
+                except Exception as error:
+                    print('Unable to write to archivers dir! ({})'.format(error),file=sys.stderr)
+                    return
+        elif tar_exe:
+            archiver_in = [
+                'tar.archiver.in',
+                'tar.bz2.archiver.in',
+                'tar.gz.archiver.in',
+                'tar.xz.archiver.in',
+                'tbz.archiver.in',
+                'tgz.archiver.in',
+                'txz.archiver.in'
+            ]
+                
+            for i in archiver_in:
+                with open(os.path.join(archiver_dir,i),'r') as ifile:
+                    s=ifile.read()
+                s = s.replace('__EXECUTABLE__',tar_exe)
+                
+                try:
+                    with open(os.path.join(odir,i[:'-3']),'w') as ofile:
+                        ofile.write(s)
+                except Exception as error:
+                    print('Unable to write to archivers dir! ({})'.format(error))
+                    return
+                    
+    #check for win32 archivers
+    if sys.platform == 'win32':
+        winrar_exe = os.path.join(os.environ['SYSTEMDRIVE'],"Program Files","WinRAR","WinRAR.exe")
+        if os.path.isfile(winrar_exe):
+            with open(os.path.join(archiver_dir,'rar.archiver.w32.in'),'r') as ifile:
+                s = ifile.read()
+                
+            s = s.replace('__EXECUTABLE__',winrar_exe)
+            
+            try:
+                with open(os.path.join(odir,'rar.archiver'),'w') as ofile:
+                    ofile.write(s)
+            except Exception as error:
+                print('Unable to write to archivers dir! ({})'.format(error))
+                return
+                
+        sevenzip_search_path=[
+            os.path.join(os.environ['SYSTEMDRIVE'],'Program Files','7z','7z.exe'),
+            os.path.join(os.environ['SYSTEMDRIVE'],'Program Files (x86)','7z','7z.exe')
+        ]
+        sevenzip_exe = ''
+        for i in sevenzip_search_path:
+            if os.path.isfile(i):
+                sevenzip_exe = i
+                break
+                
+        if sevenzip_exe:
+            with open(os.path.join(archiver_dir,'7z.archiver.w32.in'),'r') as ifile:
+                s = ifile.read()
+            
+            s = s.replace('__EXECUTABLE__',sevenzip_exe)
+            
+            with open(os.path.join(odir,'7z.archiver'),'w') as ofile:
+                ofile.write(s)
+        
+# update_archivers
