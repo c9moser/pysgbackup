@@ -663,8 +663,34 @@ def command_game(db,argv):
             print('{} {}'.format(gid + (' ' * (gid_len - len(gid))),name))
         return
     elif cmd == 'add':
-        #TODO
-        pass
+        if not args:
+            done = False
+            while not done:
+                game = games.Game('game','A Game','','','')
+                games.add_game(db,game,ask=True)
+                valid_input = False
+                while not valid_input:
+                    x = input('Add another game? [Y/n] ')
+                    if x.lower() == 'y' or x.lower() == 'yes':
+                        valid_input = True
+                        done = False
+                        break
+                    elif x.lower() == 'n' or x.lower() == 'no':
+                        valid_input = True
+                        done = True
+                        break
+                    else:
+                        valid_input = False
+        else:
+            for i in args:
+                game = games.parse_gameconf(i)
+                if not game:
+                    game = games.Game(i,i,'','','')
+                if game.name:
+                    print('Adding game "{}"'.format(game.name))
+                else:
+                    print('Adding game with ID "{}"'.format(game.game_id))
+                games.add_game(db,game,ask=True)
     elif cmd == 'remove':
         #TODO
         pass

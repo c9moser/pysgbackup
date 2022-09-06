@@ -243,7 +243,7 @@ def add_game(db,game=None,ask=True):
                 print('  {0}={1}'.format(k,v))
             input_ok = False
             while not input_ok:
-                value = input("Are the game-settings OK? [yes/no]")
+                value = input("Are the game-settings OK? [yes/no] ")
                 if value.lower() == 'y' or value.lower() == 'yes':
                     input_ok = True
                     game_ok = True
@@ -281,3 +281,39 @@ def add_game(db,game=None,ask=True):
                 
     db.add_game(game,gameconf=[GameConf(gcf,user_file=True)])
 # add_game()
+
+def remove_game(db,game,force=False):
+    if isinstance(game,Game):
+        game_id = game.game_id
+    elif isinstance(game,str):
+        game_id = game
+        
+    db.delete_game(game_id)
+    
+    if not force:
+        for d in get_conf_dirs():
+            gcf = os.path.join(d,'.'.join((game_id,'game')))
+            if os.path.isfile(gcf):
+                delete_file = False
+                if not force:
+                    valid_input = False
+                    while not valid_input:
+                        x = input('Delete GameConf "{}"? [Y/n] '.format(gcf))
+                        if x.lower() == 'y' or x.lower() == 'yes':
+                            delete_file = True
+                            valid_input = True
+                            break
+                        elif x.lower() == 'n' or x.lower() == 'no':
+                            delete_file = False
+                            valid_input = True
+                            break
+                        else:
+                            valid_input = False
+                            
+                if force or delete_file:
+                    try:
+                        os.unlink(gcf)
+                    except Exception as error:
+                        print('Unable to delete file "{0}"! ({1})'.format(gcf,error))
+# remove_game()
+
