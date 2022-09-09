@@ -322,7 +322,7 @@ def restore_all(db):
         if not os.path.isdir(bdir):
             continue
             
-        filename = find_latest_savegame(game)
+        filename = find_latest_backup(game)
         if filename:
             restore(db,game,filename)
 # restore_all()
