@@ -315,7 +315,10 @@ def command_steam(db,argv):
                         game = games.Game('game',i['name'],'','','',
                                           id=0,
                                           steam_appid=i['appid'],
-                                          variables={'INSTALLDIR':i['installdir']})
+                                          variables={
+                                            'INSTALLDIR':i['installdir'],
+                                            'STEAM_APPID':i['appid']
+                                          })
                     else:
                         game.variables.update({
                             'INSTALLDIR':i['installdir'],
