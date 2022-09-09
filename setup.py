@@ -6,7 +6,11 @@ from distutils.core import setup
 import os
 import sys
 
-from . import sgbackup
+try:
+    from . import sgbackup
+except ImportError:
+    import sgbackup
+
 
 try:
     import gi
