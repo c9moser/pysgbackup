@@ -72,17 +72,17 @@ def main():
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
         print(HELP)
-        sys.exit(2)
+        return 2
 
     verbose = False
          
     for o,a in opts:
         if o == '-h' or o == '--help':
             print(HELP)
-            sys.exit(0)
+            return 0
         elif o == '--version':
             print('sgrestore: {0}'.format('.'.join((str(i) for i in CONFIG['version']))))
-            sys.exit(0)
+            return 0
         elif o == '-l' or o == '--list':
             gl = get_game_list()
             width=0
@@ -93,7 +93,7 @@ def main():
             
             for g in gl:
                 print(g['game-id'] + ' ' * (width - len(g['game-id'])) + g['name'])
-            sys.exit(0)
+            return 0
         elif o == '-a' or o == '--all':
             with shelve.open(CONFIG['game-shelve']) as d:
                 for gameid in d.keys():
@@ -110,14 +110,14 @@ def main():
             
     if not args:
         print(HELP)
-        sys.exit(2)
+        return 2
         
     with shelve.open(CONFIG['game-shelve']) as d:
         for gameid in args:
             if not gameid in d.keys():
                 print ('GameID "{}" not found!'.format(gameid))
                 print ('Use "sgrestore --list" to show valid GameIDs.')
-                sys.exit(2)
+                return 2
                 
         for gameid in args:
             g = d[gameid]
@@ -171,10 +171,11 @@ def main():
                     continue
                     
                 print("[restore] {}".format(backup))
-                archiver.restore(backup_file,g['savegame-root'])                
+                archiver.restore(backup_file,g['savegame-root'])
+    return 0                
 # main()
                 
     
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
 
