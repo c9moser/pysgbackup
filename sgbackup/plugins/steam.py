@@ -22,7 +22,7 @@ import sys
 import getopt
 import glob
 import configparser
-from .. import config,database,games
+from .. import config,database,games,help
 
 default_steam_lib = ""
 __test_steam_libs= [
@@ -141,12 +141,12 @@ OPTIONS:
 def command_steamlib(db,argv):
     if not argv:
         print('[sgbackup steamlib] ERROR: No command given!',file=sys.stderr)
-        print(_COMMAND_STEAMLIB_HELP)
+        help.print_help('steamlib')
         sys.exit(2)
         
     if argv[0] not in ['add','remove','show']:
         print('[sgbackup steamlib] ERROR: Unknown command "{0}"!'.format(argv[0]),file=sys.stderr)
-        print(_COMMAND_STEAMLIB_HELP)
+        help.print_help('steamlib')
         sys.exit(2)
         
     if argv[0] == 'show':
@@ -174,15 +174,14 @@ def command_steamlib(db,argv):
     if argv[0] == 'add':
         if not args:
             print('[sgbackup steamlib add] ERROR: No Steam Library given!',file=sys.stderr)
-            print(_COMMAND_STEAMLIB_HELP)
+            help.print_help('steamlib')
             sys.exit(2)
             
         for sl in args:
             if not os.path.isdir(sl):
                 print('Steam Library "{0}" does not exist!'.format(sl))
                 sys.exit(3)
-        
-        
+
         for sl in args:
             if sl not in steam_libs:
                 if config.CONFIG['verbose']:
@@ -193,7 +192,7 @@ def command_steamlib(db,argv):
     elif argv[0] == 'remove':
         if not args:
             print('[sgbackup steamlib remove] ERROR: No Steam Library given!',file=sys.stderr)
-            print(_COMMAND_STEAMLIB_HELP)
+            help.print_help('steamlib')
             sys.exit(2)
             
         for sl in args:
@@ -238,22 +237,23 @@ def command_steam(db,argv):
         opts,args = getopt.getopt(argv,'vV',['no-verbose','verbose'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
-        print(_COMMAND_STEAM_HELP)
+        help.print_help('steam')
         sys.exit(2)
         
     if not args:
         print('[sgbackup steam] No command given!',file=sys.stderr)
-        print(_COMMAND_STEAM_HELP)
+        help.print_help('steam')
         sys.exit(2)
 
     commands=[
+        'add',
         'list',
         'scan'
     ]
     cmd = args[0]
     if cmd not in commands:
         print('[sgbackup steam] Unknown command "{0}"!'.format(cmd),file=sys.stderr)
-        print(_COMMAND_STEAM_HELP)
+        help.print_help('steam')
         sys.exit(2)
     
     for o,a in opts:
@@ -262,7 +262,41 @@ def command_steam(db,argv):
         elif o == '-v' or o == '--verbose':
             config.CONFIG['verbose'] = True
     
-    if cmd == 'list':
+    if cmd == 'add':
+        if not args:
+            print('No SteamIDs to add!',file=sys.stderr)
+            help.print_help('steam')
+        steam_games = scan_steamlibs()
+        
+        games_add = []
+        
+        for appid in args:
+            sg = None
+            for i in steam_games:
+                if appid == i['appid']:
+                    sg = i
+                    break
+            if not sg:
+                print('No Steam-game with appid "{0}" found!'.format(appid),file=sys.stderr)
+                sys.exit(3)
+            games_add.append(sg)
+        
+        for i in games_add:
+            game = db.get_game_by_steam_appid(appid)
+            if not game:
+                game = get_game_from_gameconf(sg['appid'])
+            if not game:
+                game = games.Game('game',i['name'],'','','',
+                                  variables={
+                                    'STEAM_APPID': i['appid'],
+                                    'INSTALLDIR': i['installdir']})
+            else:
+                game.raw_variables.update({
+                    'STEAM_APPID': i['appid'],
+                    'INSTALLDIR': i['installdir']
+                })
+            games.add_game(db,game=game,ask=True)    
+    elif cmd == 'list':
         steam_games = scan_steamlibs()
         gid_len=0
         appid_len=0
@@ -285,7 +319,6 @@ def command_steam(db,argv):
             appid = i['appid'] + (' ' * (appid_len - len(i['appid'])))
             
             print('{0} {1} {2}'.format(appid,gid,i['name']))
-        return
     elif cmd == 'scan':
         steam_games = scan_steamlibs()
         for i in steam_games:
@@ -320,14 +353,11 @@ def command_steam(db,argv):
                                             'STEAM_APPID':i['appid']
                                           })
                     else:
-                        game.variables.update({
+                        game.raw_variables.update({
                             'INSTALLDIR':i['installdir'],
                             'STEAM_APPID':i['appid']
-                        })
-                        
-                        
+                        })    
                     games.add_game(db,game=game,ask=True)
-        return  
 # command_steam()
 
 plugin = {

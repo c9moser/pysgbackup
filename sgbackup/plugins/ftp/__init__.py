@@ -21,7 +21,7 @@ import os
 import sys
 
 import sgbackup
-#from sgbackup import plugins
+from sgbackup import help
 from sgbackup.config import CONFIG
 import gettext
 import ftplib
@@ -169,11 +169,11 @@ def command_ftp_list(db,argv):
                                    'verbose'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
-        print(_get_help('ftp-list'))
+        help.print_help('ftp-list')
         
     if args:
         print('[sgbackup ftp-list] Command does not take any arguments!',file=sys.stderr)
-        print(_get_help('ftp-list'))
+        help.print_help('ftp-list')
         
     connect = {
         'directory': CONFIG['ftp.directory'],
@@ -199,10 +199,9 @@ def command_ftp_list(db,argv):
     for game_id in db.list_game_ids():
         game = db.get_game(game_id)
         for game_backup in db.get_game_backups(game):
-            if not game_backup['ftp_transferred']:
+            if game_backup['use_ftp'] and not game_backup['ftp_transferred']:
                 fname = os.path.join(CONFIG['backup.dir'],game.savegame_name,game_backup['filename'])
                 ftp_backup_file(db,game,fname,connect)
-                                
 # command_ftp_list
     
 def command_ftp(db,argv):
@@ -217,12 +216,12 @@ def command_ftp(db,argv):
                                    'verbose'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
-        print(_get_help('ftp'))
+        help.print_help('ftp')
         sys.exit(2)
         
     if not args:
         print('[sgbackup ftp] ERROR: No GameIDs given!',file=sys.stderr)
-        print(_get_help('ftp'))
+        help.print_help('ftp')
         sys.exit(2)
         
     dir_mode = False
@@ -309,12 +308,12 @@ def command_ftp_all(db,argv):
                                    'verbose'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
-        print(_get_help('ftp-all'))
+        help.print_help('ftp-all')
         sys.exit(2)
         
     if args:
         print('[sgbackup ftp-all] This command does not take any arguments!',file=sys.stderr)
-        print(_get_help('ftp-all'))
+        help.print_help('ftp-all')
         sys.exit(2)
         
     connect={}
@@ -367,72 +366,6 @@ def command_ftp_all(db,argv):
             ftp_backup_file(db,game,bf,connect)
 # command_ftp_all()
     
-def command_ftp_listfile(db,argv):
-    try:
-        opts,args = getopt.getopt(argv,'d:h:L:p:ru:Vv',
-                                  ['directory=',
-                                  'host=',
-                                  'password=',
-                                  'listfile=',
-                                  'remove',
-                                  'user=',
-                                  'no-verbose',
-                                  'verbose'])
-    except getopt.GetoptError as error:
-        print(error,file=sys.stderr)
-        print(_get_help('ftp-list'))
-        sys.exit(2)
-        
-    if args:
-        print("[sgbackup ftp-list] ERROR: This command does not take any arguments!",file=sys.stderr)
-        print(_get_help('ftp-list'))
-        
-    connect={
-        'directory': CONFIG['ftp.directory'],
-        'host': CONFIG['ftp.host'],
-        'user': CONFIG['ftp.user'],
-        'password': CONFIG['ftp.password']
-    }
-    listfile = CONFIG['backup.listfile']
-    remove = False
-    for o,a in opts:
-        if o == '-d' or o == '--directory':
-            connect['directory'] = a
-        elif o == '-h' or o == '--host':
-            connect['host'] = a
-        elif o == '-L' or o == '--listfile':
-            listfile = a
-        elif o == '-r' or o == '--remove':
-            remove = True
-        elif o == '-p' or o == '--password':
-            connect['password'] = a
-        elif o == '-u' or o == '--user':
-            connect['user'] = a
-        elif o == '-V' or o == '--no-verbose':
-            CONFIG['verbose'] = False
-        elif o == '-v' or o == '--verbose':
-            CONFIG['verbose'] = True
-    
-    if not os.path.isfile(listfile):
-        print('[sgbackup ftp-list] Listfile "{0}" does not exist!'.format(listfile))
-        sys.exit(0)
-            
-    ftp=ftplib.FTP(connect['host'])
-    ftp.login(connect['user'],connect['password'])
-   
-    if not os.path.isfile(listfile):
-        print('[sgbackup ftp-list] ERROR: Listfile "{0}" not found!'.format(listfile),file=sys.stderr)
-        return
-        
-    with open(listfile,'r') as ifile:
-        lines = [line.strip() for line in ifile.readlines()]
-        for l in lines:
-            if l:
-                ftp_put_listfile(ftp,connect['directory'],l)
-
-    if remove:
-        os.unlink(listfile)
-# command_ftp_list()
         
 
 plugin = {
@@ -453,11 +386,6 @@ plugin = {
             'help-function': _get_help,
             'description': 'Put backup files from filelist in database on an FTP-Server',
             'function': command_ftp_list
-        },
-        'ftp-listfile': {
-            'help-function': _get_help, 
-            'description': 'Put backup files found in listfile on a FTP-Server.',
-            'function': command_ftp_listfile
         }
     },
     'config': {

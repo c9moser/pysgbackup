@@ -17,7 +17,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-from . import config,backup,database,archivers,extension,plugins,games
+from . import config,help,backup,database,archivers,extension,plugins,games
 
 import sys
 import os
@@ -103,26 +103,21 @@ COMMANDS:
 
 def command_help(db,argv):
     if len(argv) == 0:
-        print(_get_help())
+        help.print_help()
         return
         
     if (len(argv) > 1):
         print('[sgbackup help] ERROR: Too many arguments!',file=sys.stderr)
-        print(_get_help())
+        help.print_help()
         sys.exit(2)
         
     cmd = argv[0]
     if cmd not in COMMANDS:
         print('[sgbackup help] ERROR: Unknown command "{0}"!'.format(cmd),file=sys.stderr)
-        print(_get_help())
+        help.print_help()
         sys.exit(2)
-        
-    if 'help-function' in COMMANDS[cmd]:
-        print(COMMANDS[cmd]['help-function'](cmd))
-    elif 'help' in COMMANDS[cmd]:
-        print(COMMANDS[cmd]['help'])
-    else:
-        print('[sgbackup help] No help for command "{0}" available!'.format(cmd))
+    help.print_help(cmd)
+    
 # command_help()
 
 def command_archiver(db,argv):
@@ -130,7 +125,7 @@ def command_archiver(db,argv):
         opts,args = getopt.getopt(argv,'gvV',['global','verbose','no-verbose'])
     except getopt.GetoptError as error:
         print("[sgbackup archiver] ERROR: {0}".format(error),file=sys.stderr)
-        print(COMMANDS['archiver']['help-function']('archiver'))
+        help.print_help('archiver')
         sys.exit(2)
         
     global_archivers = False
@@ -144,12 +139,12 @@ def command_archiver(db,argv):
             
     if not args:
         print("[sgbackup archiver] ERROR: No command given!",file=sys.stderr)
-        print(COMMANDS['archiver']['help-function']('archiver'))
+        help.print_help('archiver')
         sys.exit(2)
         
     if len(args) > 1:
         print("[sgbackup archiver] ERROR: Too many arguments!",file=sys.stderr)
-        print(COMMANDS['archiver']['help-function']('archiver'))
+        help.print_help('archiver')
         sys.exit(2)
         
     cmd = args[0]
@@ -160,7 +155,7 @@ def command_archiver(db,argv):
         archivers.update(global_archivers)
     else:
         print('[sgbackup archiver] ERROR: Unknown command "{0}"!'.format(cmd),file=sys.stderr)
-        print(COMMANDS['archiver']['help-function']('archiver'))
+        help.print_help('archiver')
         sys.exit(2)
 # command_archiver
 
@@ -174,7 +169,7 @@ def command_backup(db,argv):
                                    "no-verbose"])
     except getopt.GetoptError as err:
         print(err,file=sys.stderr)
-        print(COMMANDS['backup']['help-function']('backup'))
+        help.print_help('backup')
         sys.exit(2)
     
     final_backup = False
@@ -193,7 +188,7 @@ def command_backup(db,argv):
             
     if not args:
         print("[sgbackup backup] No GameIDs given!",file=sys.stderr)
-        print(COMMANDS['backup']['help-function']('backup'))
+        help.print_help('backup')
         sys.exit(2)
         
     games=[]
@@ -225,12 +220,12 @@ def command_backup_all(db,argv):
                                    'no-verbose'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
-        print(COMMANDS['backup-all']['help-function']('backup-all'))
+        help.print_help('backup-all')
         sys.exit(2)
     
     if args:
         print('sgbackup backup-all takes no arguments!',file=sys.stderr)
-        print(COMMANDS['backup-all']['help-function']('backup-all'))
+        help.print_help('backup-all')
         sys.exit(2)
         
     force = False
@@ -250,7 +245,7 @@ def command_config(db,argv):
         opts,args = getopt.getopt(argv,'gsVv',['global','show','verbose','no-verbose'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
-        print(COMMANDS['config']['help-function']('config'))
+        help.print_help('config')
         sys.exit(2)
         
     global_config = False
@@ -287,7 +282,7 @@ def command_config(db,argv):
             print('[sgbackup config] ERROR: {0}'.format(error),file=sys.stderr)
     else:
         print('[sgbackup config] ERROR: Too many arguments!',file=sys.stderr)
-        print(COMMANDS['config']['help-function']('config'))
+        help.print_help('config')
         sys.exit(2)
 # command_config()
 
@@ -301,12 +296,12 @@ def command_check(db,argv):
                                    'verbose'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
-        print(COMMANDS['check']['help-function']('check'))
+        help.print_help('check')
         sys.exit(2)    
     
     if not args:
         print('[sgbackup check] ERROR: No GameIDs given!',file=sys.stderr)
-        print(COMMANDS['check']['help-function']('check'))
+        help.print_help('check')
         sys.exit(2)
         
     ask = True
@@ -330,7 +325,7 @@ def command_check(db,argv):
     for game_id in args:
         if not db.has_game(game_id):
             print('[sgbackup check] No such GameID "{0}"!'.format(game_id),file=sys.stderr)
-            print(COMMANDS['check']['help-function']('check'))
+            help.print_help('check')
             sys.exit(2)
             
     for game_id in args:
@@ -348,12 +343,12 @@ def command_check_all(db,argv):
                                    'verbose'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
-        print(COMMANDS['check-all']['help-function']('check-all'))
+        help.print_help('check-all')
         sys.exit(2)
         
     if len(args) > 0:
         print('[sgbackup check-all] ERROR: This command does not handle any arguments!',file=sys.stderr)
-        print(COMMANDS['check-all']['help-function']('check-all'))
+        help.print_help('check-all')
         sys.exit(2)
         
     ask=True
@@ -391,16 +386,16 @@ def command_database(db,argv):
     
     if not argv:
         print("sgbackup database: No command given!", file=sys.stderr)
-        print(COMMANDS['database']['help-function']('database'))
+        help.print_help('database')
     if (argv[0]) not in commands:
         print("sgbackup database: Unknown command '{0}'!".format(argv[0]),file=sys.stderr)
-        print(COMMANDS['database']['help-function']('database'))
+        help.print_help('database')
     
     try:   
         opts,args = getopt.getopt(argv[1:], 'fVv', ['force','verbose','no-verbose'])
     except getopt.GetoptError as err:
         print(err,file=sys.stderr)
-        print(COMMANDS['database']['help-function']('database'))
+        help.print_help('database')
         sys.exit(2)
    
     force=False
@@ -416,7 +411,7 @@ def command_database(db,argv):
     if cmd == 'delete':
         if not args:
             print("sgbackup database delete: No GameIDs given!'",file=sys.stderr)
-            print(COMMANDS['database']['help-function']('database'))
+            help.print_help('database')
             sys.exit(2)
         
         for i in args:
@@ -455,7 +450,7 @@ def command_database(db,argv):
     elif cmd == 'name':
         if not args:
             print("sgbackup database name: No GameIDs given!",file=sys.stderr)
-            print(COMMANDS['database']['help-function']('database'))
+            help.print_help('database')
             sys.exit(2)
         for gid in args:
             if not db.has_game(gid):
@@ -467,7 +462,7 @@ def command_database(db,argv):
     elif cmd == 'show':
         if not args:
             print('sgbackup database show: No GameIDs given!',file=sys.stderr)
-            print(COMMANDS['database']['help-function']('database'))
+            help.print_help('database')
             sys.exit(2)
         for gid in args:
             if not db.has_game(gid):
@@ -504,12 +499,12 @@ def command_delete_backups(db,argv):
         opts,args = getopt.getopt(argv,'fVv',['force','verbose','no-verbose'])
     except getopt.GetoptError as error:
         print('[sgbackup delete-backups] ERROR: {0}'.format(error),file=sys.stderr)
-        print(COMMANDS['delete-backups']['help-function']('delete-backups'))
+        help.print_help('delete-backups')
         sys.exit(2)
         
     if not args:
         print('[sgbackup delete-backups] ERROR: No GameIDs given!',file=sys.stderr)
-        print(COMMANDS['delete-backups']['help-function']('delete-backups'))
+        help.print_help('delete-backups')
     
     keep_latest = True
     for o,a in opts:
@@ -535,12 +530,12 @@ def command_delete_savegames(db,argv):
         opts,args = getopt.getopt(argv,'Vv',['no-verbose','verbose'])
     except getopt.GetoptError as error:
         print('[sgbackup delete-savegames] ERROR: {0}'.format(error),file=sys.stderr)
-        print(COMMANDS['delete-savegames']['help-function']('delete-savegames'))
+        help.print_help('delete-savegames')
         sys.exit(2)
         
     if not args:
         print('[sgbackup delete-savegames] ERROR: No GameIDs given!',file=sys.stderr)
-        print(COMMANDS['delete-savegames']['help-function']('delete-savegames'))
+        help.print_help('delete-savegames')
         
     for o,a in opts:
         if o == '-V' or o == '--no-verbose':
@@ -600,14 +595,14 @@ def command_game(db,argv):
     
     if not cmd in commands:
         print('[sgbackup game] ERROR: Unknown command "{0}"!'.format(cmd),file=sys.stderr)
-        print(_get_command_help('game'))
+        help.print_help('game')
         sys.exit(2)
         
     try:
         opts,args = getopt.getopt(argv[1:],'fVv',['force','no-verbose','verbose'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
-        print(_get_command_help('game'))
+        help.print_help('game')
         sys.exit(2)
     
     force = False
@@ -699,7 +694,8 @@ def command_game(db,argv):
 def command_plugin(db,argv):
     if not argv:
         print('[sgbackup plugin] No command given!',file=sys.stderr)
-        print(COMMANDS['plugin']['help-function']('plugin'))
+        help.print_help('plugin')
+        sys.exit(2)
         
     cmd = argv[0]
     if cmd == 'list':
@@ -726,7 +722,7 @@ def command_plugin(db,argv):
     elif cmd == 'enable':
         if len(argv) < 2:
             print("[spbackup plugin enable] ERROR: No Plugins given!",file=sys.stderr)
-            print(COMMANDS['plugin']['help-function']('plugin'))
+            help.print_help('plugin')
         for i in argv[1:]:
             if i not in plugins.PLUGINS:
                 print('No plugin "{0} found!"'.format(i),file=sys.stderr)
@@ -736,12 +732,12 @@ def command_plugin(db,argv):
     elif cmd == 'disable':
         if len(argv) < 2:
             print("[spbackup plugin disable] ERROR: No Plugins given!",file=sys.stderr)
-            print(COMMANDS['plugin']['help-function']('plugin'))
+            help.print_help('plugin')
         for i in argv[1:]:
             db.disable_plugin(i)
     else:
         print('[sgbackup plugin] No such command "{0}"!'.format(cmd),file=sys.stderr)
-        print(COMMANDS['plugin']['help-function']('plugin'))
+        help.print_help('plugin')
 # command_plugin
         
     
@@ -750,12 +746,12 @@ def command_restore(db,argv):
         opts,args = getopt.getopt(argv,'cVv',['choose','no-verbose','verbose'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
-        print(COMMANDS['restore']['help-function']('restore'))
+        help.print_help('restore')
         sys.exit(2)
     
     if not args:
         print("[sgbackup restore] No GameIDs given!",file=sys.stderr)
-        print(COMMANDS['restore']['help-function']('restore'))
+        help.print_help('restore')
         sys.exit(2)
     
     for game_id in args:
@@ -795,7 +791,7 @@ def command_restore_all(db,argv):
         
     if args:
         print("[sgbackup restore-all] Command does not take any arguments!",file=sys.stderr)
-        print(COMMANDS['restore-all']['help-function']('restore-all'))
+        help.print_help('restore-all')
         
     for o,a in opts:
         if o == '-v' or o == '--verbose':
@@ -813,7 +809,7 @@ def command_write_config(db,argv):
         opts,args = getopt.getopt(argv, 'gv', ['global','verbose'])
     except GetoptError as error:
         print(error,file=sys.stderr)
-        print(COMMANDS['write-config']['help-function']('write-config'))
+        help.print_help('write-config')
         sys.exit(2)
             
     global_config = False

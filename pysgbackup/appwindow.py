@@ -364,13 +364,17 @@ class AppWindow(Gtk.ApplicationWindow):
             if result == Gtk.ResponseType.APPLY:
                 g = dialog.game
                 db = sgbackup.database.Database()
-                if g.game_id != model.get_value(iter,self.GV_COL_GAMEID):
-                    gc = os.path.join(CONFIG['user-gameconf-dir'],'.'.join((gameid,'game')))
-                    if os.path.isfile(gc):
-                        os.unlink(gc)
+                old_game_id = model.get_value(iter,self.GV_COL_GAMEID)
+                if g.game_id != old_game_id:
+                    old_gc = os.path.join(CONFIG['user-gameconf-dir'],'.'.join((old_game_id,'game')))
+                    if os.path.isfile(old_gc):
+                        os.unlink(old_gc)
                 gc = os.path.join(CONFIG['user-gameconf-dir'],'.'.join((g.game_id,'game')))
                 cparser = configparser.ConfigParser()
                 dialog.write_game_config(cparser)
+                with open(gc,'w') as ofile:
+                    cparser.write(ofile)
+                    
                 db.add_game(g)
                     
                 with open(gc,'w') as ofile:

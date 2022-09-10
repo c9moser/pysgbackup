@@ -197,12 +197,12 @@ def add_game(db,game=None,ask=True):
            
         game_ok = False 
         settings=[
+            {'name':'Name','attr':'name','raw':False},
             {'name':'GameID','attr':'game_id','raw':False},
-            {'name': 'Name','attr':'name','raw':False},
             {'name':'SaveGame Name','attr':'savegame_name','raw':False},
-            {'name': 'SaveGame Root','attr':'savegame_root','raw':True},
-            {'name': 'SaveGame Dir','attr':'savegame_dir','raw':True},
-            {'name': 'Steam Appid', 'attr':'steam_appid','raw':False}
+            {'name':'SaveGame Root','attr':'savegame_root','raw':True},
+            {'name':'SaveGame Dir','attr':'savegame_dir','raw':True},
+            {'name':'Steam Appid','attr':'steam_appid','raw':False}
         ]
         while not game_ok:
             for i in settings:

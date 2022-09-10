@@ -46,7 +46,7 @@ def _get_checksum_values():
         values[i] = lambda f: get_checksum(f,i)
         
     return values
-     
+
 def _bool_to_config(b):
     if (b):
         return 'yes'
@@ -57,7 +57,7 @@ def _get_user_plugin_dir():
         return ""
         
     return os.path.join(site.USER_SITE,'sgbackup_plugins')
-    
+            
 CONFIG={
     "version":(0,0,16),
     "global-config": os.path.join(os.path.dirname(__file__),"sgbackup.conf"),

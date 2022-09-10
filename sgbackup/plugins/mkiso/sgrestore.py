@@ -35,7 +35,7 @@ HELP = """sgrestore
 
 USAGE:
 ======
-  sgrestore <-h|--help|-l|--list>
+  sgrestore <-h|--help|-l|--list|--version>
   sgrestore [-v] <-a>
   sgrestore [-v] GameID ...
   
@@ -45,14 +45,15 @@ OPTIONS:
   -h | --help       Print this help message.
   -l | --list       List all games.
   -v | --verbose    Print verbose messages.
+       --version    Print version information.
 """
 
 CONFIG={
+    'version': (0,0,18),
     'iso-root-directory': os.path.join(os.path.dirname(__file__)),
     'backup-directory': os.path.join(os.path.dirname(__file__),'SaveGames'),
     'game-shelve': os.path.join(os.path.dirname(__file__),'SaveGames','games')
 }
-
 
 def get_game_list():
     gl  = []
@@ -67,7 +68,7 @@ def get_game_list():
 
 def main():
     try:
-        opts,args = getopt.getopt(sys.argv[1:],'ahlv',['all','help','list','verbose'])
+        opts,args = getopt.getopt(sys.argv[1:],'ahlv',['all','help','list','verbose','version'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
         print(HELP)
@@ -78,6 +79,9 @@ def main():
     for o,a in opts:
         if o == '-h' or o == '--help':
             print(HELP)
+            sys.exit(0)
+        elif o == '--version':
+            print('sgrestore: {0}'.format('.'.join((str(i) for i in CONFIG['version']))))
             sys.exit(0)
         elif o == '-l' or o == '--list':
             gl = get_game_list()
@@ -91,7 +95,7 @@ def main():
                 print(g['game-id'] + ' ' * (width - len(g['game-id'])) + g['name'])
             sys.exit(0)
         elif o == '-a' or o == '--all':
-            with open(CONFIG['game-shelve']) as d:
+            with shelve.open(CONFIG['game-shelve']) as d:
                 for gameid in d.keys():
                     found=False
                     for i in args:
@@ -129,6 +133,8 @@ def main():
                 for i in g['files'].keys():
                     print('{0}\t{1}'.format(count,os.path.basename(i)))
                     choose[count] = i
+                    count += 1
+                    
                 valid_input = False
                 ignore = False
                 while not valid_input:

@@ -31,6 +31,7 @@ if plugin_available:
     import glob
     import datetime
     from sgbackup.config import CONFIG
+    from sgbackup import help
     import shelve
     import hashlib
     import gi; from gi.repository import GLib
@@ -52,12 +53,12 @@ OPTIONS:
             opts,args = getopt.getopt(argv,'aVv', ['all-finals','no-verbose','verbose'])
         except getopt.GetoptError as error:
             print(error,file=sys.stderr)
-            print(COMMAND_MKISO_HELP)
+            help.print_help('mkiso')
             sys.exit(2)
             
         if args:
             print("[sgbackup mkiso] This command does not take any arguments!",file=sys.stderr)
-            print(COMMAND_MKISO_HELP)
+            help.print_help('mkiso')
             sys.exit(2)
             
         all_finals = False

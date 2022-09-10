@@ -23,7 +23,7 @@ import subprocess
 import gettext
 import getopt
 from sgbackup.config import CONFIG
-from sgbackup import backup,extension
+from sgbackup import backup,extension,help
 
 N_ = lambda s: (s)
 def Q_(msgid):
@@ -174,12 +174,12 @@ if plugin_avilable:
             opts,args = getopt.getopt(argv,'dVv',['delete','no-verbose','verbose'])
         except getopt.GetoptError as error:
             print(error,file=sys.stderr)
-            print(_get_help('checksum'))
+            help.print_help('checksum')
             sys.exit(2)
             
         if not args:
             print('[sgabckup checksum] ERROR: No GameIDs given!',file=sys.stderr)
-            print(_get_help('checksum'))
+            help.print_help('checksum')
             sys.exit(2)
         
         for game_id in args:
@@ -215,7 +215,7 @@ if plugin_avilable:
             
         if args:
             print('[sgbackup checksum-all] ERROR: This command does not take any arguments!',file=sys.stderr)
-            print(_get_help('checksum-all'))
+            help.print_help('checksum-all')
             sys.exit(2)
         
         delete = False
