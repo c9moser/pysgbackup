@@ -1207,4 +1207,5 @@ class UpdateDatabaseDialog(Gtk.Dialog):
             buf.insert_with_tags(buf.get_end_iter(),"Unable to start process!",self.stderr_tag)
             
         return Gtk.Dialog.run(self)
-# UpdateDatabaseDialog()     
+# UpdateDatabaseDialog()
+

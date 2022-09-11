@@ -3,9 +3,9 @@
 import os
 import configparser
 import importlib
+import sys
 from .. import config
 from ._archiver import ArchiverBase,ProgramArchiver,TarFileArchiver,ZipFileArchiver
-from ._update import update
 
 ARCHIVERS={
     'tarfile': {
@@ -17,7 +17,6 @@ ARCHIVERS={
         'class': ZipFileArchiver,
     }
 }
-
 
 def _parse_conf(filename):
     parser = configparser.ConfigParser()
@@ -137,8 +136,7 @@ def update_archivers(global_archivers=False):
     if global_archivers:
         odir = config.CONFIG['global-archivers-dir']
     else:
-        odir = config.CONFIg['user-archivers-dir']
-                
+        odir = config.CONFIG['user-archivers-dir']
     if sys.platform == 'win32':
         cygpath_exe = None
         cygpath_ck_exe = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(sys.executable))),'usr','bin','cygpath.exe')
@@ -167,13 +165,18 @@ def update_archivers(global_archivers=False):
             ]
         
             for i in archiver_in:
+                archiver_file=i[:-7]
+                
+                if (config.CONFIG['verbose']):
+                    print("<archiver:update> {}".format(archiver_file[:-9]))
+                    
                 with open(os.path.join(archiver_dir,i),'r') as ifile:
                     s=ifile.read()
                 s = s.replace('__CYGPATH__',cygpath_exe)
                 s = s.replace('__EXECUTABLE__',tar_exe)
-                
+
                 try:
-                    with open(os.path.join(odir,i[:-7]),'w') as ofile:
+                    with open(os.path.join(odir,archiver_file),'w') as ofile:
                         ofile.write(s)
                 except Exception as error:
                     print('Unable to write to archivers dir! ({})'.format(error),file=sys.stderr)
@@ -190,12 +193,16 @@ def update_archivers(global_archivers=False):
             ]
                 
             for i in archiver_in:
+                archiver_file = i[:-3]
+                
+                if config.CONFIG['verbose']:
+                    print('<archiver:update> {}'.format(archiver_file[:-9]))
                 with open(os.path.join(archiver_dir,i),'r') as ifile:
                     s=ifile.read()
                 s = s.replace('__EXECUTABLE__',tar_exe)
                 
                 try:
-                    with open(os.path.join(odir,i[:'-3']),'w') as ofile:
+                    with open(os.path.join(odir,archiver_file),'w') as ofile:
                         ofile.write(s)
                 except Exception as error:
                     print('Unable to write to archivers dir! ({})'.format(error))
@@ -205,6 +212,9 @@ def update_archivers(global_archivers=False):
     if sys.platform == 'win32':
         winrar_exe = os.path.join(os.environ['SYSTEMDRIVE'],"Program Files","WinRAR","WinRAR.exe")
         if os.path.isfile(winrar_exe):
+            if config.CONFIG['verbose']:
+                print('<archiver:update> rar')
+                
             with open(os.path.join(archiver_dir,'rar.archiver.w32.in'),'r') as ifile:
                 s = ifile.read()
                 
@@ -228,6 +238,8 @@ def update_archivers(global_archivers=False):
                 break
                 
         if sevenzip_exe:
+            if config.CONFIG['verbose']:
+                print('<archiver:update> 7z')
             with open(os.path.join(archiver_dir,'7z.archiver.w32.in'),'r') as ifile:
                 s = ifile.read()
             

@@ -109,15 +109,15 @@ def command_help(db,argv):
     if (len(argv) > 1):
         print('[sgbackup help] ERROR: Too many arguments!',file=sys.stderr)
         help.print_help()
-        sys.exit(2)
+        return 2
         
     cmd = argv[0]
     if cmd not in COMMANDS:
         print('[sgbackup help] ERROR: Unknown command "{0}"!'.format(cmd),file=sys.stderr)
         help.print_help()
-        sys.exit(2)
+        return 2
     help.print_help(cmd)
-    
+    return 0
 # command_help()
 
 def command_archiver(db,argv):
@@ -126,7 +126,7 @@ def command_archiver(db,argv):
     except getopt.GetoptError as error:
         print("[sgbackup archiver] ERROR: {0}".format(error),file=sys.stderr)
         help.print_help('archiver')
-        sys.exit(2)
+        return 2
         
     global_archivers = False
     for o,a in opts:
@@ -140,23 +140,25 @@ def command_archiver(db,argv):
     if not args:
         print("[sgbackup archiver] ERROR: No command given!",file=sys.stderr)
         help.print_help('archiver')
-        sys.exit(2)
+        return 2
         
     if len(args) > 1:
         print("[sgbackup archiver] ERROR: Too many arguments!",file=sys.stderr)
         help.print_help('archiver')
-        sys.exit(2)
+        return 2
         
     cmd = args[0]
     if cmd == 'list':
         for i in archivers.list_archivers():
             print(i)
     elif cmd == 'update':
-        archivers.update(global_archivers)
+        archivers.update_archivers(global_archivers)
     else:
         print('[sgbackup archiver] ERROR: Unknown command "{0}"!'.format(cmd),file=sys.stderr)
         help.print_help('archiver')
-        sys.exit(2)
+        return 2
+        
+    return 0
 # command_archiver
 
 def command_backup(db,argv):
@@ -588,22 +590,22 @@ def command_game(db,argv):
     commands = ['add','list','remove','show']
     
     if not argv:
-        print(_get_command_help('game'))
-        sys.exit(0)
+        help.print_help('game')
+        return 0
     
     cmd = argv[0]
     
     if not cmd in commands:
         print('[sgbackup game] ERROR: Unknown command "{0}"!'.format(cmd),file=sys.stderr)
         help.print_help('game')
-        sys.exit(2)
+        return 2
         
     try:
         opts,args = getopt.getopt(argv[1:],'fVv',['force','no-verbose','verbose'])
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
         help.print_help('game')
-        sys.exit(2)
+        return 2
     
     force = False
     for o,a in opts:
@@ -656,7 +658,6 @@ def command_game(db,argv):
                 
         for gid,name in game_list:
             print('{} {}'.format(gid + (' ' * (gid_len - len(gid))),name))
-        return
     elif cmd == 'add':
         if not args:
             done = False
@@ -682,13 +683,27 @@ def command_game(db,argv):
                 if not game:
                     game = games.Game(i,i,'','','')
                 if game.name:
-                    print('Adding game "{}"'.format(game.name))
+                    print('Adding game "{}".'.format(game.name))
                 else:
-                    print('Adding game with ID "{}"'.format(game.game_id))
+                    print('Adding game with ID "{}".'.format(game.game_id))
                 games.add_game(db,game,ask=True)
     elif cmd == 'remove':
-        #TODO
-        pass
+        if not args:
+            print("No GameIDs given!",file=sys.stderr)
+            return 2
+        
+        game_list = []
+        for gid in args:
+            game = db.get_game(gid)
+            if not game:
+                print ('GameID "{0}" not in database!'.format(gid),file=sys.stderr)
+                return 2
+            game_list.append(game)
+            
+        for game in games:
+            games.remove_game(db,game,force)
+    
+    return 0
 # command_game()
 
 def command_plugin(db,argv):

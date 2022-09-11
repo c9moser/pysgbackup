@@ -282,7 +282,7 @@ def add_game(db,game=None,ask=True):
     db.add_game(game,gameconf=[GameConf(gcf,user_file=True)])
 # add_game()
 
-def remove_game(db,game,force=False):
+def remove_game(db,game,force=False,delete_gameconf=None):
     if isinstance(game,Game):
         game_id = game.game_id
     elif isinstance(game,str):
@@ -294,23 +294,22 @@ def remove_game(db,game,force=False):
         for d in get_conf_dirs():
             gcf = os.path.join(d,'.'.join((game_id,'game')))
             if os.path.isfile(gcf):
-                delete_file = False
-                if not force:
+                if not force and delete_gameconf is None:
                     valid_input = False
                     while not valid_input:
                         x = input('Delete GameConf "{}"? [Y/n] '.format(gcf))
                         if x.lower() == 'y' or x.lower() == 'yes':
-                            delete_file = True
+                            delete_gameconf = True
                             valid_input = True
                             break
                         elif x.lower() == 'n' or x.lower() == 'no':
-                            delete_file = False
+                            delete_gameconf = False
                             valid_input = True
                             break
                         else:
                             valid_input = False
                             
-                if force or delete_file:
+                if force or delete_gameconf:
                     try:
                         os.unlink(gcf)
                     except Exception as error:

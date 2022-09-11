@@ -42,6 +42,9 @@ def main():
 # main()
 
 if __name__ == "__main__":
-    main()
+    result = main()
+    if result is None:
+        result = 0
+    sys.exit(result)
 
 
