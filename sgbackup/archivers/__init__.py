@@ -197,6 +197,7 @@ def update_archivers(global_archivers=False):
                 
                 if config.CONFIG['verbose']:
                     print('<archiver:update> {}'.format(archiver_file[:-9]))
+                    
                 with open(os.path.join(archiver_dir,i),'r') as ifile:
                     s=ifile.read()
                 s = s.replace('__EXECUTABLE__',tar_exe)

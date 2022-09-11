@@ -172,7 +172,7 @@ def command_backup(db,argv):
     except getopt.GetoptError as err:
         print(err,file=sys.stderr)
         help.print_help('backup')
-        sys.exit(2)
+        return 2
     
     final_backup = False
     remove_final_backup_flag = False
@@ -191,7 +191,7 @@ def command_backup(db,argv):
     if not args:
         print("[sgbackup backup] No GameIDs given!",file=sys.stderr)
         help.print_help('backup')
-        sys.exit(2)
+        return 2
         
     games=[]
     for i in args:
@@ -199,7 +199,7 @@ def command_backup(db,argv):
         if not g:
             print("[sgbackup backup]: Unknown GameID '{0}'!".format(i),file=sys.stderr)
             print("Use 'sgbackup database list' to show known GameIDs.",file=sys.stderr)
-            sys.exit(2)
+            return 2
         games.append(g)
         
     for g in games:
@@ -212,6 +212,7 @@ def command_backup(db,argv):
 
 
         backup.backup(db,g)
+    return 0
 # command_backup()
 
 def command_backup_all(db,argv):
@@ -223,12 +224,12 @@ def command_backup_all(db,argv):
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
         help.print_help('backup-all')
-        sys.exit(2)
+        return 2
     
     if args:
         print('sgbackup backup-all takes no arguments!',file=sys.stderr)
         help.print_help('backup-all')
-        sys.exit(2)
+        return 2
         
     force = False
     for o,a in opts:
@@ -240,6 +241,7 @@ def command_backup_all(db,argv):
             config.CONFIG['verbose'] = True
             
     backup.backup_all(db,force)
+    return 0
 # command_backup_all()
 
 def command_config(db,argv):
@@ -248,7 +250,7 @@ def command_config(db,argv):
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
         help.print_help('config')
-        sys.exit(2)
+        return 2
         
     global_config = False
     show = False
@@ -270,13 +272,13 @@ def command_config(db,argv):
                 config.print_config_value(args[0],global_config)
             except Exception as error:
                 print('[sgbackup config] ERROR: {0}'.format(error),file=sys.stderr)
-                sys.exit(2)
+                return 2
         else:
             try:
                 config.print_config_key(args[0],global_config)
             except Exception as error:
                 print('[sgbackup config] ERROR: {0}'.format(error),file=sys.stderr)
-                sys.exit(2)
+                return 2
     elif len(args) == 2:
         try:
             config.write_config_key(args[0],args[1],global_config)
@@ -285,7 +287,9 @@ def command_config(db,argv):
     else:
         print('[sgbackup config] ERROR: Too many arguments!',file=sys.stderr)
         help.print_help('config')
-        sys.exit(2)
+        return 2
+        
+    return 0
 # command_config()
 
 def command_check(db,argv):
@@ -299,12 +303,12 @@ def command_check(db,argv):
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
         help.print_help('check')
-        sys.exit(2)    
+        return 2
     
     if not args:
         print('[sgbackup check] ERROR: No GameIDs given!',file=sys.stderr)
         help.print_help('check')
-        sys.exit(2)
+        return 2
         
     ask = True
     create_missing = False
@@ -328,11 +332,13 @@ def command_check(db,argv):
         if not db.has_game(game_id):
             print('[sgbackup check] No such GameID "{0}"!'.format(game_id),file=sys.stderr)
             help.print_help('check')
-            sys.exit(2)
+            return 2
             
     for game_id in args:
         game = db.get_game(game_id)
         backup.check(db,game,create_missing,check_deleted,delete_failed)
+        
+    return 0
 # command_check()
     
 def command_check_all(db,argv):
@@ -346,12 +352,12 @@ def command_check_all(db,argv):
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
         help.print_help('check-all')
-        sys.exit(2)
+        return 2
         
     if len(args) > 0:
         print('[sgbackup check-all] ERROR: This command does not handle any arguments!',file=sys.stderr)
         help.print_help('check-all')
-        sys.exit(2)
+        return 2
         
     ask=True
     create_missing=False
@@ -374,6 +380,8 @@ def command_check_all(db,argv):
     for game_id in db.list_game_ids():
         game = db.get_game(game_id)
         backup.check(db,game,create_missing,check_deleted,delete_failed)
+        
+    return 0
 # command_check_all()
 
 def command_database(db,argv):
@@ -389,16 +397,18 @@ def command_database(db,argv):
     if not argv:
         print("sgbackup database: No command given!", file=sys.stderr)
         help.print_help('database')
+        return 2
     if (argv[0]) not in commands:
         print("sgbackup database: Unknown command '{0}'!".format(argv[0]),file=sys.stderr)
         help.print_help('database')
+        return 2
     
     try:   
         opts,args = getopt.getopt(argv[1:], 'fVv', ['force','verbose','no-verbose'])
     except getopt.GetoptError as err:
         print(err,file=sys.stderr)
         help.print_help('database')
-        sys.exit(2)
+        return 2
    
     force=False
     for o,a in opts:
@@ -414,12 +424,12 @@ def command_database(db,argv):
         if not args:
             print("sgbackup database delete: No GameIDs given!'",file=sys.stderr)
             help.print_help('database')
-            sys.exit(2)
+            return 2
         
         for i in args:
             if not db.has_game(i):
                 print("No Game found for GameID '{0}'!".format(i),file=sys.stderr)
-                sys.exit(2)
+                return 2
                 
         for i in args:
             if (config.CONFIG['verbose']):
@@ -453,11 +463,11 @@ def command_database(db,argv):
         if not args:
             print("sgbackup database name: No GameIDs given!",file=sys.stderr)
             help.print_help('database')
-            sys.exit(2)
+            return 2
         for gid in args:
             if not db.has_game(gid):
                 print("No GameID '{0}' found!".format(gid),file=sys.stderr)
-                sys.exit(2)
+                return 2
         for gid in args:
             game = db.get_game(gid)
             print(game.name) 
@@ -465,11 +475,11 @@ def command_database(db,argv):
         if not args:
             print('sgbackup database show: No GameIDs given!',file=sys.stderr)
             help.print_help('database')
-            sys.exit(2)
+            return 2
         for gid in args:
             if not db.has_game(gid):
                 print('No GameID \'{0}\' found!'.format(gid))
-                sys.exit(2)
+                return 2
         for gid in args:
             g = db.get_game(gid)
             fmt='{0}={1}'
@@ -494,6 +504,7 @@ def command_database(db,argv):
                     
             for g in game_list:
                 db.add_game(g)
+    return 0
 # command_database()
 
 def command_delete_backups(db,argv):
@@ -502,7 +513,7 @@ def command_delete_backups(db,argv):
     except getopt.GetoptError as error:
         print('[sgbackup delete-backups] ERROR: {0}'.format(error),file=sys.stderr)
         help.print_help('delete-backups')
-        sys.exit(2)
+        return 2
         
     if not args:
         print('[sgbackup delete-backups] ERROR: No GameIDs given!',file=sys.stderr)
@@ -520,11 +531,13 @@ def command_delete_backups(db,argv):
     for game_id in args:
         if not db.has_game(game_id):
             print('[sgbackup delete-backups] ERROR: No such GameID "{0}!"'.format(game_id))
-            sys.exit(2)
+            return 2
             
     for game_id in args:
         game = db.get_game(game_id)
         backup.delete_backups(db,game,keep_latest)
+        
+    return 0
 # command_delete_backups
 
 def command_delete_savegames(db,argv):
@@ -533,7 +546,7 @@ def command_delete_savegames(db,argv):
     except getopt.GetoptError as error:
         print('[sgbackup delete-savegames] ERROR: {0}'.format(error),file=sys.stderr)
         help.print_help('delete-savegames')
-        sys.exit(2)
+        return 2
         
     if not args:
         print('[sgbackup delete-savegames] ERROR: No GameIDs given!',file=sys.stderr)
@@ -548,11 +561,12 @@ def command_delete_savegames(db,argv):
     for game_id in args:
         if not db.has_game(game_id):
             print('[sgbackup delete-savegames] ERROR: No such GameID "{0}"!'.format(game_id))
-            sys.exit(2)
+            return 2
     
     for game_id in args:
         game = db.get_game(game_id)
         backup.delete_savegames(game)
+    return 0
 # command_delete_savegames()
 
 def command_extension(db,argv):
@@ -583,7 +597,8 @@ def command_extension(db,argv):
                     print(e)
             except LookupError as error:
                 print('[sgbackup extension] ERROR: {}'.format(err))
-                sys.exit(2)
+                return 2
+    return 0
 # command_extension
 
 def command_game(db,argv):
@@ -591,7 +606,7 @@ def command_game(db,argv):
     
     if not argv:
         help.print_help('game')
-        return 0
+        return 2
     
     cmd = argv[0]
     
@@ -710,7 +725,7 @@ def command_plugin(db,argv):
     if not argv:
         print('[sgbackup plugin] No command given!',file=sys.stderr)
         help.print_help('plugin')
-        sys.exit(2)
+        return 2
         
     cmd = argv[0]
     if cmd == 'list':
@@ -753,6 +768,8 @@ def command_plugin(db,argv):
     else:
         print('[sgbackup plugin] No such command "{0}"!'.format(cmd),file=sys.stderr)
         help.print_help('plugin')
+        
+    return 0
 # command_plugin
         
     
@@ -762,17 +779,17 @@ def command_restore(db,argv):
     except getopt.GetoptError as error:
         print(error,file=sys.stderr)
         help.print_help('restore')
-        sys.exit(2)
+        return 2
     
     if not args:
         print("[sgbackup restore] No GameIDs given!",file=sys.stderr)
         help.print_help('restore')
-        sys.exit(2)
+        return 2
     
     for game_id in args:
         if not db.has_game(game_id):
             print("[sgbackup restore] No game for GameID '{0}' found!".format(game_id))
-            sys.exit(2)
+            return 2
                 
     choose = False
     for o,a in opts:
@@ -795,6 +812,8 @@ def command_restore(db,argv):
         else:
             print("[sgbackup restore] {0}".format(game.name))
             backup.restore(db,game,latest_backup)
+            
+    return 0
 # command_restore()
 
 def command_restore_all(db,argv):
@@ -803,20 +822,25 @@ def command_restore_all(db,argv):
     except getopt.GetoptError as error:
         print(error, file=sys.stderr)
         print(COMMANDS['restore-all']['help-function']('restore-all'))
+        return 2
         
     if args:
         print("[sgbackup restore-all] Command does not take any arguments!",file=sys.stderr)
         help.print_help('restore-all')
+        return 2
         
     for o,a in opts:
         if o == '-v' or o == '--verbose':
             config.CONFIG['verbose'] = True
     
     backup.restore_all(db)
+    
+    return 0
 # command_restore_all()
 
 def command_version(db,argv):
     print("sgbackup {0}".format('.'.join((str(i) for i in config.CONFIG['version']))))
+    return 0
 # command_version
 
 def command_write_config(db,argv):
@@ -825,7 +849,7 @@ def command_write_config(db,argv):
     except GetoptError as error:
         print(error,file=sys.stderr)
         help.print_help('write-config')
-        sys.exit(2)
+        return 2
             
     global_config = False
     
@@ -847,6 +871,7 @@ def command_write_config(db,argv):
             config.write_config(filename,global_config)
         except Exception as error:
             print('Writing Config \'{0}\' failed! ({1})'.format(filename,error),file=sys.stderr)          
+            return 3
     else:
         for i in args:
             if config.CONFIG['verbose']:
@@ -855,6 +880,8 @@ def command_write_config(db,argv):
                 config.write_config(i,global_config)
             except Exception as error:
                 print('Writing Config \'{0}\' failed! ({1})'.format(i,error),file=sys.stderr)
+                return 3
+    return 0
 # command_write_config()
 
 COMMANDS={

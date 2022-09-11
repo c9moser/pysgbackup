@@ -22,29 +22,28 @@
 from . import config
 
 import sys
-
 from .commands import COMMANDS
-from . import database
+from . import database,help
 
 import sgbackup
 
 def main():
     if len(sys.argv) == 1:
-        print(COMMANDS['help']['help-function']('help'))
-        sys.exit(0)
+        help.print_help('help')
+        return 0
     elif sys.argv[1] in COMMANDS:
         db = database.Database()
-        COMMANDS[sys.argv[1]]['function'](db,sys.argv[2:])
+        result = COMMANDS[sys.argv[1]]['function'](db,sys.argv[2:])
+        if result is None:
+            result = 0
+        return result
     else:
         print("sgbackup: Unknown command '{0}'!".format(sys.argv[1]),file=sys.stderr)
-        print(COMMANDS['help']['help-function']('help'))
-        sys.exit(2)
+        help.print_help('help')
+        return 2
 # main()
 
 if __name__ == "__main__":
-    result = main()
-    if result is None:
-        result = 0
-    sys.exit(result)
+    sys.exit(main())
 
 
