@@ -21,6 +21,20 @@
         </section>
         <section>
             <item>
+                <attribute name='label' translatable='yes'>Restore latest backups of all games</attribute>
+                <attribute name='action'>win.restore-all</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>Restore latest backup of selected game</attribute>
+                <attribute name='action'>win.restore-latest</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>Restore selected backup</attribute>
+                <attribute name='action'>win.restore-selected</attribute>
+            </item>
+        </section>
+        <section>
+            <item>
                 <attribute name='label' translatable='yes'>Refresh</attribute>
                 <attribute name='action'>win.refresh</attribute>
             </item>
@@ -57,6 +71,10 @@
                         <attribute name='label' translatable='yes'>Check all backups</attribute>
                         <attribute name='action'>win.check-all-backups</attribute>
                     </item>
+                    <item>
+                        <attribute name='label' translatable='yes'>Check selected backup</attribute>
+                        <attribute name='action'>win.check-selected-backup</attribute>
+                    </item>
                 </section>
             </submenu>
             <submenu>
@@ -86,6 +104,74 @@
             <item>
                 <attribute name='label' translatable='yes'>_Quit</attribute>
                 <attribute name='action'>app.quit</attribute>
+            </item>
+        </section>
+    </menu>
+    <menu id='gameview-popup'>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>_Backup selected game</attribute>
+                <attribute name='action'>win.backup</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>Backup _all games</attribute>
+                <attribute name='action'>win.backup-all</attribute>
+            </item>
+        </section>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>_Create final backup</attribute>
+                <attribute name='action'>win.final-backup</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>Unfinal game</attribute>
+                <attribute name='action'>win.unfinal-game</attribute>
+            </item>
+        </section>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>_Edit game</attribute>
+                <attribute name='action'>win.edit-game</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>_Delete game</attribute>
+                <attribute name='action'>win.delete-game</attribute>
+            </item>
+        </section>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>Check backups of selected game</attribute>
+                <attribute name='action'>win.check-backups</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>Check all backups</attribute>
+                <attribute name='action'>win.check-all-backups</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>Check selected backup</attribute>
+                <attribute name='action'>win.check-selected-backup</attribute>
+            </item>
+        </section>
+    </menu>
+    <menu id='backupview-popup'>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>Restore selected backup</attribute>
+                <attribute name='action'>win.restore-selected</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>Restore latest backup</attribute>
+                <attribute name='action'>win.restore-latest</attribute>
+            </item>
+        </section>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>Check selected backup</attribute>
+                <attribute name='action'>win.check-selected-backup</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>Check backups</attribute>
+                <attribute name='action'>win.check-backups</attribute>
             </item>
         </section>
     </menu>

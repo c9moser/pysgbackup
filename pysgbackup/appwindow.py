@@ -27,7 +27,7 @@ import os
 import configparser
 import threading
 
-from . import settings,backupdialog,dialogs
+from . import settings,dialogs
 
 import pysgbackup
 
@@ -69,8 +69,8 @@ class AppWindow(Gtk.ApplicationWindow):
         self.menu_button = Gtk.MenuButton()
         image = Gtk.Image.new_from_icon_name('open-menu-symbolic',Gtk.IconSize.BUTTON)
         self.menu_button.set_image(image)
-        appmenu = builder.get_object('appmenu')
-        self.menu_button.set_menu_model(appmenu)
+        self.appmenu = builder.get_object('appmenu')
+        self.menu_button.set_menu_model(self.appmenu)
         self.headerbar.pack_start(self.menu_button)
         
         self.set_titlebar(self.headerbar)
@@ -82,8 +82,12 @@ class AppWindow(Gtk.ApplicationWindow):
         self.paned = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
         
         # gameview
+        giomenu = builder.get_object('gameview-popup')
+        self.gameview_popup_menu = Gtk.Menu.new_from_model(giomenu)
         self.gameview_scrolled = Gtk.ScrolledWindow()
         self.gameview = Gtk.TreeView(self.__create_gameview_model())
+        self.gameview_popup_menu.attach_to_widget(self.gameview)
+        self.gameview.connect('button-press-event',self._on_gameview_button_press_event)
         self.gameview.get_selection().connect('changed',self._on_gameview_selection_changed)
         
         renderer = Gtk.CellRendererText()
@@ -120,8 +124,13 @@ class AppWindow(Gtk.ApplicationWindow):
         
         
         # backup view
+        giomenu = builder.get_object('backupview-popup')
+        self.backupview_popup_menu = Gtk.Menu.new_from_model(giomenu)
         self.backupview_scrolled = Gtk.ScrolledWindow()
         self.backupview = Gtk.TreeView(self.__create_backupview_model())
+        self.backupview_popup_menu.attach_to_widget(self.backupview)
+        self.backupview.get_selection().connect('changed',self._on_backupview_selection_changed)
+        self.backupview.connect('button-press-event',self._on_backupview_button_press_event)
         
         renderer = Gtk.CellRendererText()
         column = Gtk.TreeViewColumn('Savegame Backup',renderer,text=self.BV_COL_BASENAME)
@@ -133,7 +142,6 @@ class AppWindow(Gtk.ApplicationWindow):
         renderer.set_radio(True)
         column = Gtk.TreeViewColumn('Latest',renderer,active=self.BV_COL_LATEST)
         self.backupview.append_column(column)
-        
         
         self.backupview_scrolled.add(self.backupview)
         self.paned.pack2(self.backupview_scrolled,False,True)
@@ -147,7 +155,7 @@ class AppWindow(Gtk.ApplicationWindow):
         self.add(self.vbox)
         
         self._on_gameview_selection_changed(self.gameview.get_selection())
-        
+        self._on_backupview_selection_changed(self.backupview.get_selection())
         self.show_all()
         
         
@@ -202,8 +210,12 @@ class AppWindow(Gtk.ApplicationWindow):
         self._action_final_backup = add_simple_action('final-backup',self._on_action_final_backup)
         self._action_check_backups = add_simple_action('check-backups',self._on_action_check_backups)
         self._action_check_all_backups = add_simple_action('check-all-backups',self._on_action_check_all_backups)
+        self._action_check_selected_backup = add_simple_action('check-selected-backup',self._on_action_check_selected_backup)
         self._action_edit_game = add_simple_action('edit-game',self._on_action_edit_game)
         self._action_delete_game = add_simple_action('delete-game',self._on_action_delete_game)
+        self._action_restore_all = add_simple_action('restore-all',self._on_action_restore_all)
+        self._action_restore_latest = add_simple_action('restore-latest',self._on_action_restore_latest)
+        self._action_restore_selected = add_simple_action('restore-selected',self._on_action_restore_selected)     
         
         add_simple_action('database-vacuum',self._on_action_database_vacuum)
         add_simple_action('database-update',self._on_action_database_update)
@@ -213,7 +225,8 @@ class AppWindow(Gtk.ApplicationWindow):
             
     
     def _on_gameview_selection_changed(self,selection):
-        self.backupview.set_model(self.__create_backupview_model())
+        bv_model = self.__create_backupview_model()
+        self.backupview.set_model(bv_model)
         model,iter = selection.get_selected()
         if iter:
             self._action_backup.set_enabled(True)
@@ -227,6 +240,11 @@ class AppWindow(Gtk.ApplicationWindow):
             else:
                 self._action_unfinal_game.set_enabled(False)
                 self._action_final_backup.set_enabled(True)
+                
+            if len(bv_model) > 0:
+                self._action_restore_latest.set_enabled(True)
+            else:
+                self._action_restore_latest.set_enabled(False)
         else:
             self.headerbar.set_subtitle('')
             self._action_backup.set_enabled(False)
@@ -235,6 +253,24 @@ class AppWindow(Gtk.ApplicationWindow):
             self._action_check_backups.set_enabled(False)
             self._action_edit_game.set_enabled(False)
             self._action_delete_game.set_enabled(False)
+            self._action_restore_latest.set_enabled(False)
+        
+    def _on_gameview_button_press_event(self,widget,event):
+        if event.button == 3:
+            self.gameview_popup_menu.popup_at_pointer(event)
+        
+    def _on_backupview_button_press_event(self,widget,event):
+        if event.button == 3:
+            self.backupview_popup_menu.popup_at_pointer(event)
+            
+    def _on_backupview_selection_changed(self,selection):
+        model,iter = selection.get_selected()
+        if iter:
+            self._action_restore_selected.set_enabled(True)
+            self._action_check_selected_backup.set_enabled(True)
+        else:
+            self._action_restore_selected.set_enabled(False)
+            self._action_check_selected_backup.set_enabled(False)
         
     def _on_action_backup(self,action,data):
         model,iter = self.gameview.get_selection().get_selected()
@@ -329,8 +365,6 @@ class AppWindow(Gtk.ApplicationWindow):
             self.gameview.set_model(self.__create_gameview_model())
             self.gameview.show()        
         dialog.destroy()        
-        
-        
     # _on_action_add_game()
     
     def _on_action_edit_game(self,action,data):
@@ -472,6 +506,18 @@ class AppWindow(Gtk.ApplicationWindow):
                     self.update_gameview()
                     self.gameview_select_game(game)
         
+    def _on_action_restore_all(self,action,data):
+        #TODO
+        pass
+    
+    def _on_action_restore_latest(self,action,data):
+        #TODO
+        pass
+        
+    def _on_action_restore_selected(self,action,data):
+        #TODO
+        pass
+        
     def _on_action_check_backups(self,action,data):
         model,iter = self.gameview.get_selection().get_selected()
         if iter:
@@ -497,6 +543,10 @@ class AppWindow(Gtk.ApplicationWindow):
             dialog = dialogs.CheckGamesDialog(games=games,parent=self)
             dialog.run()
             dialog.destroy()
+        
+    def _on_action_check_selected_backup(self,action,data):
+        #TODO
+        pass
         
     def _on_action_settings(self,action,data):
         dialog = settings.SettingsDialog(parent=self)
