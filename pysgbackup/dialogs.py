@@ -300,19 +300,205 @@ class UnfinalGameDialog(Gtk.Dialog):
         return Gtk.Dialog.run(self)
 # UnfinalGameDialog class
 
+class CheckBackupDialog(Gtk.Dialog):
+    (FAILED_IGNORE,FAILED_DELETE) = range(2)
+    (MISSING_IGNORE,MISSING_CREATE,MISSING_DELETE) = range(3)
+    
+    def __init__(self,parent,game,files=[]):
+        Gtk.Dialog.__init__(self,parent)
+        self.game = game
+        self.__files = files
+        
+        self.__action_failed = FAILED_IGNORE
+        self.__action_missing = MISSING_IGNORE
+        
+        vbox = self.get_content_area()
+        label = Gtk.Label()
+        label.set_markup('<span size="x-large>"' + 'Checking game backup(s).' + '</span>')
+        vbox.pack_start(label,False,False,0)
+        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL,False,False,5))
+        
+        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL),False,False,0)
+        self.sizegroup = Gtk.SizeGroup()
+        self.sizegroup.set_mode(Gtk.SizeGroupMode.HORIZONTAL)
+        
+        failed_actions = [
+            ('ignore', 'Ignore files where checksum-test failed.'),
+            ('delete', 'Delete files where checksum-test failed.')
+        ]
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        label = Gtk.Label('Failed checksum action:')
+        self.sizegroup.add_widget(label)
+        hbox.pack_start(label,False,False,5)
+        self.failed_cbox = Gtk.ComboBoxText()
+        for id,text in failed_actions:
+            self.failed_cbox.append(id,text)
+        hbox.pack_start(self.failed_cbox,True,True,0)
+        vbox.pack_start(hbox,False,False,0)
+        
+        missing_actions = [
+            ('ignore','Ignore files where checksums are missing.'),
+            ('create', 'Create missing checksums.'),
+            ('delete', 'Delete Files where checksums are missing.')
+        ]
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        label = Gtk.Label('Missing checksum action:')
+        self.sizegroup.add_widget(label)
+        hbox.pack_start(label,False,False,5)       
+        self.missing_cbox = Gtk.ComboBoxText()
+        for id,text in missing_actions:
+            self.missing_cbox.append(id,text)
+        self.missing_cbox.set_active_id('create')
+        hbox.pack_start(self.missing_cbox,True,True,0)
+        self.vbox.pack_start(hbox,False,False,0)
+        
+        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL),False,False,5)
+        self.progress = Gtk.ProgressBar()
+        self.progress.set_show_text(True)
+        vbox.pack_start(self.progress,False,False,0)
+        
+        vbox.pack_start(Gtk.Separator(orientation=Orientation.HORIZONTAL),False,False,5)
+        
+        self.progressview_scrolled = Gtk.ScrolledWindow()
+        buf = Gtk.TextBuffer()
+        self.tag_stdout = buf.create_tag('stdout',foreground='green')
+        self.tag_stderr = buf.create_tag('stderr',foreground='red')
+        self.progressview = Gtk.TextView()
+        self.progressview.set_buffer(buf)
+        self.progressview_scrolled.add(self.progressview)
+        vbox.pack_start(self.progressview_scrolled,True,True,0)
+        
+        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
+        self.show_all()
+        
+    @property
+    def game(self):
+        return self.__game
+    @game.setter
+    def game(self,g):
+        if not isinstance(g,sgbackup.games.Game):
+            raise TypeError('"game" is not a sgbackup.games.Game instance!')
+        if self.__game.game_id != g.game_id and self.__files:
+            self.__files = []
+        self.__game = g
+        
+    @property
+    def files(self):
+        return self.__files
+        
+    @property
+    def missing_action(self):   
+        actions = {'ignore':self.MISSING_IGNORE,'delete':self.MISSING_DELETE,'create':self.MISSING_CREATE}
+        return actions[self.missing_cbox.get_active_id()]
+        
+    @property
+    def failed_action(self):
+        actions={'ignore':self.FAILED_IGNORE,'delete':self.FAILED_DELETE}
+        return actions[self.failed_cbox.get_active_id()]
+        
+    def _on_thread_finished(self):
+        #TODO
+        pass
+        
+    def _on_thread_update(self,data):
+        #TODO
+        pass
+        
+    def _thread_func(self):
+        data = {'fraction':0.0,'text':'Preparing ... '}
+        GLib.idle_add(self._on_thread_update,data)
+        db = sgbackup.database.Database()
+        
+        count = 0
+        n_steps = 1
+        if not self.files:
+            f = sgbackup.backup.find_latest_backup()
+            if f:
+                self.files.append(f)
+                    
+        n_steps += len(self.files)
+        
+        if self.files:
+            for f in self.files:
+                if os.path.abspath(f):
+                    file = f
+                else:
+                    file = os.path.join(CONFIG['backup.dir'],game.savegame_name,f)
+                    
+                count += 1
+                data = {'fraction': (count/n_steps),'text': 'Checking file: {}'.format(os.path.basename(f))}
+                
+                if not os.path.isfile(f):
+                    #print('File "{}" not found! SKIPPING'.format(file),file=self.stderr_w)
+                    continue
+                    
+                GLib.idle_add(self._on_thread_update,data)
+                backup = db.get_game_backup(game,os.path.basename(file))
+                if not backup:
+                    missing_action = self.missing_action
+                    if missing_action == self.MISSING_IGNORE:
+                        print('[ERROR]' + 'Checksum for file "{}" not found! SKIPPING!'.format(file),file=self.__pipew)
+                        continue
+                    elif self.missing_action == self.MISSING_CREATE:
+                        print('[ERROR]' + 'Checksum for file "{}" not found! CREATING!'.format(file),file=self.__pipew)
+                        cksum = CONFIG['backup.checksum']
+                        h = hashlib.new(cksum)
+                        with open(file,'rb') as ifile:
+                            h.update(ifile.read())
+                        hash = h.hexdigest()
+                        db.add_game_backup(game,os.path.basename(file),cksum,hash)
+                    elif missing_action == self.MISSING_DELETE:
+                        print('[ERROR]' + 'Checksum for file "{0}" not found! DELETING FILE!'.format(file),file=self.__pipew)
+                        sgbackup.backup.delete_backup(self.game,file)
+                else:
+                    print('[checksum:{0}] {} ... '.format(backup['checksum'],os.path.basename(file)),end='',file=self.__pipew)
+                    h = hashlib.new(backup['checksum'])
+                    with open(file,'rb') as ifile:
+                        h.update(ifile.read())
+                    hash = h.hexdigest()
+                    if backup['hash'] == hash:
+                        print('OK',file=self.__pipew)
+                        continue
+                    else:
+                        failed_action = self.failed_action
+                        
+                        print('FAILED',file=self.__pipew)
+                        if failed_action == self.FAILED_IGNORE:
+                            continue
+                        elif failed_action == self.FAILED_DELETE:
+                            print('[ERROR]' + 'Checksum check for file {} failed! DELETING!'.format(os.path.baesname(file)),
+                                  file=self.__pipew)
+                    
+                
+        data = {'fraction': 1.0, 'text': 'Done'}
+        GLib.idle_add(self._on_thread_update,data)
+        GLib.idle_add(self._on_thread_finished)
+        
+    def _on_run_clicked(self):
+        r,w = os.pipe()
+        utility.pipe_nowait(r)
+        self.__piper = os.fdopen(r)
+        self.__pipew = os.fdopen(w)
+        
+        self.__thread = threading.Thread(target=self._thread_func)
+        self.__thread.daemon=True
+        self._thread.run()
+
+# CheckBackupDialog class
+
 class CheckGamesDialog(Gtk.Dialog):
     (FAILED_IGNORE,FAILED_DELETE) = range(2)
     (MISSING_IGNORE,MISSING_CREATE,MISSING_DELETE) = range(3)
     
     def __init__(self,games=[],parent=None):
-        Gtk.Dialog.__init__(self)
+        Gtk.Dialog.__init__(self,parent)
         self.__games=[]
         self.__action_failed = self.FAILED_IGNORE
         self.__action_missing = self.MISSING_IGNORE
         
         for i in games:
             self.add_game(i)
-        
+                    
         vbox=self.get_content_area()
         
         label = Gtk.Label()
@@ -379,7 +565,7 @@ class CheckGamesDialog(Gtk.Dialog):
         
         self.show_all()
     
-    def get_missins_action(self):
+    def get_missing_action(self):
         actions = {'ignore':self.MISSING_IGNORE,'delete':self.MISSING_DELETE,'create':self.MISSING_CREATE}
         return actions[self.missing_cbox.get_active_id()]
         
@@ -397,14 +583,14 @@ class CheckGamesDialog(Gtk.Dialog):
         self.failed_cbox.set_sensitive(False)
         
         self.__thread = threading.Thread(target=self._thread_func)
-        self.__thread.set_daemon = True
+        self.__thread.daemon = True
         self.__thread.start()
                 
         
     @property
     def games(self):
         return self.__games
-        
+                    
     def add_game(self,game):
         db = sgbackup.database.Database()
         if isinstance(game,str):
@@ -445,9 +631,9 @@ class CheckGamesDialog(Gtk.Dialog):
         
     def _thread_func(self):
         db = sgbackup.database.Database()
-        missing_action = self.get_missins_action()
+        missing_action = self.get_missing_action()
         failed_action = self.get_failed_action()
-        files = []
+        
         count = 0
         data = {'fraction':0.0,'text': 'Creating file-list'}
         GLib.idle_add(self._on_thread_update,data)

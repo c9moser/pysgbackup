@@ -545,9 +545,7 @@ class AppWindow(Gtk.ApplicationWindow):
             dialog.destroy()
         
     def _on_action_check_selected_backup(self,action,data):
-        #TODO
-        pass
-        
+        pass        
     def _on_action_settings(self,action,data):
         dialog = settings.SettingsDialog(parent=self)
         result = dialog.run()
