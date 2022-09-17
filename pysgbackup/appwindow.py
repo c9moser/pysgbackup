@@ -210,6 +210,7 @@ class AppWindow(Gtk.ApplicationWindow):
         self._action_final_backup = add_simple_action('final-backup',self._on_action_final_backup)
         self._action_check_backups = add_simple_action('check-backups',self._on_action_check_backups)
         self._action_check_all_backups = add_simple_action('check-all-backups',self._on_action_check_all_backups)
+        self._action_check_latest_backup = add_simple_action('check-latest-backup',self._on_action_check_latest_backup)
         self._action_check_selected_backup = add_simple_action('check-selected-backup',self._on_action_check_selected_backup)
         self._action_edit_game = add_simple_action('edit-game',self._on_action_edit_game)
         self._action_delete_game = add_simple_action('delete-game',self._on_action_delete_game)
@@ -525,7 +526,7 @@ class AppWindow(Gtk.ApplicationWindow):
             game = db.get_game(model.get_value(iter,self.GV_COL_GAMEID))
             db.close()
             if game:
-                dialog = dialogs.CheckGamesDialog(games=[game],parent=self)
+                dialog = dialogs.CheckBackupDialog(self,game,sgbackup.backup.find_backups(game))
                 dialog.run()
                 dialog.destroy()                
     
@@ -544,8 +545,42 @@ class AppWindow(Gtk.ApplicationWindow):
             dialog.run()
             dialog.destroy()
         
+    def _on_action_check_latest_backup(self,action,data):
+        model,iter = self.gameview.get_selection().get_selected()
+        if iter:
+            db = sgbackup.database.Database()
+            game = db.get_game(model.get_value(iter,self.GV_COL_GAMEID))
+            if not game:
+                db.close()
+                return
+                
+            backup = sgbackup.backup.find_latest_backup(game)
+            
+            db.close()
+            if not backup:
+                return
+            dialog = dialogs.CheckBackupDialog(self,game,files=[backup])
+            dialog.run()
+            dialog.hide()
+            dialog.destroy()
+        
     def _on_action_check_selected_backup(self,action,data):
-        pass        
+        gv_model,gv_iter = self.gameview.get_selection().get_selected()
+        if gv_iter:
+            bv_model,bv_iter = self.backupview.get_selection().get_selected()
+            if bv_iter:
+                db = sgbackup.database.Database()
+                game = db.get_game(self.model.get_value(gv_iter,self.GV_COL_GAMEID))
+                
+                db.close()
+                
+                backup = bv_model.get_value(iter,self.BV_COL_FILENAME)
+                dialog = dialogs.CheckBackupDialog(self,game,files=[backup])
+                dialog.run()
+                dialog.hide()
+                dialog.destroy()
+    # _on_action_check_selected_backup()                
+            
     def _on_action_settings(self,action,data):
         dialog = settings.SettingsDialog(parent=self)
         result = dialog.run()

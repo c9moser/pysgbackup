@@ -308,15 +308,14 @@ class CheckBackupDialog(Gtk.Dialog):
         Gtk.Dialog.__init__(self,parent)
         self.game = game
         self.__files = files
-        
-        self.__action_failed = FAILED_IGNORE
-        self.__action_missing = MISSING_IGNORE
-        
+        self.set_default_size(600,400)
+        self.set_title('PySGBackup: Check Backups')
+                
         vbox = self.get_content_area()
         label = Gtk.Label()
-        label.set_markup('<span size="x-large>"' + 'Checking game backup(s).' + '</span>')
+        label.set_markup('<span size="x-large">' + 'Checking game backup(s).' + '</span>')
         vbox.pack_start(label,False,False,0)
-        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL,False,False,5))
+        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL),False,False,5)
         
         vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL),False,False,0)
         self.sizegroup = Gtk.SizeGroup()
@@ -333,6 +332,7 @@ class CheckBackupDialog(Gtk.Dialog):
         self.failed_cbox = Gtk.ComboBoxText()
         for id,text in failed_actions:
             self.failed_cbox.append(id,text)
+        self.failed_cbox.set_active_id('ignore')
         hbox.pack_start(self.failed_cbox,True,True,0)
         vbox.pack_start(hbox,False,False,0)
         
@@ -357,28 +357,38 @@ class CheckBackupDialog(Gtk.Dialog):
         self.progress.set_show_text(True)
         vbox.pack_start(self.progress,False,False,0)
         
-        vbox.pack_start(Gtk.Separator(orientation=Orientation.HORIZONTAL),False,False,5)
+        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL),False,False,5)
         
         self.progressview_scrolled = Gtk.ScrolledWindow()
         buf = Gtk.TextBuffer()
-        self.tag_stdout = buf.create_tag('stdout',foreground='green')
-        self.tag_stderr = buf.create_tag('stderr',foreground='red')
+        self.stdout_tag = buf.create_tag('stdout',foreground='green')
+        self.stderr_tag = buf.create_tag('stderr',foreground='red')
         self.progressview = Gtk.TextView()
         self.progressview.set_buffer(buf)
         self.progressview_scrolled.add(self.progressview)
         vbox.pack_start(self.progressview_scrolled,True,True,0)
         
-        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL))
+        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL),False,False,5)
+        
+        buttonbox = self.get_action_area()
+        self.button_run = Gtk.Button('Run')
+        self.button_run.connect('clicked',self._on_button_run_clicked)
+        buttonbox.pack_start(self.button_run,False,False,0)
+        buttonbox.set_child_secondary(self.button_run,True)
+        
+        self.button_close = self.add_button('Close',Gtk.ResponseType.CLOSE)
         self.show_all()
         
     @property
     def game(self):
         return self.__game
+        
     @game.setter
     def game(self,g):
         if not isinstance(g,sgbackup.games.Game):
             raise TypeError('"game" is not a sgbackup.games.Game instance!')
-        if self.__game.game_id != g.game_id and self.__files:
+        
+        if hasattr(self,'__game') and self.__game.game_id != g.game_id and self.__files:
             self.__files = []
         self.__game = g
         
@@ -396,13 +406,69 @@ class CheckBackupDialog(Gtk.Dialog):
         actions={'ignore':self.FAILED_IGNORE,'delete':self.FAILED_DELETE}
         return actions[self.failed_cbox.get_active_id()]
         
-    def _on_thread_finished(self):
-        #TODO
-        pass
+    def _on_button_run_clicked(self,button):
+        self.button_run.set_sensitive(False)
+        self.button_close.set_sensitive(False)
+        self.missing_cbox.set_sensitive(False)
+        self.failed_cbox.set_sensitive(False)
+        self.__thread_finished = False
         
+        self.button_close.set_sensitive(False)
+        self.button_run.set_sensitive(False)
+        
+        r,w = os.pipe()
+        utility.pipe_nowait(r)
+        self.__piper = os.fdopen(r,'r')
+        self.__pipew = os.fdopen(w,'w')
+        
+        self.__thread = threading.Thread(target=self._thread_func)
+        self.__thread.daemon=True
+        self.__thread.run()
+        GLib.timeout_add(50,self._on_timeout)
+        
+    def _on_timeout(self):
+        text = self.__piper.read()
+        lines = text.split('\n')
+        if lines:
+            buffer = self.progressview.get_buffer()
+            for i in lines:
+                if i.startswith('[ERROR]'):
+                    text = i[len('[ERROR]'):] + '\n'
+                    buffer.insert_with_tags(buffer.get_end_iter(),text,self.stderr_tag)
+                else:
+                    if i.endswith('... '):
+                        text = i
+                    else:
+                        text = i + '\n'
+                    buffer.insert_with_tags(buffer.get_end_iter(),text,self.stdout_tag)
+                    
+            while Gtk.events_pending():
+                Gtk.main_iteration_do(False)
+                
+            iter = buffer.get_iter_at_line(buffer.get_line_count())
+            self.progressview.scroll_to(iter)
+            
+        if not self.__thread_finished:
+            return True
+            
+        self.__pipew.close()
+        return False
+    # _on_timeout()
+        
+    def _on_thread_finished(self):
+        self.__thread_finished = True
+        self.button_close.set_sensitive(True)
+        self.button_close.set_sensitive(True)
+        self.missing_cbox.set_sensitive(True)
+        self.failed_cbox.set_sensitive(True)
+        
+        self.__pipew.close()        
     def _on_thread_update(self,data):
-        #TODO
-        pass
+        if 'fraction' in data:
+            self.progress.set_fraction(data['fraction'])
+        if 'text' in data:
+            self.progress.set_text('text')
+        self.progress.show()
         
     def _thread_func(self):
         data = {'fraction':0.0,'text':'Preparing ... '}
@@ -433,7 +499,7 @@ class CheckBackupDialog(Gtk.Dialog):
                     continue
                     
                 GLib.idle_add(self._on_thread_update,data)
-                backup = db.get_game_backup(game,os.path.basename(file))
+                backup = db.get_game_backup(self.game,os.path.basename(file))
                 if not backup:
                     missing_action = self.missing_action
                     if missing_action == self.MISSING_IGNORE:
@@ -451,7 +517,7 @@ class CheckBackupDialog(Gtk.Dialog):
                         print('[ERROR]' + 'Checksum for file "{0}" not found! DELETING FILE!'.format(file),file=self.__pipew)
                         sgbackup.backup.delete_backup(self.game,file)
                 else:
-                    print('[checksum:{0}] {} ... '.format(backup['checksum'],os.path.basename(file)),end='',file=self.__pipew)
+                    print('[checksum:{0}] {1} ... '.format(backup['checksum'],os.path.basename(file)),end='',file=self.__pipew)
                     h = hashlib.new(backup['checksum'])
                     with open(file,'rb') as ifile:
                         h.update(ifile.read())
@@ -473,17 +539,7 @@ class CheckBackupDialog(Gtk.Dialog):
         data = {'fraction': 1.0, 'text': 'Done'}
         GLib.idle_add(self._on_thread_update,data)
         GLib.idle_add(self._on_thread_finished)
-        
-    def _on_run_clicked(self):
-        r,w = os.pipe()
-        utility.pipe_nowait(r)
-        self.__piper = os.fdopen(r)
-        self.__pipew = os.fdopen(w)
-        
-        self.__thread = threading.Thread(target=self._thread_func)
-        self.__thread.daemon=True
-        self._thread.run()
-
+    # _thread_func()   
 # CheckBackupDialog class
 
 class CheckGamesDialog(Gtk.Dialog):
