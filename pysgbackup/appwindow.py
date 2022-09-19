@@ -508,8 +508,13 @@ class AppWindow(Gtk.ApplicationWindow):
                     self.gameview_select_game(game)
         
     def _on_action_restore_all(self,action,data):
-        #TODO
-        pass
+        db = sgbackup.database.Database()
+        games = []
+        for gid in db.list_game_ids():
+            g = db.get_game(gid)
+            if g:
+                games.append(g)
+        db.close()
     
     def _on_action_restore_latest(self,action,data):
         #TODO

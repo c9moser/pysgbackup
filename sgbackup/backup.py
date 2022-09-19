@@ -359,3 +359,24 @@ def check(db,game,create_missing=False,check_deleted=False,delete_failed=False):
             db.add_game_backup(game,fn,cksum,h.hexdigest())
 # check()
 
+def check_backup(db,game,backup):
+    if os.path.isabs(backup)
+        f = backup
+    else:
+        f = os.path.join(CONFIG['backup.dir'],game.savegame_name,f)
+    
+    if not os.path.isfile(f):
+        return False
+            
+    db_backup = db.get_game_backup(os.path.basename(f))
+    if not db_backup:
+        return False
+    
+        
+    h = hashlib.new(db_backup['checksum'])
+    with open(f,'rb') as ifile:
+        h.update(ifile.read())
+        
+    return (h.hexdigest() == db_backup['hash'])
+# check_backup
+

@@ -1451,3 +1451,87 @@ class UpdateDatabaseDialog(Gtk.Dialog):
         return Gtk.Dialog.run(self)
 # UpdateDatabaseDialog()
 
+class RestoreGamesDialog(Gtk.Dialog):
+    def __init__(self,parent=None,games=[]):
+        Gtk.Dialog.__init__(self,parent)
+        db = sgbackup.database.Database()
+        self.__games = []
+        if games:
+            for g in games:
+                found=False
+                for i in self.__games:
+                    if g.game_id == i.game_id:
+                        found = True
+                        break
+                if not found:
+                    self.__games.append(g)
+        else:
+            for gid in db.list_game_ids():
+                g = db.get_game(gid)
+                self.__games.append(g)
+                
+    @property
+    def games(self):
+        return self.__games
+        
+    def _on_thread_update(self,data):
+        pass
+        
+    def _on_timeout(self):
+        pass
+        
+    def _thread_func(self):
+        def find_latest_good_savegame(db,game):
+            backup = sgbackup.backup.find_latest_backup(game)
+            if sgbackup.backup.check_backup(db,game,backup)
+                return backup
+            
+            backup = None
+            backup_list = []
+            for i in backups.find_backups(game):
+                st = os.stat(i)
+                inserted = False
+                for j in range(len(backup_list))
+                    f,ctime = backup_list[j]
+                    if ctime > st.st_ctime:
+                        backup_list.insert(j,(i,st.st_ctime))
+                        inserted = True
+                        break
+                if not inserted:
+                    backup_list.append((i,st.st_ctime))
+                    
+            
+            for f,ctime in backup_list:
+                if sgbackup.check_backup(db,game,f):
+                    backup = f
+                    break
+                    
+            return backup
+        # find_latest_good_savegame
+        
+        db = sgbackup.database.Database()
+        backup_files = []
+        
+        for game in self.games:
+            backup = find_latest_backup(db,game)
+            if backup:
+                backup_files.append((game,backup))
+                
+        n_steps = len(backup_files + 1)
+        count = 1
+        for game,backup in backup_files:
+            data = {'fraction': (count/n_steps), 'text': 'Restoring: {} ...'.format(game.name)}
+            GLib.idle_add(self._on_thread_update,data)
+            sgbackup.backup.restore(db,game,backup)
+            count += 1
+            
+        GLib.idle_add(self._on_thread_finished)            
+        
+    def run(self):
+        return Gtk.Dialog.run()
+# RestoreGamesDialog class
+
+class RestoreBackupDialog(Gtk.Dialog):
+    def __init__(self,game,parent=None,backup=None)
+        Gtk.Dialog.__init__(self,parent)
+        
