@@ -508,22 +508,56 @@ class AppWindow(Gtk.ApplicationWindow):
                     self.gameview_select_game(game)
         
     def _on_action_restore_all(self,action,data):
-        db = sgbackup.database.Database()
-        games = []
-        for gid in db.list_game_ids():
-            g = db.get_game(gid)
-            if g:
-                games.append(g)
-        db.close()
-    
+        dialog = dialogs.RestoreGamesDialog(self)
+        dialog.run()
+        dialog.hide()
+        dialog.destroy()
+        
     def _on_action_restore_latest(self,action,data):
-        #TODO
-        pass
+        model,iter = self.gameview.get_selection().get_selected()
+        if iter:
+            db = sgbackup.database.Database()    
+            game = db.get_game(model.get_value(iter,self.GV_COL_GAMEID))
+            db.close()
+            if not game:
+                return
+            
+            dialog = dialogs.RestoreBackupDialog(game,self)
+            dialog.run()
+            dialog.hide()
+            dialog.destroy()
+    # _on_action_restore_latest
         
     def _on_action_restore_selected(self,action,data):
-        #TODO
-        pass
+        gv_model,gv_iter = self.gameview.get_selection().get_selected()
+        bv_model,bv_iter = self.backupview.get_selection().get_selected()
         
+        if bv_iter and gv_iter:
+            db = sgbackup.database.Database()
+            game = db.get_game(gv_model.get_value(iter,self.GV_COL_GAMEID))
+            backup = gv_model.get_value(iter,self.BV_COL_FILENAME)
+            db.close()
+            
+            if not game:
+                return
+                
+            if not os.path.isfile(backup):
+                dialog = Gtk.MessageDialog(self,
+                                           Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                                           Gtk.MESSAGE_ERROR,
+                                           Gtk.BUTTONS_CLOSE,
+                                           'File "{0}" does not exist!'.format(backup))
+                dialog.run()
+                dialog.hide()
+                dialog.destroy()
+                return
+            
+            dialog = RestoreBackupDialog(game,self,backup)
+            dialog.run()
+            dialog.hide()
+            dialog.destroy()
+    # _on_action_restore_selected()
+            
     def _on_action_check_backups(self,action,data):
         model,iter = self.gameview.get_selection().get_selected()
         if iter:

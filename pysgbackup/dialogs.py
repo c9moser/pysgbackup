@@ -1366,12 +1366,10 @@ class UpdateDatabaseDialog(Gtk.Dialog):
 
         
         self.progressview_scrolled = Gtk.ScrolledWindow()
-        
-        
         self.progressview = Gtk.TextView()
         self.progressview.set_buffer(buf)
         self.progressview.set_editable(False)
-        
+
         self.progressview_scrolled.add(self.progressview)
         vbox.pack_start(self.progressview_scrolled,True,True,0)
         
@@ -1456,6 +1454,8 @@ class RestoreGamesDialog(Gtk.Dialog):
         Gtk.Dialog.__init__(self,parent)
         db = sgbackup.database.Database()
         self.__games = []
+        self.__cancel = False
+        
         if games:
             for g in games:
                 found=False
@@ -1470,20 +1470,62 @@ class RestoreGamesDialog(Gtk.Dialog):
                 g = db.get_game(gid)
                 self.__games.append(g)
                 
+        vbox = self.get_content_area()
+        label = Gtk.Label()
+        label.set_markup('<span size="x-large" weight="bold">' 
+                         + 'Restoring selected SaveGame-Backups'
+                         + '</span>')
+        vbox.pack_start(label,False,False,0)
+        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL),False,False,5)
+        
+        self.progress = Gtk.ProgressBar()
+        self.progress.set_show_text(True)
+        vbox.pack_start(self.progress,False,False,0)
+        
+        vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL),False,False,5)
+        
+        buttonbox = self.get_action_area()
+        self.button_cancel = Gtk.Button('Cancel')
+        self.button_cancel.connect('clicked',self._on_button_cancel_clicked)
+        self.button_cancel.set_sensitive(False)
+        buttonbox.pack_start(self.button_cancel,False,False,0)
+        buttonbox.set_child_secondary(self.button_cancel,True)
+        
+        self.button_close = self.add_button('Close',Gtk.ResponseType.CLOSE)
+        
+        self.show_all()
+    # __init__()
+        
     @property
     def games(self):
         return self.__games
         
-    def _on_thread_update(self,data):
-        pass
+    def _on_button_cancel_clicked(self,button):
+        self.__cancel = True
+        self.button_cancel.set_sensitive(False)
         
-    def _on_timeout(self):
-        pass
+    def _on_thread_update(self,data):
+        if 'text' in data:
+            self.progress.set_text(data['text'])
+        if 'fraction' in data:
+            self.progress.set_fraction(data['fraction'])
+        self.progress.show()
+        
+    def _on_thread_finished(self):
+        if self.__cancel:
+            self.progress.set_text('Restoring backups canceled')
+        else:
+            self.progress.set_text('Done')
+            self.progress.set_fraction(1.0)
+            
+        self.button_close.set_sensitive(True)
+        self.button_cancel.set_sensitive(False)
+        
         
     def _thread_func(self):
         def find_latest_good_savegame(db,game):
             backup = sgbackup.backup.find_latest_backup(game)
-            if sgbackup.backup.check_backup(db,game,backup)
+            if sgbackup.backup.check_backup(db,game,backup):
                 return backup
             
             backup = None
@@ -1491,7 +1533,7 @@ class RestoreGamesDialog(Gtk.Dialog):
             for i in backups.find_backups(game):
                 st = os.stat(i)
                 inserted = False
-                for j in range(len(backup_list))
+                for j in range(len(backup_list)):
                     f,ctime = backup_list[j]
                     if ctime > st.st_ctime:
                         backup_list.insert(j,(i,st.st_ctime))
@@ -1513,13 +1555,17 @@ class RestoreGamesDialog(Gtk.Dialog):
         backup_files = []
         
         for game in self.games:
-            backup = find_latest_backup(db,game)
+            backup = sgbackup.backup.find_latest_backup(game)
             if backup:
                 backup_files.append((game,backup))
                 
-        n_steps = len(backup_files + 1)
+        n_steps = len(backup_files) + 1
         count = 1
         for game,backup in backup_files:
+            if self.__cancel:
+                GLib.idle_add(self._on_thread_finished)
+                return
+                
             data = {'fraction': (count/n_steps), 'text': 'Restoring: {} ...'.format(game.name)}
             GLib.idle_add(self._on_thread_update,data)
             sgbackup.backup.restore(db,game,backup)
@@ -1528,10 +1574,106 @@ class RestoreGamesDialog(Gtk.Dialog):
         GLib.idle_add(self._on_thread_finished)            
         
     def run(self):
-        return Gtk.Dialog.run()
+        thread = threading.Thread(target=self._thread_func)
+        thread.daemon = True
+        thread.start()
+        self.button_cancel.set_sensitive(True)
+        self.button_close.set_sensitive(False)
+        return Gtk.Dialog.run(self)
 # RestoreGamesDialog class
 
 class RestoreBackupDialog(Gtk.Dialog):
-    def __init__(self,game,parent=None,backup=None)
+    def __init__(self,game,parent=None,backup=None):
         Gtk.Dialog.__init__(self,parent)
+        self.set_title('PySGBackup: Restore Backup')
         
+        self.game = game
+        self.backup = backup
+        
+        vbox = self.get_content_area()
+        self.progress = Gtk.ProgressBar()
+        self.progress.set_show_text(True)
+        vbox.pack_start(self.progress,False,False,0)
+        
+        self.close_button = self.add_button('Close', Gtk.ResponseType.CLOSE)
+        self.close_button.set_sensitive(False)
+        
+        self.show_all()
+        
+    @property
+    def game(self):
+        return self.__game   
+    @game.setter
+    def game(self,g):
+        if not isinstance(g,sgbackup.games.Game):
+            raise TypeError('game')
+        if hasattr(self,'__game') and (self.game.game_id != g.game_id):
+            self.backup = sgbackup.backup.find_latest_backup(g)
+        self.__game = g
+        
+    @property
+    def backup(self):
+        if not self.__backup:
+            db = sgbackup.database.Database()
+            backup = sgbackup.backup.find_latest_backup(self.game)
+            return backup
+            
+        if os.path.isabs(self.__backup):
+            return self.__backup
+        return os.path.join(CONFIG['backup.dir'],self.game.savegame_name,self.__backup)
+        
+    @backup.setter
+    def backup(self,filename):
+        self.__backup = filename
+    
+    def _on_thread_update(self,data):
+        if 'text' in data:
+            self.progress.set_text(data['text'])
+        if 'fraction' in data:
+            self.progress.set_fraction(data['fraction'])
+        self.progress.show()
+        
+    def _on_thread_finished(self):
+        self.close_button.set_sensitive(True)
+        
+    def _on_check_failed(self):
+        #TODO
+        pass
+        
+    def _thread_func(self):
+        db = sgbackup.database.Database()
+        
+        data = {'text': 'Checking backup ...','fraction':0.0}
+        GLib.idle_add(self._on_thread_update,data)
+        
+        if not sgbackup.backup.check_backup(db,self.game,self.backup):
+            dialog = Gtk.MessageDialog(self,
+                                       Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                                       Gtk.MessageType.ERROR,
+                                       Gtk.ButtonsType.CLOSE,
+                                       'Checksum test on file "{0}" failed!'.format(self.backup))
+            dialog.set_title('PySGBackup: Error checksum-test')
+            dialog.show_all()
+            dialog.run()
+            dialog.hide()
+            dialog.destroy()
+            
+            GLib.idle_add(self._on_check_failed)
+            GLib.idle_add(self._on_thread_finished)
+            return
+            
+        data = {'text':'Restoring backup ...','fraction':0.5}
+        GLib.idle_add(self._on_thread_update,data)
+        
+        sgbackup.backup.restore(db,self.game,self.backup)
+        
+        data = {'text':'Done','fraction':1.0}
+        GLib.idle_add(self._on_thread_update,data)
+        GLib.idle_add(self._on_thread_finished)
+        
+    def run(self):
+        thread = threading.Thread(target=self._thread_func)
+        thread.daemon = True
+        thread.start()
+        return Gtk.Dialog.run(self)
+# RestoreBackupDialog()

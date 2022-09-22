@@ -360,7 +360,7 @@ def check(db,game,create_missing=False,check_deleted=False,delete_failed=False):
 # check()
 
 def check_backup(db,game,backup):
-    if os.path.isabs(backup)
+    if os.path.isabs(backup):
         f = backup
     else:
         f = os.path.join(CONFIG['backup.dir'],game.savegame_name,f)
@@ -368,7 +368,7 @@ def check_backup(db,game,backup):
     if not os.path.isfile(f):
         return False
             
-    db_backup = db.get_game_backup(os.path.basename(f))
+    db_backup = db.get_game_backup(game,os.path.basename(f))
     if not db_backup:
         return False
     
