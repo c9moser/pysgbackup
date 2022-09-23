@@ -98,11 +98,7 @@ OPTIONS:
             f = sgbackup.backup.find_latest_backup(game)
             if f: 
                 if f not in files:
-                    files.append(f)
-                for i in glob.glob('{}.*'.format(f)):
-                    if i not in files:
-                        files.append(i)
-                
+                    files.append(f)                
             if files:
                 game_list.append((gid,game,files))
                 iso_dirs.append('/'.join(('/SaveGames',game.savegame_name)))
@@ -134,6 +130,7 @@ OPTIONS:
                             h.update(ifile.read())
                         digest = h.hexdigest()
                     game_spec_files[key] = {'checksum':cksum,'hash':digest}
+                    
                 
                 game_spec={
                     'game-id': game.game_id,

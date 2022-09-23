@@ -125,7 +125,8 @@ def main():
             if verbose:
                 print('Processing game "{}"'.format(g['name']))
             if len(g['files']) == 1:
-                backup = g['files'][0]
+                for backup in g['files'].keys():
+                    break
             elif len(g['files']) > 1:
                 count = 1
                 choose={}
@@ -152,7 +153,7 @@ def main():
                         except:
                             continue
             if backup:
-                print('[check] {} ... '.format(backup))
+                print('[check] {} ... '.format(backup),end='')
                 h = hashlib.new(g['files'][backup]['checksum'])
                 backup_file = os.path.join(CONFIG['backup-directory'],g['savegame-name'],backup)
                 with open(backup_file,'rb') as ifile:
