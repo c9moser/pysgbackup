@@ -218,6 +218,8 @@ class AppWindow(Gtk.ApplicationWindow):
         self._action_restore_latest = add_simple_action('restore-latest',self._on_action_restore_latest)
         self._action_restore_selected = add_simple_action('restore-selected',self._on_action_restore_selected)     
         
+        add_simple_action('refresh-gameview',self._on_action_refresh_gameview)
+        add_simple_action('refresh-backupview',self._on_action_refresh_backupview)
         add_simple_action('database-vacuum',self._on_action_database_vacuum)
         add_simple_action('database-update',self._on_action_database_update)
         add_simple_action('refresh',self._on_action_refresh)
@@ -304,6 +306,14 @@ class AppWindow(Gtk.ApplicationWindow):
         self.gameview.set_model(self.__create_gameview_model())
         self.gameview.show()        
 
+    def _on_action_refresh_gameview(self,action,data):
+        self.gameview.set_model(self.__create_gameview_model())
+        self.gameview.show()
+        
+    def _on_action_refresh_backupview(self,action,data):
+        self.backupview.set_model(self.__create_backupview_model())
+        self.backupview.show()
+        
     def _on_action_database_vacuum(self,action,data):
         def on_timeout(dialog):
             if not dialog.thread_finished:

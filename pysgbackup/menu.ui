@@ -110,6 +110,12 @@
     <menu id='gameview-popup'>
         <section>
             <item>
+                <attribute name='label' translatable='yes'>_Refresh</attribute>
+                <attribute name='action'>win.refresh-gameview</attribute>
+            </item>
+        </section>
+        <section>
+            <item>
                 <attribute name='label' translatable='yes'>_Backup selected game</attribute>
                 <attribute name='action'>win.backup</attribute>
             </item>
@@ -126,6 +132,16 @@
             <item>
                 <attribute name='label' translatable='yes'>Unfinal game</attribute>
                 <attribute name='action'>win.unfinal-game</attribute>
+            </item>
+        </section>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>Restore latest backup</attribute>
+                <attribute name='action'>win.restore-latest</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>Restore selected backup</attribute>
+                <attribute name='action'>win.restore-selected</attribute>
             </item>
         </section>
         <section>
@@ -154,6 +170,12 @@
         </section>
     </menu>
     <menu id='backupview-popup'>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>Refresh</attribute>
+                <attribute name='action'>win.refresh-backupview</attribute>
+            </item>
+        </section>
         <section>
             <item>
                 <attribute name='label' translatable='yes'>Restore selected backup</attribute>
