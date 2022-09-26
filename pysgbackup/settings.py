@@ -24,26 +24,21 @@ import sgbackup
 from sgbackup.config import CONFIG
 import string
 import os
+import sys
 import pysgbackup
 
 SETTINGS = {
 }
-
+    
 class SettingsDialog(Gtk.Dialog):
     __gsignals__ = {
-        'save-settings': (GObject.SIGNAL_RUN_FIRST,None,[])
+        'save-settings': (GObject.SIGNAL_RUN_FIRST,None,())
     }
-    
-    (
-        CHOOSER_COL_ID,
-        CHOOSER_COL_ICON_NAME,
-        CHOOSER_COL_ICON_FILE,
-        CHOOSER_COL_NAME
-    ) = range(4)
-    
+        
     def __init__(self,parent=None):
         Gtk.Dialog.__init__(self,parent=parent)
         self.set_title('PySGBackup: Settings')
+        self.__settings = {}
         
         vbox = self.get_content_area()
         self.paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
@@ -62,10 +57,23 @@ class SettingsDialog(Gtk.Dialog):
         self.settings_backup = self.__create_backup_settings()
         self.content.add_titled(self.settings_backup,'backup','Backup Settings')                
         
+        for sid,settings in settings.items():
+            widget = settings.get_widget()
+            if settings.id and settings.title and widget:
+                self.content.add_titled(widget,settings.id,settings.title)
+                self.__settings[sid] = settings
+                self.connect('destroy',settings.unload)
+                
+                if settings.attribute:
+                    try:
+                        setattr(self,settings.attribute,widget)
+                    except Exception as error:
+                        print('!!! ERROR !!! {}'.format(error),file=sys.stderr)
+            settings.load(self)
+            
         self.chooser=Gtk.StackSidebar()
         self.chooser.set_stack(self.content)
         self.paned.add1(self.chooser)
-        
         
         self.vbox.pack_start(self.paned,True,True,0)
         
@@ -74,6 +82,10 @@ class SettingsDialog(Gtk.Dialog):
         
         self.show_all()
         
+    @GObject.Property
+    def settings(self):
+        return self.__settings
+    
     def __create_app_settings(self):
         def create_label(text,sizegroup):
             l = Gtk.Label(text)
@@ -123,8 +135,7 @@ class SettingsDialog(Gtk.Dialog):
         
         w.add(lb)
         return w
-        
-            
+                 
     def __create_generic_settings(self):
         def create_label(text):
             l = Gtk.Label(text)
@@ -152,7 +163,7 @@ class SettingsDialog(Gtk.Dialog):
                 widget.database_entry.set_text(dialog.get_filename())
                 widget.database_entry.show()            
         # _on_db_button_clicked()
-        
+                
         def _on_gameconf_button_clicked(button,widget):
             t = string.Template(widget.gameconf_entry.get_text())
             path = t.substitute(sgbackup.config.get_template_vars())
@@ -448,5 +459,83 @@ class SettingsDialog(Gtk.Dialog):
         
         CONFIG['pysgbackup.gameview.show-steam-appid'] = app.steam_appid_switch.get_active()
         pysgbackup.app.appwindow.gameview.column_steam_appid.set_visible(app.steam_appid_switch.get_active())
+        
+        for settings in self.settings.values():
+            settings.save(self)
+    # do_save_settings()
+# SettingsDialog class
                 
+class Settings(GObject.GObject):
+    __gsignals__ = {
+        'load': (GObject.SIGNAL_RUN_FIRST,None,(SettingsDialog,)),
+        'unload': (GObject.SIGNAL_RUN_FIRST,None,(SettingsDialog,)),
+        'save': (GObject.SIGNAL_RUN_FIRST,None,(SettingsDialog,))
+    }
+    
+    def __init__(self,id,title,
+                 create_widget_callback=None,
+                 attribute=None,
+                 load_callback=None,
+                 unload_callback=None,
+                 save_callback=None):
+                 
+        GObject.GObject.__init__(self)
+        
+        self.__id = id
+        self.__title = title
+        self.__widget = None
+        self.__attribute = attribute
+        self.__load_cb = load_callback
+        self.__save_cb = save_callback
+        self.__create_widget_cb = create_widget_callback
+        
+    @GObject.Property
+    def id(self):
+        return self.__id
+        
+    @GObject.Property
+    def title(self):
+        return self.__title
+        
+    @GObject.Property
+    def attribute(self):
+        return self.__attribute
+        
+    def get_widget(self):
+        if not self.__widget:
+            self.set_widget(self.do_create_widget())            
+        return self.__widget
+              
+    def set_widget(self,widget):
+        if not isinstance(widget,Gtk.Widget) or widget is not None:
+            raise TypeError('widget')
+        self.__widget = widget
+        
+    def load(self,settings_dialog):
+        self.emit('load',settings_dialog)
+        
+    def unload(self,settings_dialog):
+        self.emit('unload',settings_dialog)
+    
+    def save(self,settings_dialog):
+        self.emit('save',settings_dialog)
+        
+    def do_create_widget(self):
+        if self.__create_widget_cb and callable(self.__create_widget_cb):
+            return self.__create_widget_cb(self)
 
+    def do_load(self,settings_dialog):
+        if self.__load_cb and callable(self.__load_cb):
+            self.__load_cb(self,settings_dialog)
+            
+    def do_unload(self,settings_dialog):
+        if self.__widget:
+            self.set_widget(None)
+            
+        if self.__unload_cb and callable(self.__unload_cb):
+            self.__unload_cb(self,settings_dialog) 
+                       
+    def do_save(self,settings_dialog):
+        if self.__save_cb and callable(self.__save_cb):
+            self.__save_cb(self,settings_dialog)
+# Settings class
