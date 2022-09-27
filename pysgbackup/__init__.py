@@ -27,5 +27,5 @@ from . import utility,settings,dialogs
 from .appwindow import AppWindow
 from .app import Application
 
-import plugins
+from . import plugins
 

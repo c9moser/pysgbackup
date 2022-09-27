@@ -23,8 +23,8 @@ import pysgbackup
 
 class Plugin(GObject.GObject):
     __gsignals__ = {
-        'enable': (GObject.SIGNAL_RUN_FIRST,None,(pysgbackup.AppWindow))
-        'disable': (GObject.SIGNAL_RUN_FIRST,None,(pysgbackup.AppWindow))
+        'enable': (GObject.SIGNAL_RUN_FIRST,None,(pysgbackup.AppWindow,)),
+        'disable': (GObject.SIGNAL_RUN_FIRST,None,(pysgbackup.AppWindow,))
     }
     def __init__(self,name,
                  sgbackup_plugin=None,
@@ -75,7 +75,7 @@ class Plugin(GObject.GObject):
         
     @GObject.Property
     def enabled(self):
-        return self.__enabled = False
+        return self.__enabled
             
     @GObject.Property
     def sgbackup_plugin(self):

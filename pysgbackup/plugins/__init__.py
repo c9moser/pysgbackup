@@ -19,13 +19,13 @@
 
 import os
 import importlib
-from ._plugin import Plugin#,Loader
+from ._plugin import Plugin,Loader
 
 PLUGIN_DIR = os.path.dirname(__file__)
 #USER_PLGIN_DIR = 
 PLUGINS={}
 
-loader = Loader
+loader = Loader()
 
 # import plugins
 for i in os.listdir(PLUGIN_DIR):

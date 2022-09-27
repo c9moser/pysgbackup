@@ -34,7 +34,7 @@ if mkiso.plugin:
             pass
             
         def do_create_widget(self):
-            lb_add_hbox(listbox,label,widget,sizegroup=None):
+            def lb_add_hbox(listbox,label,widget,sizegroup=None):
                 hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
                 l = Gtk.Label(label)
                 if (sizegroup):
