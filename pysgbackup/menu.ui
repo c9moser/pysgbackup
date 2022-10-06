@@ -168,6 +168,11 @@
                 <attribute name='action'>win.check-selected-backup</attribute>
             </item>
         </section>
+        <section>
+            <submenu id='gameview-popup-plugins'>
+                <attribute name='label' translatable='yes'>Plugins</attribute>
+            </submenu>
+        </section>
     </menu>
     <menu id='backupview-popup'>
         <section>
@@ -195,6 +200,11 @@
                 <attribute name='label' translatable='yes'>Check backups</attribute>
                 <attribute name='action'>win.check-backups</attribute>
             </item>
+        </section>
+        <section>
+            <submenu id='backupview-popup-plugins'>
+                <attribute name='label' translatable='yes'>Plugins</attribute>
+            </submenu>
         </section>
     </menu>
 </interface>

@@ -70,7 +70,9 @@ setup(name="pysgbackup",
                  'sgbackup.plugins.ftp',
                  'sgbackup.plugins.checksum',
                  'sgbackup.plugins.mkiso',
-                 'pysgbackup'
+                 'pysgbackup',
+                 'pysgbackup.plugins',
+                 'pysgbackup.plugins.mkiso'
       ],
       scripts=scripts,
       include_package_data=True,
@@ -80,6 +82,7 @@ setup(name="pysgbackup",
                     'sgbackup.plugins.checksum': ['*.txt'],
                     'sgbackup.plugins.ftp': ['*.txt'],
                     'sgbackup.plugins.mkiso': ['*.bat','*.sh','*.txt'],
-                    'pysgbackup' : ['*.ui']
+                    'pysgbackup' : ['*.ui'],
+                    'pysgbackup.plugins.mkiso': ['*.ui']
       })
 

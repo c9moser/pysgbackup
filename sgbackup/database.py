@@ -634,6 +634,135 @@ class Database:
         if row and row[0] > 0:
             return True
         return False
+        
+    def get_pysgbackup_plugin(self,plugin_name):
+        sql = 'SELECT id,name,version,enabled,sgbackup_plugin,sgbackup_plugin_enable FROM pysgbackup_plugins WHERE name=?;'
+        cur = self._db.cursor()
+        cur.execute(sql,(plugin_name,))
+        row = cur.fetchone()
+        if row:
+            sgbackup_plugin = None
+            if row[4]:
+                sql2 = "SELECT name,version,enabled FROM plugins WHERE id=?;"
+                cur2 = self._db.cursor()
+                cur2.execute(sql2,(int(row[4]),))
+                
+                row2 = cur2.fetchone()
+                if row2:
+                    sgbackup_plugin = {
+                        'id': int(row[4]),
+                        'name': row2[0],
+                        'version': row2[1],
+                        'enabled': self._db_to_bool(row2[2])
+                    }
+            plugin = {
+                'id': row[0],
+                'name': row[1],
+                'version': row[2],
+                'enabled': self._db_to_bool(row[3]),
+                'sgbackup_plugin': sgbackup_plugin,
+                'sgbackup_plugin_enable': self._db_to_bool(row[5])
+            }
+            return plugin
+        return None
+    # get_pysgbackup_plugin()
+    
+    def has_pysgbackup_plugin(self,plugin_name):
+        sql = "SELECT id FROM pysgbackup_plugins WHERE name=?;"
+        cur = self._db.cursor()
+        cur.execute(sql,(plugin_name,))
+        row = cur.fetchone()
+        if row and int(row[0]):
+            return True
+        return False
+    # has_pysgbackup_plugin()
+    
+    def get_pysgbackup_plugin_enabled(self,plugin_name):
+        plugin = self.get_pysgbackup_plugin(plugin_name)
+        if not plugin:
+            return False
+        
+        if plugin['enabled']:
+            return True
+            
+        if plugin['sgbackup_plugin_enable'] and plugin['sgbackup_plugin'] and plugin['sgbackup_plugin']['enabled']:
+            return True
+            
+        return False
+    # get_pysgbackup_plugin_enabled()
+    
+    def add_pysgbackup_plugin(self,plugin):
+        if self.has_pysgbackup_plugin(plugin.name):
+            db_plugin = self.get_pysgbackup_plugin(plugin.name)
+            sql = "UPDATE pysgbackup_plugins SET name=?,version=?,enabled=?,sgbackup_plugin=?,sgbackup_plugin_enable=? WHERE id=?;"
+            sgbackup_plugin_id = None
+            enable = False
+            if plugin.sgbackup_plugin:
+                sgbackup_plugin_enable = plugin.sgbackup_plugin_enable
+            else:
+                sgbackup_plugin_enable = False
+                
+            if not plugin.sgbackup_plugin and not plugin.sgbackup_plugin_enable:
+                enable = plugin.enabled
+            if plugin.sgbackup_plugin:
+                db_sgbackup_plugin = self.get_plugin(plugin.sgbackup_plugin.name)
+                if db_sgbackup_plugin:
+                    sgbackup_plugin_id = db_sgbackup_plugin['id']
+                    
+            sql_args = (
+                plugin.name,
+                plugin.version,
+                self._bool_to_db(enable),
+                sgbackup_plugin_id,
+                self._bool_to_db(sgbackup_plugin_enable),
+                db_plugin['id']
+            )
+        else:
+            sql = "INSERT INTO pysgbackup_plugins (name,version,enabled,sgbackup_plugin,sgbackup_plugin_enable) VALUES (?,?,?,?,?);"
+            sgbackup_plugin_id = None
+            enabled = False
+            if plugin.sgbackup_plugin:
+                db_sgbackup_plugin = self.get_plugin(plugin.sgbackup_plugin.name)
+                if db_sgbackup_plugin:
+                    sgbackup_plugin_id = db_sgbackup_plugin['id']
+            if not plugin.sgbackup_plugin and not plugin.sgbackup_plugin_enable:
+                enabled = plugin.enabled
+                
+            sql_args = (
+                plugin.name,
+                plugin.version,self._bool_to_db(enabled),
+                sgbackup_plugin_id,
+                self._bool_to_db(plugin.sgbackup_plugin_enable)
+            )
+            
+        cur = self._db.cursor()
+        cur.execute(sql,sql_args)
+        self._db.commit()
+    # add_pysgbackup_plugin()
+    
+    def enable_pysgbackup_plugin(self,plugin_name):
+        plugin = self.get_pysgbackup_plugin(plugin_name)
+        if plugin:
+            if plugin['sgbackup_plugin'] and plugin['sgbackup_plugin_enable']:
+                self.enable_plugin(plugin['sgbackup_plugin']['name'])
+            else:
+                sql = "UDPATE pysgbackup_plugins SET enabled='Y' WHERE id=?;"
+                cur = self._db.cursor()
+                cur.execute(sql,(plugin['id'],))
+                self._db.commit()
+    # enable_pysgbackup_plugin()
+    
+    def disable_pysgbackup_plugin(self,plugin_name):
+        plugin = self.get_pysgbackup_plugin(plugin_name)
+        if plugin:
+            sql = "UPDATE pysgbackup_plugins SET enabled='N' WHERE id?;"
+            cur = self._db_cursor()
+            cur.execute(sql,(plugin['id'],))
+            self._db_commit()
+            
+            if plugin['sgbackup_plugin'] and plugin['sgbackup_plugin_enable']:
+                self.disable_plugin(plugin['sgbackup_plugin']['name'])
+    # disable_pysgbackup_plugin()
 # Database class
 
 def update(db,force=False):

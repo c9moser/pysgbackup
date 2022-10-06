@@ -57,7 +57,8 @@ class SettingsDialog(Gtk.Dialog):
         self.settings_backup = self.__create_backup_settings()
         self.content.add_titled(self.settings_backup,'backup','Backup Settings')                
         
-        for sid,settings in settings.items():
+        for sid,settings in SETTINGS.items():
+            settings.load(self)
             widget = settings.get_widget()
             if settings.id and settings.title and widget:
                 self.content.add_titled(widget,settings.id,settings.title)
@@ -486,6 +487,7 @@ class Settings(GObject.GObject):
         self.__widget = None
         self.__attribute = attribute
         self.__load_cb = load_callback
+        self.__unload_cb = unload_callback
         self.__save_cb = save_callback
         self.__create_widget_cb = create_widget_callback
         
@@ -502,13 +504,11 @@ class Settings(GObject.GObject):
         return self.__attribute
         
     def get_widget(self):
-        if not self.__widget:
-            self.set_widget(self.do_create_widget())            
         return self.__widget
               
     def set_widget(self,widget):
-        if not isinstance(widget,Gtk.Widget) or widget is not None:
-            raise TypeError('widget')
+        #if not isinstance(widget,Gtk.Widget) or widget is not None:
+        #    raise TypeError('widget')
         self.__widget = widget
         
     def load(self,settings_dialog):
@@ -520,11 +520,13 @@ class Settings(GObject.GObject):
     def save(self,settings_dialog):
         self.emit('save',settings_dialog)
         
-    def do_create_widget(self):
+    def do_create_widget(self,settings_dialog):
         if self.__create_widget_cb and callable(self.__create_widget_cb):
             return self.__create_widget_cb(self)
+        return None
 
     def do_load(self,settings_dialog):
+        self.set_widget(self.do_create_widget(settings_dialog))
         if self.__load_cb and callable(self.__load_cb):
             self.__load_cb(self,settings_dialog)
             

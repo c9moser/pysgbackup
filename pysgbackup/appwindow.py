@@ -29,8 +29,6 @@ import threading
 
 from . import settings,dialogs
 
-import pysgbackup
-
 class AppWindow(Gtk.ApplicationWindow):
     (
         GV_COL_ID,
@@ -70,6 +68,7 @@ class AppWindow(Gtk.ApplicationWindow):
         image = Gtk.Image.new_from_icon_name('open-menu-symbolic',Gtk.IconSize.BUTTON)
         self.menu_button.set_image(image)
         self.appmenu = builder.get_object('appmenu')
+        self.appmenu_plugins = builder.get_object('appmenu-plugins')
         self.menu_button.set_menu_model(self.appmenu)
         self.headerbar.pack_start(self.menu_button)
         
@@ -83,6 +82,7 @@ class AppWindow(Gtk.ApplicationWindow):
         
         # gameview
         giomenu = builder.get_object('gameview-popup')
+        self.gameview_popup_plugins = builder.get_object('gameview-popup-plugins')
         self.gameview_popup_menu = Gtk.Menu.new_from_model(giomenu)
         self.gameview_scrolled = Gtk.ScrolledWindow()
         self.gameview = Gtk.TreeView(self.__create_gameview_model())
@@ -125,6 +125,7 @@ class AppWindow(Gtk.ApplicationWindow):
         
         # backup view
         giomenu = builder.get_object('backupview-popup')
+        self.backupview_popup_plugins = builder.get_object('backupview-popup-plugins')
         self.backupview_popup_menu = Gtk.Menu.new_from_model(giomenu)
         self.backupview_scrolled = Gtk.ScrolledWindow()
         self.backupview = Gtk.TreeView(self.__create_backupview_model())

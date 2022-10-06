@@ -19,10 +19,10 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ################################################################################
 
-import pysgbackup
 from . import app
 import sys
 
+import pysgbackup
 
 def main():
     pysgbackup.app = app.Application(application_id='com.example.pysgbackup')

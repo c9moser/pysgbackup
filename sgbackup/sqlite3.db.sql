@@ -1,3 +1,10 @@
+/** pysgbackup database creation script
+ *
+ * Author: Christian Moser
+ * License: GPL
+ * Copyright (C) 2022, Christian Moser
+ */
+
 CREATE TABLE games (
     id INTEGER PRIMARY KEY,
     game_id VARCHAR(64) UNIQUE NOT NULL,
@@ -25,7 +32,6 @@ CREATE TABLE game_variables (
 );
 CREATE INDEX game_variables_game_index ON game_variables(game);
 CREATE INDEX game_variables_name_index ON game_variables(name);
-
 
 CREATE TABLE gameconf (
     id INTEGER PRIMARY KEY,
@@ -82,4 +88,19 @@ CREATE TABLE steamapp_ignore (
     steam_appid VARCHAR(128) UNIQUE NOT NULL
 );
 CREATE INDEX steamapp_ignore_steam_appid ON steamapp_ignore(steam_appid);
+
+CREATE TABLE pysgbackup_plugins (
+    id INTEGER PRIMARY KEY,
+    name VARCHAR(128) NOT NULL,
+    version VARCHAR(32) DEFAULT '0.0.0',
+    enabled CHAR(1) DEFAULT 'N',
+    sgbackup_plugin INTEGER,
+    sgbackup_plugin_enable CHAR(1) DEFAULT 'N',
+    
+    UNIQUE(name),
+    FOREIGN KEY (sgbackup_plugin) REFERENCES plugin(id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE
+);
+CREATE INDEX pysgbackup_plugins_name_index ON pysgbackup_plugins(name);
 

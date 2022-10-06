@@ -21,8 +21,7 @@ import os
 import gi
 from gi.repository import Gtk,Gio,GLib,Gdk
 
-from . import appwindow
-
+from . import appwindow,plugins
 import sgbackup
 
 class Application(Gtk.Application):
@@ -30,8 +29,7 @@ class Application(Gtk.Application):
         super().__init__(**kwargs)
         self.__appwindow = None
         Gdk.threads_init()
-        
-        
+            
     @property
     def appwindow(self):
         return self.__appwindow
@@ -70,6 +68,17 @@ class Application(Gtk.Application):
         dialog.run()
             
     
+    def __activate_plugins(self):
+        db = sgbackup.database.Database()
+        
+        for plugin in plugins.PLUGINS.values():
+            if not db.has_pysgbackup_plugin(plugin.name):
+                db.add_pysgbackup_plugin(plugin)
+                
+            enabled = db.get_pysgbackup_plugin_enabled(plugin.name)
+            if enabled:
+                plugin.enable(self.appwindow)
+                
     def do_activate(self):
         self.__create_actions()
         
@@ -78,7 +87,9 @@ class Application(Gtk.Application):
         builder = Gtk.Builder()
         builder.add_from_file(os.path.join(os.path.dirname(__file__),'menu.ui'))
         menu = builder.get_object('appmenu')
-        
         self.set_app_menu(menu)
+        
+        #self.__activate_plugins()
+        
         self.appwindow.present()
         

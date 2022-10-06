@@ -22,10 +22,8 @@ gi.require_version('Gtk','3.0')
 
 import sgbackup
 
-from . import utility,settings,dialogs
+from . import utility,settings,dialogs,plugins
 
 from .appwindow import AppWindow
 from .app import Application
-
-from . import plugins
 
