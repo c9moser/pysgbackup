@@ -252,37 +252,48 @@ class Plugin(GObject.GObject):
             backupview_menuitem = Gio.MenuItem.new_submenu(self.title,self.backupview_menu)
             appwindow.backupview_popup_plugins.append_item(backupview_menuitem)
             
+        if self.sgbackup_plugin and self.sgbackup_plugin_enable:
+            db = sgbackup.database.Database()
+            db.enable_plugin(self.sgbackup_plugin)
+            db.close()
+            self.sgbackup_plugin.enable()
+            
         if self.__enable_callback:
             self.__enable_callback(self,appwindow)
     # Plugin.do_enable()
     
     def do_disable(self,appwindow):
         if self.menu:
-            for i in range(appwindow.appmenu_plugins.get_n_items()):
-                attr_label = appwindow.appmenu_plugins.get_item_attribute(i,'label',None)
-                if attr_label and attr_label.value == self.title:
+            for i in sorted(range(appwindow.appmenu_plugins.get_n_items()),reverse=True):
+                attr_label = appwindow.appmenu_plugins.get_item_attribute_value(i,'label',None)
+                if attr_label and attr_label.get_string() == self.title:
                     appwindow.appmenu_plugins.remove(i)
-                    break
         if self.__menu_desc:
             self.__menu = None
             
         if self.gameview_menu:
-            for i in range(appwindow.gameview_popup_plugins.get_n_items()):
+            for i in sorted(range(appwindow.gameview_popup_plugins.get_n_items()),reverse=True):
                 attr_label = appwindow.gameview_popup_plugins.get_item_attribute(i,'label',None)
-                if attr_label and attr_label.value == self.title:
+                if attr_label and attr_label.get_string() == self.title:
                     appwindow.gameview_popup_plugins.remove(i)
                     break
         if self.__gameview_menu_desc:
             self.__gameview_menu = None
             
         if self.backupview_menu:
-            for i in range(appwindow.backupview_popup_plugins.get_n_items()):
+            for i in sorted(range(appwindow.backupview_popup_plugins.get_n_items()),reverse=True):
                 attr_label = appwindow.backupview_popup_plugins.get_item_attribute(i,'label',None)
-                if attr_label and attr_label.value == self.title:
+                if attr_label and attr_label.get_string() == self.title:
                     appwindow.backupview_popup_plugins.remove(i)
                     break
         if self.__backupview_menu_desc:
             self.__backupview_menu = None
+            
+        if self.sgbackup_plugin and self.sgbackup_plugin_enable:
+            db = sgbackup.database.Database()
+            db.disable_plugin(self.sgbackup_plugin)
+            db.close()
+            self.sgbackup_plugin.disable()
             
         if self.__disable_callback:
             self.__disable_callback(self,appwindow)

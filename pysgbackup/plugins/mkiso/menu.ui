@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<interface>
+    <menu id='mkiso-menu'>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>Create ISO file</attribute>
+                <attribute name='action'>win.mkiso-create-iso</attribute>
+            </item>
+        </section>
+    </menu>
+</interface>

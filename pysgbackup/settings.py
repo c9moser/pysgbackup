@@ -58,6 +58,7 @@ class SettingsDialog(Gtk.Dialog):
         self.content.add_titled(self.settings_backup,'backup','Backup Settings')                
         
         for sid,settings in SETTINGS.items():
+            print(sid,',',settings.id,',',settings.title)
             settings.load(self)
             widget = settings.get_widget()
             if settings.id and settings.title and widget:
@@ -450,16 +451,16 @@ class SettingsDialog(Gtk.Dialog):
         CONFIG['zipfile.compresslevel'] = backup.zipfile_compresslevel_spinbutton.get_value_as_int()
         
         CONFIG['pysgbackup.gameview.show-id'] = app.dbid_switch.get_active()
-        pysgbackup.app.appwindow.gameview.column_id.set_visible(app.dbid_switch.get_active())
+        pysgbackup.application.appwindow.gameview.column_id.set_visible(app.dbid_switch.get_active())
         
         CONFIG['pysgbackup.gameview.show-gameid'] = app.gameid_switch.get_active()
-        pysgbackup.app.appwindow.gameview.column_gameid.set_visible(app.gameid_switch.get_active())
+        pysgbackup.application.appwindow.gameview.column_gameid.set_visible(app.gameid_switch.get_active())
         
         CONFIG['pysgbackup.gameview.show-final'] = app.final_switch.get_active()
-        pysgbackup.app.appwindow.gameview.column_final.set_visible(app.final_switch.get_active())
+        pysgbackup.application.appwindow.gameview.column_final.set_visible(app.final_switch.get_active())
         
         CONFIG['pysgbackup.gameview.show-steam-appid'] = app.steam_appid_switch.get_active()
-        pysgbackup.app.appwindow.gameview.column_steam_appid.set_visible(app.steam_appid_switch.get_active())
+        pysgbackup.application.appwindow.gameview.column_steam_appid.set_visible(app.steam_appid_switch.get_active())
         
         for settings in self.settings.values():
             settings.save(self)
@@ -526,13 +527,13 @@ class Settings(GObject.GObject):
         return None
 
     def do_load(self,settings_dialog):
-        self.set_widget(self.do_create_widget(settings_dialog))
+        self.__widget = self.do_create_widget(settings_dialog)
         if self.__load_cb and callable(self.__load_cb):
             self.__load_cb(self,settings_dialog)
             
     def do_unload(self,settings_dialog):
         if self.__widget:
-            self.set_widget(None)
+            self.__widget = None
             
         if self.__unload_cb and callable(self.__unload_cb):
             self.__unload_cb(self,settings_dialog) 

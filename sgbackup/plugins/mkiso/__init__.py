@@ -44,13 +44,14 @@ USAGE:
   
 OPTIONS:
 ========
-  -a | --all-finals     Put all finals to ISO.
+  -a | --all-finals     Store all finals in ISO file.
+  -A | --no-all-finals  Don't put all finals in ISO file. 
   -V | --no-verbose     Disable verbose messages.
   -v | --verbose        Enable verbose messages.
 """
     def command_mkiso(db,argv):
         try:
-            opts,args = getopt.getopt(argv,'aVv', ['all-finals','no-verbose','verbose'])
+            opts,args = getopt.getopt(argv,'AaVv', ['all-finals','no-all-finals','no-verbose','verbose'])
         except getopt.GetoptError as error:
             print(error,file=sys.stderr)
             help.print_help('mkiso')
@@ -61,10 +62,12 @@ OPTIONS:
             help.print_help('mkiso')
             sys.exit(2)
             
-        all_finals = False
+        all_finals = CONFIG['mkiso.all-finals']
         for o,a in opts:
             if o == '-a' or o == '--all-finals':
                 all_finals = True
+            elif o == '-A' or o == '--no-all-finals':
+                all_finals = False
             elif o == '-V' or o == '--no-verbose':
                 CONFIG['verbose'] = False
             elif o == '-v' or o == '--verbose':
@@ -201,6 +204,11 @@ OPTIONS:
                     'option': 'maxiso',
                     'type': 'integer',
                     'default': 7
+                },
+                'mkiso.all-finals': {
+                    'option': 'all-finals',
+                    'type': 'boolean',
+                    'default': False
                 }
             }
         }

@@ -89,7 +89,7 @@ class Application(Gtk.Application):
         menu = builder.get_object('appmenu')
         self.set_app_menu(menu)
         
-        #self.__activate_plugins()
+        self.__activate_plugins()
         
         self.appwindow.present()
         

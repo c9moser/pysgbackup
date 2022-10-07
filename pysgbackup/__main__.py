@@ -25,8 +25,8 @@ import sys
 import pysgbackup
 
 def main():
-    pysgbackup.app = app.Application(application_id='com.example.pysgbackup')
-    pysgbackup.app.run(sys.argv)
+    pysgbackup.application = app.Application(application_id='com.example.pysgbackup')
+    pysgbackup.application.run(sys.argv)
     
 if __name__ == '__main__':
     main()
