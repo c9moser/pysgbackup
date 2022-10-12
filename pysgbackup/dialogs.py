@@ -1242,6 +1242,7 @@ class RenameBackupsDialog(Gtk.MessageDialog):
     def __init__(self,old_game,new_game,parent=None):
         Gtk.MessageDialog.__init__(self,parent,
                                    Gtk.DialogFlags.DESTROY_WITH_PARENT,
+                                   Gtk.MessageType.INFO,
                                    Gtk.ButtonsType.NONE,
                                    'Renaming SaveGame-Backups from "{0}" to "{1}".'.format(old_game.savegame_name,new_game.savegame_name))
                               
