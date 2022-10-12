@@ -275,11 +275,12 @@ class Database:
                     cur2.execute('DELETE FROM game_variables WHERE game=? AND name=?;',(g.id,row[0]))
             
             for k,v in game.raw_variables.items():
-                sql_args = (v,g.id,k)
                 if _has_game_variable(g,k):
                     sql = "UPDATE game_variables SET value=? WHERE game=? AND name=?;"
+                    sql_args = (v,g.id,k)
                 else:
-                    sql = "INSERT INTO game_variables (value,game,name) VALUES (?,?,?);"      
+                    sql = "INSERT INTO game_variables (game,name,value) VALUES (?,?,?);"
+                    sql_args = (g.id,k,v)
                 cur.execute(sql,sql_args)
         self._db.commit()
     # add_game_variables()

@@ -63,14 +63,16 @@ def scan_steamlibs():
                     if not i:
                         continue
                     if i.startswith('"appid"'):
-                        key,value = i.split(None,1)
-                        appid=value[1:-1]
+                        value = i.split('"')
+                        appid=value[3]
                     elif i.startswith('"name"'):
-                        key,value = i.split(None,1)
-                        name=value[1:-1]
+                        value = i.split('"')
+                        name=value[3]
                     elif i.startswith('"installdir"'):
-                        key,value = i.split(None,1)
-                        installdir=os.path.join(appdir,'common',value[1:-1])
+                        value = i.split('"')
+                        installdir=os.path.join(appdir,'common',value[3])
+                        if sys.platform == 'win32':
+                            installdir = installdir.replace('/','\\')
                     
             if int(manifest_id) == int(appid):
                 g = {

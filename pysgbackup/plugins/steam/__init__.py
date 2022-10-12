@@ -215,6 +215,7 @@ class SteamPlugin(Plugin):
     def on_action_steam_scan(self,action,data,appwindow):
         db = sgbackup.database.Database()
         
+        entry_changed = False
         for steam_game in steam.scan_steamlibs():
             game = db.get_game_by_steam_appid(steam_game['appid'])
             if not game:
@@ -240,6 +241,7 @@ class SteamPlugin(Plugin):
                         appwindow.update_gameview()
                     elif result == Gtk.ResponseType.CANCEL:
                         continue
+                    entry_changed = True
                     game_dialog.destroy()
                 elif result == dialog.RESPONSE_IGNORE:
                     db.add_ignore_steamapp(steam_game['appid'])
@@ -259,6 +261,7 @@ class SteamPlugin(Plugin):
                     if result == Gtk.ResponseType.YES:
                         game.variables['INSTALLDIR'] = steam_game['installdir']
                         db.add_game(game)
+                    entry_changed = True
                     dialog.destroy()
         db.close()
         dialog = Gtk.MessageDialog(appwindow,
@@ -269,6 +272,9 @@ class SteamPlugin(Plugin):
         dialog.run()
         dialog.hide()
         dialog.destroy()
+        if entry_changed:
+            appwindow.update_gameview()
+        
     # SteamPlugin.on_action_steam_scan()
         
     def do_enable(self,appwindow):
