@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<interface>
+    <menu id='steam-menu'>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>Scan Steam Libraries</attribute>
+                <attribute name='action'>win.steam-scan</attribute>
+            </item>
+        </section>
+    </menu>
+</interface>

@@ -58,7 +58,6 @@ class SettingsDialog(Gtk.Dialog):
         self.content.add_titled(self.settings_backup,'backup','Backup Settings')                
         
         for sid,settings in SETTINGS.items():
-            print(sid,',',settings.id,',',settings.title)
             settings.load(self)
             widget = settings.get_widget()
             if settings.id and settings.title and widget:

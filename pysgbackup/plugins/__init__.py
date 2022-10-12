@@ -50,6 +50,7 @@ class Plugin(GObject.GObject):
     }
     
     def __init__(self,name,title,
+                 version='0.0.0',
                  settings=None,
                  sgbackup_plugin=None,
                  sgbackup_plugin_enable=False,
@@ -62,6 +63,7 @@ class Plugin(GObject.GObject):
         
         self.__name = name
         self.__title = title
+        self.__version = version
 
         self.__settings = settings
         
@@ -183,6 +185,10 @@ class Plugin(GObject.GObject):
     @GObject.Property
     def settings(self):
         return self.__settings
+        
+    @GObject.Property
+    def version(self):
+        return self.__version
         
     def enable(self,appwindow):
         self.emit('enable',appwindow)

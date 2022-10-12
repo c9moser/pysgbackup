@@ -816,7 +816,7 @@ class GameDialog(Gtk.Dialog):
         
         self.__final_backup = False
         
-        self.set_default_size(400,400)
+        self.set_default_size(500,500)
         vbox = self.get_content_area()
         self.sizegroup = Gtk.SizeGroup()
         self.sizegroup.set_mode(Gtk.SizeGroupMode.HORIZONTAL)
@@ -956,7 +956,10 @@ class GameDialog(Gtk.Dialog):
         return self.savegame_name_entry.get_text()
     @savegame_name.setter
     def savegame_name(self,s):
-        self.savegame_name_entry.set_text(s)
+        if s:
+            self.savegame_name_entry.set_text(s)
+        else:
+            self.savegame_name_entry.set_text('')
         self.savegame_name_entry.show()
         
     @property

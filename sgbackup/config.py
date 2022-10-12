@@ -59,7 +59,7 @@ def _get_user_plugin_dir():
     return os.path.join(site.USER_SITE,'sgbackup_plugins')
             
 CONFIG={
-    "version":(0,0,21),
+    "version":(0,0,23),
     "global-config": os.path.join(os.path.dirname(__file__),"sgbackup.conf"),
     "global-archivers-dir": os.path.join(os.path.dirname(__file__),"archivers"),
     "global-gameconf-dir": os.path.join(os.path.dirname(__file__),"games"),

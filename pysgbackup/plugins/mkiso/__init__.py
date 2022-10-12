@@ -31,10 +31,18 @@ if PLUGIN_ID in sgbackup.plugins.PLUGINS:
     
     class MkisoSettings(Settings):
         def __init__(self):
-            Settings.__init__(self,PLUGIN_ID,'Create ISO',
+            Settings.__init__(self,PLUGIN_ID,'Create ISO Settings',
                               attribute = 'mkiso_settings')
                               
         def do_create_widget(self,dialog):
+            def create_label(text,sizegroup=None):
+                l = Gtk.Label(text)
+                l.set_xalign(0.0)
+                if sizegroup:
+                    sizegroup.add_widget(l)
+                return l
+            # create_label()
+            
             def on_enable_switch_toggled(switch,state,w):
                 if switch.get_active():
                     if PLUGIN_ID in PLUGINS:
@@ -82,8 +90,7 @@ if PLUGIN_ID in sgbackup.plugins.PLUGINS:
             w.sizegroup.set_mode(Gtk.SizeGroupMode.HORIZONTAL)
             
             hbox = Gtk.Box(orientation = Gtk.Orientation.HORIZONTAL)
-            label = Gtk.Label('Enable plugin:')
-            w.sizegroup.add_widget(label)
+            label = create_label('Enable plugin:',w.sizegroup)
             hbox.pack_start(label,False,False,5)
             w.enable_switch = Gtk.Switch()
             hbox.pack_end(w.enable_switch,False,False,5)
@@ -92,7 +99,7 @@ if PLUGIN_ID in sgbackup.plugins.PLUGINS:
             lb.add(lb_row)
 
             hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-            w.finals_label = Gtk.Label('Include all final backups:')
+            w.finals_label = create_label('Include all final backups:',w.sizegroup)
             hbox.pack_start(w.finals_label,False,False,5)
             w.finals_switch = Gtk.Switch()
             w.finals_switch.set_active(sgbackup.config.CONFIG['mkiso.all-finals'])
@@ -102,8 +109,7 @@ if PLUGIN_ID in sgbackup.plugins.PLUGINS:
             lb.add(lb_row)
             
             hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-            w.directory_label = Gtk.Label('Output directory:')
-            w.sizegroup.add_widget(w.directory_label)
+            w.directory_label = create_label('Output directory:',w.sizegroup)
             hbox.pack_start(w.directory_label,False,False,5)
             w.directory_entry = Gtk.Entry()
             w.directory_entry.set_text(sgbackup.config.CONFIG['mkiso.directory.template'])
@@ -116,8 +122,7 @@ if PLUGIN_ID in sgbackup.plugins.PLUGINS:
             lb.add(lb_row)
             
             hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-            w.maxiso_label = Gtk.Label('Maximum ISO-files:')
-            w.sizegroup.add_widget(w.maxiso_label)
+            w.maxiso_label = create_label('Maximum ISO-files:',w.sizegroup)
             hbox.pack_start(w.maxiso_label,False,False,5)
             adjustment = Gtk.Adjustment(float(sgbackup.config.CONFIG['mkiso.maxiso']),0.0,10000.0,1.0,10.0,1.0)
             w.maxiso_spinbutton = Gtk.SpinButton.new(adjustment,1.0,0)
@@ -147,6 +152,12 @@ if PLUGIN_ID in sgbackup.plugins.PLUGINS:
     
     class MkisoDialog(Gtk.Dialog):
         def __init__(self,parent):
+            def create_label(text,sizegroup):
+                l = Gtk.Label(text)
+                l.set_xalign(0.0),
+                sizegroup.add_widget(l)
+                return l
+                
             Gtk.Dialog.__init__(self,parent)
             self.set_title('PySGBackup: Create ISO File')
             
@@ -157,13 +168,34 @@ if PLUGIN_ID in sgbackup.plugins.PLUGINS:
             buttonbox.set_child_secondary(self.create_button,True)
             self.close_button = self.add_button('Close',Gtk.ResponseType.CLOSE)
             
+            self.sizegroup = Gtk.SizeGroup()
+            self.sizegroup.set_mode(Gtk.SizeGroupMode.HORIZONTAL)
+            
             vbox = self.get_content_area()
             hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-            self.finals_label = Gtk.Label('Include all finals:')
+            self.finals_label = create_label('Include all finals:',self.sizegroup)
             hbox.pack_start(self.finals_label,False,False,5)
             self.finals_switch = Gtk.Switch()
             self.finals_switch.set_active(sgbackup.config.CONFIG['mkiso.all-finals'])
             hbox.pack_end(self.finals_switch,False,False,5)
+            vbox.pack_start(hbox,False,False,0)
+            
+            hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            self.output_label = create_label('Enable user ISO file:',self.sizegroup)
+            hbox.pack_start(self.output_label,False,False,5)
+            self.output_switch = Gtk.Switch()
+            self.output_switch.connect('notify::active',self._on_output_switch_toggled)
+            hbox.pack_end(self.output_switch,False,False,5)
+            vbox.pack_start(hbox,False,False,0)
+            
+            hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            self.outfile_label = create_label('Output file:',self.sizegroup)
+            hbox.pack_start(self.outfile_label,False,False,5)
+            self.outfile_entry = Gtk.Entry()
+            hbox.pack_start(self.outfile_entry,True,True,5)
+            self.outfile_button = Gtk.Button.new_from_icon_name('document-open',Gtk.IconSize.BUTTON)
+            self.outfile_button.connect('clicked',self._on_outfile_button_clicked)
+            hbox.pack_start(self.outfile_button,False,False,5)
             vbox.pack_start(hbox,False,False,0)
             
             vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL),False,False,5)
@@ -174,8 +206,44 @@ if PLUGIN_ID in sgbackup.plugins.PLUGINS:
             
             vbox.pack_start(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL),False,False,5)
             
+            self._on_output_switch_toggled(self.output_switch,None)
             self.show_all()
         # MkisoDialog.__init__()
+            
+        def _on_outfile_button_clicked(self,button):
+            filter = Gtk.FileFilter()
+            filter.add_pattern('*.iso')
+            dialog = Gtk.FileChooserDialog('Select ISO file',
+                                           self,
+                                           Gtk.FileChooserAction.SAVE)
+            dialog.set_create_folders(True)
+            dialog.set_do_overwrite_confirmation(True)
+            if not self.outfile_entry.get_text():
+                dialog.set_current_folder(GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOCUMENTS))
+            else:
+                dialog.set_current_folder(os.path.dirname(self.outfile_entry.get_text()))
+
+            dialog.add_button('Accept',Gtk.ResponseType.ACCEPT)
+            dialog.add_button('Cancel',Gtk.ResponseType.CANCEL)
+            dialog.set_filter(filter)
+            result = dialog.run()
+            dialog.hide()
+            if result == Gtk.ResponseType.ACCEPT:
+                self.outfile_entry.set_text(dialog.get_filename())
+                
+            dialog.destroy()                
+        #MkisoDialog._on_outfile_button_clicked()
+            
+        def _on_output_switch_toggled(self,switch,state):
+            if switch.get_active():
+                self.outfile_label.set_sensitive(True)
+                self.outfile_entry.set_sensitive(True)
+                self.outfile_button.set_sensitive(True)
+            else:
+                self.outfile_label.set_sensitive(False)
+                self.outfile_button.set_sensitive(False)
+                self.outfile_entry.set_sensitive(False)
+        # MkisoDialog._on_output_switch_toggled()
             
         def _on_error(self,error):
             self.__thread_finished = True
@@ -186,7 +254,7 @@ if PLUGIN_ID in sgbackup.plugins.PLUGINS:
                                        Gtk.MessageType.ERROR,
                                        Gtk.ButtonsType.CLOSE,
                                        'Creating ISO file failed!')
-            dialog.format_secondary_markup("%s",error.stderr)
+            dialog.format_secondary_markup(error.stderr)
             dialog.run()
             dialog.hide()
             dialog.destroy()
@@ -198,6 +266,8 @@ if PLUGIN_ID in sgbackup.plugins.PLUGINS:
                 finals = '-A'
                 
             args = [sys.executable,'-m','sgbackup','mkiso',finals]
+            if self.output_switch.get_active() and self.outfile_entry.get_text():
+                args += ['-o',self.outfile_entry.get_text()]
             try:
                 proc = subprocess.run(args,check=True,capture_output=True)
             except subprocess.CalledProcessError as error:
@@ -224,6 +294,11 @@ if PLUGIN_ID in sgbackup.plugins.PLUGINS:
             self.finals_switch.set_sensitive(False)
             self.create_button.set_sensitive(False)
             self.close_button.set_sensitive(False)
+            self.output_label.set_sensitive(False)
+            self.output_switch.set_sensitive(False)
+            self.outfile_button.set_sensitive(False)
+            self.outfile_entry.set_sensitive(False)
+            self.outfile_label.set_sensitive(False)
             
             thread = threading.Thread(target=self._thread_func,daemon=True)
             thread.start()
@@ -233,6 +308,7 @@ if PLUGIN_ID in sgbackup.plugins.PLUGINS:
     class MkisoPlugin(Plugin):
         def __init__(self):
             Plugin.__init__(self,PLUGIN_ID,'Create ISO files',
+                            version=sgbackup.config.version(),
                             settings=MkisoSettings(),
                             menu={
                                 'file':os.path.join(os.path.dirname(__file__),'menu.ui'),

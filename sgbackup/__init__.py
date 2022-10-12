@@ -21,6 +21,7 @@ import gi
 gi.require_version('GLib','2.0')
 
 from . import config,database,extension,backup,archivers,games
+from .config import CONFIG
 from . import plugins
 
 db = database.Database()

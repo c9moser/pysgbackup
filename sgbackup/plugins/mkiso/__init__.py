@@ -38,20 +38,38 @@ if plugin_available:
     
     COMMAND_MKISO_HELP="""sgbackup mkiso
 
-USAGE:
-======
+USAGE
+=====
   sgbackup mkiso [OPTIONS]
   
-OPTIONS:
-========
+OPTIONS
+=======
   -a | --all-finals     Store all finals in ISO file.
-  -A | --no-all-finals  Don't put all finals in ISO file. 
+  -A | --no-all-finals  Don't put all finals in ISO file.
+  -o | --output=FILE    Output to file FILE.
   -V | --no-verbose     Disable verbose messages.
   -v | --verbose        Enable verbose messages.
+  
+DESCRIPTION
+===========
+  Creates an ISO file from SaveGame-backups. 
+  
+  If --all-finals option is given, all finalized backups are included into the
+  ISO-image. If --no-all-finals option is given, only the latest 
+  SaveGame-backups are included into the ISO-image.
+  
+  If --output option is given, the ISO-file written will be filename and the
+  maxiso check is not performed.
 """
     def command_mkiso(db,argv):
         try:
-            opts,args = getopt.getopt(argv,'AaVv', ['all-finals','no-all-finals','no-verbose','verbose'])
+            opts,args = getopt.getopt(argv,'Aao:Vv', [
+                                        'all-finals',
+                                        'no-all-finals',
+                                        'no-verbose',
+                                        'output='
+                                        'verbose'
+                                      ])
         except getopt.GetoptError as error:
             print(error,file=sys.stderr)
             help.print_help('mkiso')
@@ -63,11 +81,28 @@ OPTIONS:
             sys.exit(2)
             
         all_finals = CONFIG['mkiso.all-finals']
+        check_maxiso = True
+        dt = datetime.datetime.now()
+        image_name = os.path.join(CONFIG['mkiso.directory'],
+                                  "SaveGames.{}.iso".format(dt.strftime('%Y%m%d-%H%M%S')))
         for o,a in opts:
             if o == '-a' or o == '--all-finals':
                 all_finals = True
             elif o == '-A' or o == '--no-all-finals':
                 all_finals = False
+            elif o == '-o' or o == '--output':
+                check_maxiso = False
+                if os.path.isabs(a):
+                    image_name = a
+                else:
+                    image_name = os.path.join(os.getcwd(),a)
+                    
+                if not os.path.isdir(os.path.dirname(image_name)):
+                    os.makedirs(os.path.dirname(image_name))
+                    
+                if os.path.isfile(image_name):
+                    os.unlink(image_name)
+                    
             elif o == '-V' or o == '--no-verbose':
                 CONFIG['verbose'] = False
             elif o == '-v' or o == '--verbose':
@@ -80,9 +115,7 @@ OPTIONS:
             (os.path.join(os.path.dirname(__file__),'sgrestore.bat'), '/sgrestore.bat')
         ]
         
-        dt = datetime.datetime.now()
-        image_name = os.path.join(CONFIG['mkiso.directory'],
-                                  "SaveGames.{}.iso".format(dt.strftime('%Y%m%d-%H%M%S')))
+        
         
         #FIX msys bug with burn software
         if sys.platform == 'win32':
@@ -167,7 +200,7 @@ OPTIONS:
             print('DONE')
         
         # checking for max .iso files        
-        if CONFIG['mkiso.maxiso'] > 0:
+        if check_maxiso and CONFIG['mkiso.maxiso'] > 0:
             if CONFIG['verbose']:
                 print('Check for max iso-files')
             n = CONFIG['mkiso.maxiso']

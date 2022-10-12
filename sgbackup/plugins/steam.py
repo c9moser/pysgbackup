@@ -328,7 +328,7 @@ def command_steam(db,argv):
                 input_valid = False
                 add_game = False
                 while not input_valid:
-                    x = input('Game "{0}" not found. Do you want to add it? [y/n/i]: '.format(i['name']))
+                    x = input('Game "{0}" not found! Do you want to add it? [y/n/i]: '.format(i['name']))
                     if x.lower() == 'y' or x.lower() == 'yes':
                         add_game = True
                         input_valid = True
