@@ -743,10 +743,15 @@ def command_plugin(db,argv):
         for i in plugins.get_plugins():
             plugin = plugins.PLUGINS[i]
             
-            if (len(i) < length):
-                s= i + " " * (length - len(i)) + plugin.description
+            if plugin.enabled:
+                enabled = "* "
             else:
-                s = i + " " + plugin.description
+                enabled = "  "
+            
+            if (len(i) < length):
+                s= enabled + i + " " * (length - len(i)) + plugin.description
+            else:
+                s = enabled + i + " " + plugin.description
                 
             print(s)
     elif cmd == 'enable':
@@ -765,6 +770,22 @@ def command_plugin(db,argv):
             help.print_help('plugin')
         for i in argv[1:]:
             db.disable_plugin(i)
+    elif cmd == 'update':
+        db_plugins = db.list_plugins()
+        
+        for i,plugin in plugins.PLUGINS.items():
+            p = None
+            for j in db_plugins:
+                if j['name'] == i:
+                    p = j
+            if not p:
+                if config.CONFIG['verbose']:
+                    print('[plugin add] {0}'.format(i))
+                db.add_plugin(i)
+            elif not plugin.check_version(p['version']):
+                if config.CONFIG['verbose']:
+                    print("[plugin update] {0}: {1}->{2}".format(i,p['version'],plugin.version))
+                plugin.update(db)
     else:
         print('[sgbackup plugin] No such command "{0}"!'.format(cmd),file=sys.stderr)
         help.print_help('plugin')

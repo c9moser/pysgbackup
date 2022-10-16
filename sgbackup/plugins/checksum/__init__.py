@@ -22,8 +22,10 @@ import os
 import subprocess
 import gettext
 import getopt
+import hashlib
 from sgbackup.config import CONFIG
 from sgbackup import backup,extension,help
+
 
 N_ = lambda s: (s)
 def Q_(msgid):
@@ -54,7 +56,7 @@ if sys.platform == 'win32':
             for i in cksum_exe:
                 exe = os.path.join(usr_bin,i)
                 if os.path.isfile(exe):
-                    ret[i[:-7]]=exe
+                    ret[i[:-4]]=exe
         
         return ret
     # _get_checksum_programs()
@@ -74,7 +76,7 @@ else:
         for i in cksum_exe:
             for j in path:
                 if os.path.isfile(os.path.join(j,i)):
-                    ret[i[:-3]] = os.path.join(j,i)
+                    ret[i] = os.path.join(j,i)
                     break
                     
         return ret
@@ -86,7 +88,8 @@ plugin_avilable = (len(CHECKSUM) > 0)
 if plugin_avilable:
     _HELP={
         'checksum': N_('file|command.checksum.help.txt'),
-        'checksum-all': N_('file|command.checksum.all.txt')
+        'checksum-all': N_('file|command.checksum-all.help.txt'),
+        'checksum-create': N_('file|command.checksum-create.help.txt')
     }    
 
     extension.EXTENSIONS['checksum'] = {
@@ -175,17 +178,17 @@ if plugin_avilable:
         except getopt.GetoptError as error:
             print(error,file=sys.stderr)
             help.print_help('checksum')
-            sys.exit(2)
+            return 2
             
         if not args:
             print('[sgabckup checksum] ERROR: No GameIDs given!',file=sys.stderr)
             help.print_help('checksum')
-            sys.exit(2)
+            return 2
         
         for game_id in args:
             if not db.has_game(game_id):
                 print('[sgbackup checksum] ERROR: No game for GameID "{0}" found!'.format(game_id),file=sys.stderr)
-                sys.exit(2)
+                return 2
             
         delete = False
         for o,a in opts:
@@ -211,12 +214,12 @@ if plugin_avilable:
         except getopt.GetoptError as error:
             print(error,file=sys.stderr)
             print(_get_help('cheacksum-all'))
-            sys.exit(2)
+            return 2
             
         if args:
             print('[sgbackup checksum-all] ERROR: This command does not take any arguments!',file=sys.stderr)
             help.print_help('checksum-all')
-            sys.exit(2)
+            return 2
         
         delete = False
         for o,a in opts:
@@ -232,8 +235,64 @@ if plugin_avilable:
             
             for backup_file in backup.find_backups(game):
                 check_checksum(game,backup_file,delete)
-    # command_checksum_all
+    # command_checksum_all()
 
+    def command_checksum_create(db,argv):
+        try:
+            opts,args = getopt.getopt(argv,'CcVv',['check','no-check','verbose','no-verbose'])
+        except getopt.GetoptError as error:
+            print(error,file=sys.stderr)
+            sgbackup.print_help('checksum-create')
+            return 2
+            
+        check = CONFIG['checksum.check']
+        
+        for o,a in opts:
+            if o == '-C' or o == '--no-check':
+                check = False
+            elif o == '-c' or o == '--check':
+                check = True
+            elif o == '-V' or o == '--no-verbose':
+                config.CONFIG['verbose'] = False
+            elif o == '-v' or o == '--verbose':
+                config.CONFIG['verbose'] = True
+                
+        games = []
+        if len(args) > 0:
+            gid_list = db.list_game_ids()
+            for i in args:
+                if i in gid_list:
+                    games.append(i)
+                else:
+                    print('Unable to look up GameID "{0}"!'.format(i),file=sys.stderr)
+                    return 3
+        else:
+            games = db.list_game_ids()
+            
+        if CONFIG['checksum.algorithm'] == 'None':
+            return 0
+            
+        for i in games:
+            game = db.get_game(i)
+            for fn in sgbackup.backup.find_backups(game):
+                if os.path.isfile('.'.join((fn,CONFIG['checksum.algorithm']))):
+                    continue
+                    
+                backup_ok = False
+                if check:
+                    backup = db.get_game_backup(game,fn)
+                    h = hashlib.new(backup['checksum'])
+                    with open(fn,'rb') as ifile:
+                        h.update(ifile.read())
+                    digest = h.hexdigest()
+                    if backup['hash'] == digest:
+                        backup_ok = True
+                
+                if not check or backup_ok:
+                    backup_callback(db,game,fn)                    
+        return 0
+    # command_checksum_create()
+    
     plugin={
         'name': 'checksum',
         'description': 'Create/Check checksum files.',
@@ -255,6 +314,11 @@ if plugin_avilable:
                     'option': 'bsd-tags',
                     'type': 'boolean',
                     'default': False
+                },
+                'checksum.check': {
+                    'type': 'boolean',
+                    'option': 'check',
+                    'default': True
                 }
             }
         },
@@ -267,6 +331,11 @@ if plugin_avilable:
             'checksum-all': {
                 'description': 'Check checksum files against backups for all games.',
                 'function': command_checksum_all,
+                'help-function': _get_help
+            },
+            'checksum-create': {
+                'description': 'Create missing checksum files for backups.',
+                'function': command_checksum_create,
                 'help-function': _get_help
             }
         }

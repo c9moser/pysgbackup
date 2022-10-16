@@ -67,7 +67,8 @@ class Plugin(GObject.GObject):
 
         self.__settings = settings
         
-        SETTINGS[self.settings.id] = settings
+        if self.settings:
+            SETTINGS[self.settings.id] = settings
                 
         if isinstance(sgbackup_plugin,sgbackup.plugins.Plugin):
             self.__sgbackup_plugin = sgbackup_plugin

@@ -25,7 +25,8 @@ class Plugin(object):
                  description='',
                  commands={},
                  config={},
-                 version='0.0.0',
+                 version='.'.join((str(i) for i in CONFIG['version'])),
+                 check_version_callback=None,
                  update_callback=None,
                  config_parse_callback=None,
                  config_write_callback=None,
@@ -45,6 +46,7 @@ class Plugin(object):
         self.__enabled = False
         self.__description = description
         self.__commands = commands
+        self.__check_version_callback = check_version_callback
         self.__update_callback = update_callback
         self.__config_parse_callback = config_parse_callback
         self.__config_write_callback = config_write_callback
@@ -73,17 +75,18 @@ class Plugin(object):
         if 'section' in conf:
             section = conf['section']
         
-        for i in conf['values']:  
-            cfg = conf['values'][i]
-            if not 'global' in cfg:
-                cfg['global'] = global_config
-            if not 'local' in cfg:
-                cfg['local'] = local_config
+        if 'values' in conf:
+            for i in conf['values']:  
+                cfg = conf['values'][i]
+                if not 'global' in cfg:
+                    cfg['global'] = global_config
+                if not 'local' in cfg:
+                    cfg['local'] = local_config
                 
-            if (section and 'section' not in cfg and 'option' in cfg):
-                cfg['section']=section
+                if (section and 'section' not in cfg and 'option' in cfg):
+                    cfg['section']=section
                 
-            add_config(i,cfg)
+                add_config(i,cfg)
             
         if self.config_parse_callback:
             CONFIG['config-parse-callbacks'].append(self.config_parse)
@@ -94,7 +97,7 @@ class Plugin(object):
         if self.config_show_callback:
             CONFIG['config-show-callbacks'].append(self.config_show)
         if self.config_values_callback:
-            CONFIG['config-values-callback'].append(self.config_values)
+            CONFIG['config-values-callbacks'].append(self.config_values)
             
     @staticmethod
     def new_from_dict(spec):
@@ -158,6 +161,10 @@ class Plugin(object):
     def enabled(self):
         return self.__enabled     
     
+    @property
+    def check_version_callback(self):
+        return self.__check_version_callback
+        
     @property
     def config_parse_callback(self):
         return self.__config_parse_callback
@@ -227,11 +234,34 @@ class Plugin(object):
         callback = self.backup_callback
         if callback:
             callback(db,game,filename)
-            
-    def update(self,db,version):
+    
+    def check_version(self,version):
+        if self.check_version_callback:
+            return self.check_version_callback(version)
+        
+        new_version = self.version.split('.')
+        old_version = version.split('.')
+        if len(new_version) >= 3 and len(old_version) >= 3:
+            return (old_version[0] == new_version[0] 
+                    and old_version[1] == new_version[1]
+                    and old_version[2] >= new_version[2])
+        elif len(new_version) >= 2 and len(old_version) >= 2:
+            return (old_version[0] == new_version[0] and old_version[1] >= new_version[1])
+        elif len(new_version) >= 1 and len(old_version) >= 1:
+            return (old_version[0] >= new_version[0])
+        
+    def update(self,db,version=None):
+        db_plugin = db.get_plugin(self.name)
+        if not db_plugin:
+            return
+        if not version:
+            version = db_plugin['version']
         callback = self.update_callback
         if callback:
             callback(db,version)
+            
+        db.add_plugin(self)
+    
     
     def delete_backup(self,db,game,filename):
         callback = self.delete_backup_callback

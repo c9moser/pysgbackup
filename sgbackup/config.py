@@ -59,7 +59,7 @@ def _get_user_plugin_dir():
     return os.path.join(site.USER_SITE,'sgbackup_plugins')
             
 CONFIG={
-    "version":(0,0,23),
+    "version":(0,0,24),
     "global-config": os.path.join(os.path.dirname(__file__),"sgbackup.conf"),
     "global-archivers-dir": os.path.join(os.path.dirname(__file__),"archivers"),
     "global-gameconf-dir": os.path.join(os.path.dirname(__file__),"games"),
@@ -557,7 +557,7 @@ def set_config(key,value):
             elif cfg['type'] == 'string':
                 if 'values' in cfg:
                     if value not in cfg['values']:
-                        raise ValueError("{0} needs to be one of {2}".format(','.join(("'{0}'".format(i) for i in cfg['values']))))
+                        raise ValueError("Value needs to be one of {0}!".format(', '.join(("'{0}'".format(i) for i in cfg['values']))))
                     CONFIG[key]=value
                 else:
                     CONFIG[key]=value

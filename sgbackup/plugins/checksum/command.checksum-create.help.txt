@@ -1,0 +1,27 @@
+sgbackup checksum-create
+
+USAGE
+=====
+  sgbackup checksum-create [OPTIONS] [GameID] ...
+
+OPTIONS
+=======
+  -C | --no-check       Disable sgbackup validity checks.
+  -c | --check          Enable sgbackup validity checks.
+  -V | --no-verbose     Disable verbose messages.
+  -v | --verbose        Enable verbose messages.
+
+DESCRIPTION
+===========
+  Create missing checksums for backup files. This is done by calling one of
+  "b2sum", "md5sum", "sha1sum", "sha224sum", "sha256sum", "sha364sum" or 
+  "sha512sum" and creating the corresponding checksum files.
+  
+  If --check option is set, which is set by default, the backup is checked 
+  against sgbackup internal checksum database if the file is not modified and 
+  the checksum-files are only created if the backup-archive is valid. Set the 
+  "--no-check" option to disable that feature and create checksums for all
+  archives without checking.
+  
+  Set "GameID" to specify a specific game to operate on. If no "GameID" is set
+  operate on all games.

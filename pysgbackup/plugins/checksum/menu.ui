@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<interface>
+    <menu id='checksum-menu'>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>Create missing checksums</attribute>
+                <attribute name='action'>win.checksum-create-all</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>Create missing checksum of selected game</attribute>
+                <attribute name='action'>win.checksum-create-game</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>Create missing checksum of selected backup</attribute>
+                <attribute name='action'>win.checksum-create-backup</attribute>
+            </item>
+        </section>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>Check checkums of all games</attribute>
+                <attribute name='action'>win.checksum-check-all</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>Check checkums of selected game</attribute>
+                <attribute name='action'>win.checksum-check-game</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>Check checksum of selected backup</attribute>
+                <attribute name='action'>win.checksum-check-backup</attribute>
+            </item>
+        </section>
+    </menu>
+    <menu id='checksum-gameview-menu'>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>Create missing checksums</attribute>
+                <attribute name='action'>win.checksum-create-game</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>Create missing checksums of selected backup</attribute>
+                <attribute name='action'>win.checksum-create-backup</attribute>
+            </item>
+        </section>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>Check checksums</attribute>
+                <attribute name='action'>win.checksum-check-game</attribute>
+            </item>
+            <item>
+                <attribute name='label' translatable='yes'>Check checksums of selected backup</attribute>
+                <attribute name='action'>win.checksum-check-backup</attribute>
+            </item>
+        </section>
+    </menu>
+    <menu id='checksum-backupview-menu'>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>Create missing checksum</attribute>
+                <attribute name='action'>win.checksum-create-backup</attribute>
+            </item>
+        </section>
+        <section>
+            <item>
+                <attribute name='label' translatable='yes'>Check checksum</attribute>
+                <attribute name='action'>win.checksum-check-backup</attribute>
+            </item>
+        </section>
+    </menu>
+</interface>
