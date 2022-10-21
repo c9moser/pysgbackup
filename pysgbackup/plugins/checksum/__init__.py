@@ -32,12 +32,119 @@ if 'checksum' in sgbackup.plugins.PLUGINS:
     PLUGIN_ID = 'checksum'
     MENU_FILE = os.path.join(os.path.dirname(__file__),'menu.ui')
     
+    class ChecksumSettings(plugins.Settings):
+        def __init__(self):
+            plugins.Settings.__init__(self,PLUGIN_ID,'Checksum Settings',
+                                      attribute='checksum_settings')
+    
+        def _on_enable_switch_changed(self,switch,state,dialog,widget):
+            active = switch.get_active()
+            engine = 'pysgbackup'
+            if active:
+                dialog.plugin_enable(engine,PLUGIN_ID)
+                widget.algorithm_label.set_sensitive(True)
+                widget.algorithm_combobox.set_sensitive(True)
+                widget.bsdtags_label.set_sensitive(True)
+                widget.bsdtags_switch.set_sensitive(True)
+                widget.check_label.set_sensitive(True)
+                widget.check_switch.set_sensitive(True)
+            else:
+                dialog.plugin_disable(engine,PLUGIN_ID)
+                widget.algorithm_label.set_sensitive(False)
+                widget.algorithm_combobox.set_sensitive(False)
+                widget.bsdtags_label.set_sensitive(False)
+                widget.bsdtags_switch.set_sensitive(False)
+                widget.check_label.set_sensitive(False)
+                widget.check_switch.set_sensitive(False)
+            
+        def _on_plugin_enable(self,dialog,plugin_id):
+            if plugin_id == PLUGIN_ID:
+                dialog.checksum_settings.enable_switch.set_active(True)
+            
+        def _on_plugin_disable(self,dialog,plugin_id):
+            if plugin_id == PLUGIN_ID:
+                dialog.checksum_settings.enable_switch.set_active(False)
+        
+        def do_create_widget(self,dialog):
+            def create_label(text,sizegroup):
+                l = Gtk.Label(text)
+                l.set_xalign(0.0)
+                sizegroup.add_widget(l)
+                return l
+            # create_label()
+            
+            def listbox_add_widget(listbox,widget):
+                lbr = Gtk.ListBoxRow()
+                lbr.add(widget)
+                listbox.add(lbr)
+            # listbox_add_widget()
+            
+            def on_plugin_enable(dialog,engine,plugin):
+                if engine == 'pysgbackup' and plugin == 'checksum':
+                    if not w.enable_switch.get_active():
+                        w.enable_switch.set_active(True)
+            # on_plugin_enable()
+            
+            def on_plugin_disable(dialog,engine,plugin):
+                if engine == 'pysgbackup' and plugin == 'checksum':
+                    if w.enable_switch.get_active():
+                        w.enable_switch.set_active(False)
+            # on_plugin_disable()
+            
+            w = Gtk.ScrolledWindow()
+            w.sizegroup = Gtk.SizeGroup()
+            w.sizegroup.set_mode(Gtk.SizeGroupMode.HORIZONTAL)
+            
+            lb = Gtk.ListBox()
+            hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            label = create_label("Enable Plugin:",w.sizegroup)
+            hbox.pack_start(label,False,False,5)
+            w.enable_switch = Gtk.Switch()
+            w.enable_switch.connect('notify::active',self._on_enable_switch_changed,dialog,w)
+            hbox.pack_end(w.enable_switch,False,False,5)
+            listbox_add_widget(lb,hbox)
+            
+            w.enable_switch.set_active(plugins.PLUGINS[PLUGIN_ID].enabled)
+            
+            dialog.connect('plugin-enable',on_plugin_enable)
+            dialog.connect('plugin-disable',on_plugin_disable)
+            
+            hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            w.algorithm_label = create_label("Checksum Algorithm:",w.sizegroup)
+            hbox.pack_start(w.algorithm_label,False,False,5)
+            w.algorithm_combobox = Gtk.ComboBoxText()
+            for i in sgbackup.config.CONFIG['config']['checksum.algorithm']['values']:
+                w.algorithm_combobox.append(i,i)
+            w.algorithm_combobox.set_active_id(sgbackup.config.CONFIG['checksum.algorithm'])
+            hbox.pack_start(w.algorithm_combobox,True,True,5)
+            listbox_add_widget(lb,hbox)
+            
+            hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            w.bsdtags_label = create_label('BSD Tags:',w.sizegroup)
+            hbox.pack_start(w.bsdtags_label,False,False,5)
+            w.bsdtags_switch = Gtk.Switch()
+            w.bsdtags_switch.set_active(sgbackup.config.CONFIG['checksum.bsd-tags'])
+            hbox.pack_end(w.bsdtags_switch,False,False,5)
+            listbox_add_widget(lb,hbox)
+            
+            hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            w.check_label = create_label('Check internal checksums:',w.sizegroup)
+            hbox.pack_start(w.check_label,False,False,5)
+            w.check_switch = Gtk.Switch()
+            w.check_switch.set_active(sgbackup.config.CONFIG['checksum.check'])
+            hbox.pack_end(w.check_switch,False,False,5)
+            listbox_add_widget(lb,hbox)
+            
+            w.add(lb)
+            return w
+        # ChecksumSettings.do_create_widget()
+    # ChecksumSettings class
     
     class ChecksumPlugin(plugins.Plugin):
         def __init__(self):
             plugins.Plugin.__init__(self,PLUGIN_ID,'Checksum Plugin',
                                     version=sgbackup.config.version(),
-                                    settings=None,
+                                    settings=ChecksumSettings(),
                                     sgbackup_plugin='checksum',
                                     sgbackup_plugin_enable=True,                                             
                                     menu={'file':MENU_FILE,'object':'checksum-menu'},

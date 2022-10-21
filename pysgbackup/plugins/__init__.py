@@ -50,6 +50,8 @@ class Plugin(GObject.GObject):
     }
     
     def __init__(self,name,title,
+                 description="",
+                 icon=None,
                  version='0.0.0',
                  settings=None,
                  sgbackup_plugin=None,
@@ -63,9 +65,11 @@ class Plugin(GObject.GObject):
         
         self.__name = name
         self.__title = title
+        self.__description = description
         self.__version = version
-
         self.__settings = settings
+        self.__enabled = False
+        self.__icon = icon
         
         if self.settings:
             SETTINGS[self.settings.id] = settings
@@ -156,6 +160,14 @@ class Plugin(GObject.GObject):
     @GObject.Property
     def title(self):
         return self.__title
+        
+    @GObject.Property
+    def description(self):
+        return self.__description
+        
+    @GObject.Property
+    def icon(self):
+        return self.__icon
         
     @GObject.Property
     def menu(self):
@@ -267,6 +279,8 @@ class Plugin(GObject.GObject):
             
         if self.__enable_callback:
             self.__enable_callback(self,appwindow)
+            
+        self.__enabled = True
     # Plugin.do_enable()
     
     def do_disable(self,appwindow):
@@ -304,6 +318,8 @@ class Plugin(GObject.GObject):
             
         if self.__disable_callback:
             self.__disable_callback(self,appwindow)
+            
+        self.__enabled = False
     # Plugin.do_disable()
 # Plugin class
 

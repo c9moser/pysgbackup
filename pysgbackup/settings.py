@@ -22,6 +22,7 @@ from gi.repository import Gtk,GLib,GObject
 
 import sgbackup
 from sgbackup.config import CONFIG
+from functools import cmp_to_key
 import string
 import os
 import sys
@@ -32,13 +33,17 @@ SETTINGS = {
     
 class SettingsDialog(Gtk.Dialog):
     __gsignals__ = {
-        'save-settings': (GObject.SIGNAL_RUN_FIRST,None,())
+        'save-settings': (GObject.SIGNAL_RUN_FIRST,None,()),
+        'plugin-enable': (GObject.SIGNAL_RUN_FIRST,None,(str,str)),
+        'plugin-disable': (GObject.SIGNAL_RUN_FIRST,None,(str,str))
     }
         
     def __init__(self,parent=None):
         Gtk.Dialog.__init__(self,parent=parent)
         self.set_title('PySGBackup: Settings')
         self.__settings = {}
+        
+        self.__parent = parent
         
         vbox = self.get_content_area()
         self.paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
@@ -55,7 +60,10 @@ class SettingsDialog(Gtk.Dialog):
         self.content.add_titled(self.settings_generic,'generic','Generic Settings')
         
         self.settings_backup = self.__create_backup_settings()
-        self.content.add_titled(self.settings_backup,'backup','Backup Settings')                
+        self.content.add_titled(self.settings_backup,'backup','Backup Settings')
+        
+        self.settings_plugins = self.__create_plugin_settings()
+        self.content.add_titled(self.settings_plugins,'plugins','Plugins')
         
         for sid,settings in SETTINGS.items():
             settings.load(self)
@@ -415,10 +423,144 @@ class SettingsDialog(Gtk.Dialog):
         return w
     # __create_backup_settings()
     
+    def __create_plugin_settings(self):
+        def keycompare(x,y):
+            def get_real_key(k):
+                x = k.split(':',1)
+                if len(x) > 1:
+                    return x[1]
+                return x
+            # get_real_key()
+            
+            k0 = get_real_key(x)
+            k1 = get_real_key(y)
+            
+            if k0 < k1:
+                return -1
+            if k0 == k1:
+                return 0
+            return 1
+        # keycompare()
+        
+        def on_switch_notify_changed(switch,status,engine,plugin_id):
+            if engine == 'pysgbackup':
+                try:
+                    plugin = pysgbackup.plugins.PLUGINS[plugin_id]
+                except Exception:
+                    print('Looking up pysgbackup-plugin "{0}" failed!'.format(pid),file=sys.stderr)
+                    return
+            elif engine == 'sgbackup':
+                try:
+                    plugin = sgbackup.plugins.PLUGINS[plugin_id]
+                except Exception:
+                    print('Looking up sgbackup-plugin "{0}" failed!'.format(pid),file=sys.stderr)
+                    return
+            else:
+                print('Unknown plugin-engine "{0}"!'.format(engine),file=sys.stderr)
+                return
+                
+            if switch.get_active() and not plugin.enabled:
+                self.emit('plugin-enable',engine,plugin_id)
+            elif not switch.get_active() and plugin.enabled:
+                self.emit('plugin-disable',engine,plugin_id)
+        # on_switch_notify_changed
+            
+        w = Gtk.ScrolledWindow()
+        lb = Gtk.ListBox()
+        w.plugins = []
+        w.plugin_switches = {}
+        
+        for k in sgbackup.plugins.PLUGINS.keys():
+            key='sgbackup:{}'.format(k)
+            w.plugins.append(key)
+        
+        for k,p in pysgbackup.plugins.PLUGINS.items():
+            key='pysgbackup:{}'.format(k)
+            if p.sgbackup_plugin and p.sgbackup_plugin_enable:
+                sgbackup_key = 'sgbackup:{}'.format(p.sgbackup_plugin.name)
+                for i in range(len(w.plugins)):
+                    if w.plugins[i] == sgbackup_key:
+                        del w.plugins[i]
+                        break
+            w.plugins.append(key)
+            
+        w.plugins = sorted(w.plugins,key=cmp_to_key(keycompare))
+        
+        for i in w.plugins:
+            hbox = Gtk.Box(orientation = Gtk.Orientation.HORIZONTAL)
+            vbox = Gtk.Box(orientation = Gtk.Orientation.VERTICAL)
+            engine,plugin_id = i.split(':',1)
+            
+            plugin = None
+            if engine == 'sgbackup':
+                plugin = sgbackup.plugins.PLUGINS[plugin_id]
+                title = plugin.name
+            elif engine == 'pysgbackup':
+                plugin = pysgbackup.plugins.PLUGINS[plugin_id]
+                title = plugin.title
+                
+            if plugin:
+                if engine == 'pysgbackup':
+                    if plugin.icon:
+                        if 'icon-name' in plugin.icon:
+                            icon = Gtk.Image.new_from_icon_name(plugin.icon['icon-name'],Gtk.IconSize.LARGE_TOOLBAR)
+                        elif 'file' in plugin.icon:
+                            icon = Gtk.Image.new_from_file(plugin.icon['file'])
+                        elif 'pixbuf' in plugin.icon:
+                            icon = Gtk.Image.new_from_pixbuf(plugin.icon['pixbuf'])
+                        else:
+                            icon = Gtk.Image.new_from_icon_name('applications-system-symbolic',Gtk.IconSize.LARGE_TOOLBAR)
+                    else:
+                        icon = Gtk.Image.new_from_icon_name('applications-system-symbolic',Gtk.IconSize.LARGE_TOOLBAR)
+                else:
+                    icon = Gtk.Image.new_from_icon_name('applications-system-symbolic',Gtk.IconSize.LARGE_TOOLBAR)
+                description = plugin.description
+                
+                hbox.pack_start(icon,False,False,5)
+                
+                title_label = Gtk.Label("<span weight='bold' size='large'>" + title + "</span>")
+                title_label.set_use_markup(True)
+                title_label.set_xalign(0.0)
+                vbox.pack_start(title_label,False,False,0)
+                label = Gtk.Label(description)
+                label.set_xalign(0.0)
+                vbox.pack_start(label,False,False,0)
+                
+                hbox.pack_start(vbox,True,True,5)
+                
+                vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+                switch = Gtk.Switch()
+                switch.set_active(plugin.enabled)
+                switch.connect('notify::active',on_switch_notify_changed,engine,plugin_id)
+                vbox.pack_start(switch,False,False,0)
+                hbox.pack_end(vbox,False,False,5)
+                w.plugin_switches[i] = switch
+            
+                row = Gtk.ListBoxRow()
+                row.add(hbox)
+                lb.add(row)
+        w.add(lb)
+        return w
+    # SettingsDialog.__create_plugin_settings()
+    
     def save_settings(self):
         self.emit('save-settings')
         filename = CONFIG['user-config']
         sgbackup.config.write_config(filename,False)
+        
+    def plugin_enable(self,engine,plugin_id):
+        lookup_id = ':'.join((engine,plugin_id))
+        switches = self.settings_plugins.plugin_switches
+        if not lookup_id in switches:
+            raise LookupError('Unable to lookup plugin "{0}"!'.format(lookup_id))
+        switches[lookup_id].set_active(True)
+    
+    def plugin_disable(self,engine,plugin_id):
+        lookup_id = ':'.join((engine,plugin_id))
+        switches = self.settings_plugins.plugin_switches
+        if not lookup_id in switches:
+            raise LookupError('Unable to lookup plugin "{0}"!'.format(lookup_id))
+        switches[lookup_id].set_active(False)
         
     def do_save_settings(self):
         app = self.settings_app
@@ -464,6 +606,57 @@ class SettingsDialog(Gtk.Dialog):
         for settings in self.settings.values():
             settings.save(self)
     # do_save_settings()
+    
+    
+    def do_plugin_enable(self,engine,plugin_id):
+        db = sgbackup.database.Database()
+        
+        if engine == "sgbackup":
+            if plugin_id in sgbackup.plugins.PLUGINS:
+                p = sgbackup.plugins.PLUGINS[plugin_id]
+                p.enable()
+                db.enable_plugin(p)
+            else:
+                db.close()
+                raise LookupError('Unable to lookup sgbackup-plugin "{0}"!'.format(plugin_id))
+        elif engine == "pysgbackup":
+            if plugin_id in pysgbackup.plugins.PLUGINS:
+                p = pysgbackup.plugins.PLUGINS[plugin_id]
+                p.enable()
+                db.enable_pysgbackup_plugin(p)
+            else:
+                db.close()
+                raise LookupError('Unable to lookup pysgbackup-plugin "{0}"!'.format(plugin_id))
+        else:
+            db.close()
+            raise ValueError('Unknown plugin engine "{0}"!'.format(engine))
+        db.close()
+    # SettingsDialog.do_plugin_enable()
+    
+    def do_plugin_disable(self,engine,plugin_id):
+        db = sgbackup.database.Database()
+        
+        if engine == "sgbackup":
+            if plugin_id in sgbackup.plugins.PLUGINS:
+                p = sgbackup.plugins.PLUGINS[plugin_id]
+                p.disable()
+                db.disable_plugin(p)
+            else:
+                db.close()
+                raise LookupError('Unable to lookup sgbackup-plugin "{0}"!'.format(plugin_id))
+        elif engine == "pysgbackup":
+            if plugin_id in pysgbackup.plugins.PLUGINS:
+                p = pysgbackup.plugins.PLUGINS[plugin_id]
+                p.disable()
+                db.disable_pysgbackup_plugin(p)
+            else:
+                db.close()
+                raise LookupError('Unable to lookup pysgbackup-plugin "{0}"!'.format(plugin_id))
+        else:
+            db.close()
+            raise ValueError('Unknown plugin engine "{0}"!'.format(engine))
+        db.close()
+    # SettingsDialog.do_plugin_disable()
 # SettingsDialog class
                 
 class Settings(GObject.GObject):
@@ -502,6 +695,10 @@ class Settings(GObject.GObject):
     @GObject.Property
     def attribute(self):
         return self.__attribute
+        
+    @GObject.Property
+    def parent(self):
+        return self.__parent
         
     def get_widget(self):
         return self.__widget
