@@ -1407,8 +1407,6 @@ class UpdateDatabaseDialog(Gtk.Dialog):
             pass
             
         self.progressview.show()
-        self.progressview_scrolled.set_placement(Gtk.CornerType.BOTTOM_LEFT)
-        self.progressview_scrolled.show()
         
         if self.__thread_finished:
             return False

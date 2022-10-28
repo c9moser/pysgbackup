@@ -92,17 +92,20 @@ class SteamSettings(Settings):
     def __init__(self):
         Settings.__init__(self,PLUGIN_ID,'Steam Settings',
                           attribute='steam_settings')
-        
-    def _on_enable_switch_toggled(self,switch,status,widget):
-        if switch.get_active():
-            PLUGINS[PLUGIN_ID].enable(pysgbackup.application.appwindow)
-            widget.libview_frame.set_sensitive(True)
-        else:
-            PLUGINS[PLUGIN_ID].disable(pysgbackup.application.appwindow)
-            widget.libview_frame.set_sensitive(False)
-    # SteamSettings._on_enable_switch_toggled()
     
     def do_create_widget(self,dialog):
+        def on_enable_switch_toggled(switch,status,dialog,widget):
+            active = switch.get_active()
+            widget.libview_frame.set_sensitive(active)
+            pid = "{}:{}".format('pysgbackup',PLUGIN_ID)
+            if not pid in dialog.settings_plugins.plugin_switches: 
+                return
+                
+            plugin_switch = dialog.settings_plugins.plugin_switches[pid]
+            if active != plugin_switch.get_active():
+                plugin_switch.set_active(active)
+    # on_enable_switch_toggled()
+    
         def on_add_button_clicked(button,d,w):
             dialog = SteamLibraryDialog(d)
             result = dialog.run()
@@ -138,6 +141,11 @@ class SteamSettings(Settings):
                     w.libview.show()
         # on_edit_button_clicked()
             
+        def on_plugin_switch_toggled(switch,state,widget):
+            if switch.get_active() != widget.enable_switch.get_active():
+                widget.enable_switch.set_active(switch.get_active())
+        # on_plugin_switch_toggled
+        
         w = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         label = Gtk.Label('Enable Steam Plugin:')
@@ -184,7 +192,12 @@ class SteamSettings(Settings):
         w.libview_frame.add(vbox)
         w.pack_start(w.libview_frame,True,True,0)
                 
-        w.enable_switch.connect('notify::active',self._on_enable_switch_toggled,w)
+        pid = "{}:{}".format('pysgbackup',PLUGIN_ID)
+        if pid in dialog.settings_plugins.plugin_switches:
+            plugin_switch = dialog.settings_plugins.plugin_switches[pid]
+            plugin_switch.connect('notify::active',on_plugin_switch_toggled,w)
+            
+        w.enable_switch.connect('notify::active',on_enable_switch_toggled,dialog,w)
         w.enable_switch.set_active(sgbackup.plugins.PLUGINS['steam'].enabled)
         
         return w

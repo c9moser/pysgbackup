@@ -95,6 +95,10 @@ class SettingsDialog(Gtk.Dialog):
     def settings(self):
         return self.__settings
     
+    @GObject.Property
+    def parent(self):
+        return self.__parent
+        
     def __create_app_settings(self):
         def create_label(text,sizegroup):
             l = Gtk.Label(text)
@@ -441,30 +445,7 @@ class SettingsDialog(Gtk.Dialog):
                 return 0
             return 1
         # keycompare()
-        
-        def on_switch_notify_changed(switch,status,engine,plugin_id):
-            if engine == 'pysgbackup':
-                try:
-                    plugin = pysgbackup.plugins.PLUGINS[plugin_id]
-                except Exception:
-                    print('Looking up pysgbackup-plugin "{0}" failed!'.format(pid),file=sys.stderr)
-                    return
-            elif engine == 'sgbackup':
-                try:
-                    plugin = sgbackup.plugins.PLUGINS[plugin_id]
-                except Exception:
-                    print('Looking up sgbackup-plugin "{0}" failed!'.format(pid),file=sys.stderr)
-                    return
-            else:
-                print('Unknown plugin-engine "{0}"!'.format(engine),file=sys.stderr)
-                return
-                
-            if switch.get_active() and not plugin.enabled:
-                self.emit('plugin-enable',engine,plugin_id)
-            elif not switch.get_active() and plugin.enabled:
-                self.emit('plugin-disable',engine,plugin_id)
-        # on_switch_notify_changed
-            
+                    
         w = Gtk.ScrolledWindow()
         lb = Gtk.ListBox()
         w.plugins = []
@@ -531,7 +512,6 @@ class SettingsDialog(Gtk.Dialog):
                 vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
                 switch = Gtk.Switch()
                 switch.set_active(plugin.enabled)
-                switch.connect('notify::active',on_switch_notify_changed,engine,plugin_id)
                 vbox.pack_start(switch,False,False,0)
                 hbox.pack_end(vbox,False,False,5)
                 w.plugin_switches[i] = switch
@@ -549,23 +529,61 @@ class SettingsDialog(Gtk.Dialog):
         sgbackup.config.write_config(filename,False)
         
     def plugin_enable(self,engine,plugin_id):
-        lookup_id = ':'.join((engine,plugin_id))
-        switches = self.settings_plugins.plugin_switches
-        if not lookup_id in switches:
-            raise LookupError('Unable to lookup plugin "{0}"!'.format(lookup_id))
-        switches[lookup_id].set_active(True)
+        pid = "{}:{}".format(engine,plugin_id)
+        if pid in self.settings_plugins.plugin_switches:
+            switch = self.settings_plugins.plugin_switches[pid]
+            if not switch.get_active():
+                switch.set_active(True)
+                            
+        self.emit('plugin-enable',engine,plugin_id)
     
     def plugin_disable(self,engine,plugin_id):
-        lookup_id = ':'.join((engine,plugin_id))
-        switches = self.settings_plugins.plugin_switches
-        if not lookup_id in switches:
-            raise LookupError('Unable to lookup plugin "{0}"!'.format(lookup_id))
-        switches[lookup_id].set_active(False)
+        pid = "{}:{}".format(engine,plugin_id)
+        if pid in self.settings_plugins.plugin_switches:
+            switch = self.settings_plugins.plugin_switches[pid]
+            if switch.get_active():
+                switch.set_active(False)
+                
+        self.emit('plugin-disable',engine,plugin_id)
         
     def do_save_settings(self):
         app = self.settings_app
         generic = self.settings_generic
         backup = self.settings_backup
+        
+        if isinstance(self.parent,pysgbackup.AppWindow):
+            appwindow = self.parent
+        else:
+            appwindow = pysgbackup.application.appwindow
+        
+        #BEGIN: Enable disable plugins
+        for i in self.settings_plugins.plugins:
+            try:
+                engine,pid = i.split(':',1)
+            except Exception as error:
+                print(error,file=sys.stderr)
+                continue
+            
+            if engine == 'pysgbackup':
+                if pid in pysgbackup.plugins.PLUGINS: 
+                    plugin = pysgbackup.plugins.PLUGINS[pid]
+                else:
+                    continue
+            elif engine == 'sgbackup':
+                if pid in sgbackup.plugins.PLUGINS:
+                    plugin = sgbackup.plugins.PLUGINS[pid]
+                else:
+                    continue
+            else:
+                continue
+                
+            if i in self.settings_plugins.plugin_switches:
+                plugin_switch = self.settings_plugins.plugin_switches[i]
+                if plugin_switch.get_active() and not plugin.enabled:
+                    self.plugin_enable(engine,pid)
+                elif not plugin_switch.get_active() and plugin.enabled:
+                    self.plugin_disable(engine,pid)
+        #END: Enable/Disable plugins         
         
         CONFIG['verbose'] = generic.verbose_switch.get_active()
         
@@ -609,21 +627,26 @@ class SettingsDialog(Gtk.Dialog):
     
     
     def do_plugin_enable(self,engine,plugin_id):
+        if isinstance(self.parent,pysgbackup.AppWindow):
+            appwindow = self.parent
+        else:
+            appwindow = pysgbackup.application.appwindow
+            
         db = sgbackup.database.Database()
-        
+            
         if engine == "sgbackup":
             if plugin_id in sgbackup.plugins.PLUGINS:
                 p = sgbackup.plugins.PLUGINS[plugin_id]
                 p.enable()
-                db.enable_plugin(p)
+                db.enable_plugin(p.name)
             else:
                 db.close()
                 raise LookupError('Unable to lookup sgbackup-plugin "{0}"!'.format(plugin_id))
         elif engine == "pysgbackup":
             if plugin_id in pysgbackup.plugins.PLUGINS:
                 p = pysgbackup.plugins.PLUGINS[plugin_id]
-                p.enable()
-                db.enable_pysgbackup_plugin(p)
+                p.enable(appwindow)
+                db.enable_pysgbackup_plugin(p.name)
             else:
                 db.close()
                 raise LookupError('Unable to lookup pysgbackup-plugin "{0}"!'.format(plugin_id))
@@ -634,21 +657,26 @@ class SettingsDialog(Gtk.Dialog):
     # SettingsDialog.do_plugin_enable()
     
     def do_plugin_disable(self,engine,plugin_id):
+        if isinstance(self.parent,pysgbackup.AppWindow):
+            appwindow = self.parent
+        else:
+            appwindow = pysgbackup.application.appwindow
+            
         db = sgbackup.database.Database()
         
         if engine == "sgbackup":
             if plugin_id in sgbackup.plugins.PLUGINS:
                 p = sgbackup.plugins.PLUGINS[plugin_id]
                 p.disable()
-                db.disable_plugin(p)
+                db.disable_plugin(p.name)
             else:
                 db.close()
                 raise LookupError('Unable to lookup sgbackup-plugin "{0}"!'.format(plugin_id))
         elif engine == "pysgbackup":
             if plugin_id in pysgbackup.plugins.PLUGINS:
                 p = pysgbackup.plugins.PLUGINS[plugin_id]
-                p.disable()
-                db.disable_pysgbackup_plugin(p)
+                p.disable(appwindow)
+                db.disable_pysgbackup_plugin(p.name)
             else:
                 db.close()
                 raise LookupError('Unable to lookup pysgbackup-plugin "{0}"!'.format(plugin_id))

@@ -43,10 +43,15 @@ if PLUGIN_ID in sgbackup.plugins.PLUGINS:
                 return l
             # create_label()
             
-            def on_enable_switch_toggled(switch,state,w):
+            def on_enable_switch_toggled(switch,state,dialog,w):
+                plugin_switch = None
+                pid = "{}:{}".format("pysgbackup",PLUGIN_ID)
+                if pid in dialog.settings_plugins.plugin_switches:
+                    plugin_switch = dialog.settings_plugins.plugin_switches[pid]
+                    
                 if switch.get_active():
-                    if PLUGIN_ID in PLUGINS:
-                        PLUGINS['mkiso'].enable(pysgbackup.application.appwindow)
+                    if plugin_switch and not plugin_switch.get_active():
+                        plugin_switch.set_active(True)
                     w.finals_label.set_sensitive(True)
                     w.finals_switch.set_sensitive(True)
                     w.directory_label.set_sensitive(True)
@@ -55,8 +60,9 @@ if PLUGIN_ID in sgbackup.plugins.PLUGINS:
                     w.maxiso_label.set_sensitive(True)
                     w.maxiso_spinbutton.set_sensitive(True)
                 else:
-                    if PLUGIN_ID in PLUGINS:
-                        PLUGINS['mkiso'].disable(pysgbackup.application.appwindow)
+                    if plugin_switch and plugin_switch.get_active():
+                        plugin_switch.set_active(False)
+                        
                     w.finals_label.set_sensitive(False)
                     w.finals_switch.set_active(sgbackup.config.CONFIG['mkiso.all-finals'])
                     w.finals_switch.set_sensitive(False)
@@ -83,6 +89,11 @@ if PLUGIN_ID in sgbackup.plugins.PLUGINS:
                 if result == Gtk.ResponseType.ACCEPT:
                     w.directory_entry.set_text(dialog.get_filename())
             # on_directory_button_clicked()
+            
+            def on_plugin_switch_notify_active(switch,state,widget):
+                if switch.get_active() != widget.enable_switch.get_active():
+                    widget.enable_switch.set_active(switch.get_active())
+            # def on_plugin_switch_notify_active()
             
             w = Gtk.ScrolledWindow()
             lb = Gtk.ListBox()
@@ -131,9 +142,14 @@ if PLUGIN_ID in sgbackup.plugins.PLUGINS:
             lb_row.add(hbox)
             lb.add(lb_row)
             
-            w.enable_switch.connect('notify::active',on_enable_switch_toggled,w)
+            w.enable_switch.connect('notify::active',on_enable_switch_toggled,dialog,w)
             w.enable_switch.set_active(sgbackup.plugins.PLUGINS['mkiso'].enabled)
             
+            pid = "{}:{}".format('pysgbackup',PLUGIN_ID)
+            if pid in dialog.settings_plugins.plugin_switches:
+                plugin_switch = dialog.settings_plugins.plugin_switches[pid]
+                plugin_switch.connect('notify::active',on_plugin_switch_notify_active,w)
+                
             w.add(lb)
             return w
         # MkisoSettings.do_create_widget()

@@ -294,7 +294,7 @@ class Plugin(GObject.GObject):
             
         if self.gameview_menu:
             for i in sorted(range(appwindow.gameview_popup_plugins.get_n_items()),reverse=True):
-                attr_label = appwindow.gameview_popup_plugins.get_item_attribute(i,'label',None)
+                attr_label = appwindow.gameview_popup_plugins.get_item_attribute_value(i,'label',None)
                 if attr_label and attr_label.get_string() == self.title:
                     appwindow.gameview_popup_plugins.remove(i)
                     break
@@ -303,7 +303,7 @@ class Plugin(GObject.GObject):
             
         if self.backupview_menu:
             for i in sorted(range(appwindow.backupview_popup_plugins.get_n_items()),reverse=True):
-                attr_label = appwindow.backupview_popup_plugins.get_item_attribute(i,'label',None)
+                attr_label = appwindow.backupview_popup_plugins.get_item_attribute_value(i,'label',None)
                 if attr_label and attr_label.get_string() == self.title:
                     appwindow.backupview_popup_plugins.remove(i)
                     break

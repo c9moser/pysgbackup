@@ -483,7 +483,7 @@ class Database:
             
         sql = "INSERT INTO filelist_extrafiles (file,filename,use_ftp) VALUES (?,?,?);"
         cur = self._db.cursor()
-        cur.execute(sql,(backup['id'],extrafile,self._bool_to_db(use_ftp)))
+        cur.execute(sql,(backup['id'],os.path.basename(extrafile),self._bool_to_db(use_ftp)))
         self._db.commit()
     # add_game_backup_extrafile()    
     
@@ -756,10 +756,10 @@ class Database:
     def disable_pysgbackup_plugin(self,plugin_name):
         plugin = self.get_pysgbackup_plugin(plugin_name)
         if plugin:
-            sql = "UPDATE pysgbackup_plugins SET enabled='N' WHERE id?;"
-            cur = self._db_cursor()
+            sql = "UPDATE pysgbackup_plugins SET enabled='N' WHERE id=?;"
+            cur = self._db.cursor()
             cur.execute(sql,(plugin['id'],))
-            self._db_commit()
+            self._db.commit()
             
             if plugin['sgbackup_plugin'] and plugin['sgbackup_plugin_enable']:
                 self.disable_plugin(plugin['sgbackup_plugin']['name'])
