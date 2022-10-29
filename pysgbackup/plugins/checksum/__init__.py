@@ -24,6 +24,7 @@ if 'checksum' in sgbackup.plugins.PLUGINS:
     import os,sys
     import subprocess
     import threading
+    import hashlib
     import pysgbackup
     from pysgbackup import plugins
     import sgbackup
@@ -472,13 +473,14 @@ if 'checksum' in sgbackup.plugins.PLUGINS:
             scrolled = Gtk.ScrolledWindow()
             model = Gtk.TreeStore(str,str,str,str,GdkPixbuf.Pixbuf)
             self.progress_gameview = Gtk.TreeView.new_with_model(model)
+            self.progress_gameview.set_headers_visible(False)
 
             renderer = Gtk.CellRendererPixbuf()
             column = Gtk.TreeViewColumn("Icon",renderer,pixbuf=self.GV_COL_PIXBUF)
             self.progress_gameview.append_column(column)
             
             renderer = Gtk.CellRendererText()
-            self.progress_gameview.column_text = Gtk.TreeViewColumn("Icon",renderer,text=self.GV_COL_TEXT)
+            self.progress_gameview.column_text = Gtk.TreeViewColumn("Text",renderer,text=self.GV_COL_TEXT)
             self.progress_gameview.append_column(self.progress_gameview.column_text)
             
             scrolled.add(self.progress_gameview)
@@ -591,7 +593,7 @@ if 'checksum' in sgbackup.plugins.PLUGINS:
                 db_backup = db.get_game_backup(game,backup)
                 h = hashlib.new(db_backup['checksum'])
                 with open(b,'rb') as ifile:
-                    h.update(ifile)
+                    h.update(ifile.read())
                 if db_backup['hash'] == h.hexdigest():
                     return True
                 return False
@@ -599,7 +601,7 @@ if 'checksum' in sgbackup.plugins.PLUGINS:
                
             db = sgbackup.database.Database()
             
-            Glib.idle_add(self._on_update,'Preparing ...',0.0)
+            GLib.idle_add(self._on_update,'Preparing ...',0.0)
             
             check_games = {}
             for game_spec in self.games:
@@ -717,7 +719,7 @@ if 'checksum' in sgbackup.plugins.PLUGINS:
             while Gtk.events_pending():
                 Gtk.main_iteration_do(False)
             iter = buffer.get_iter_at_line(buffer.get_line_count())
-            self.progressview.scroll_to(iter)
+            self.progress_outputview.scroll_to_iter(iter,0.0,False,0.0,0.0)
             self.progress_outputview.show()
         # ChecksumCheckDialog._on_update_outputview()
         

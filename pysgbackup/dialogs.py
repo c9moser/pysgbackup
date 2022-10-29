@@ -446,7 +446,7 @@ class CheckBackupDialog(Gtk.Dialog):
                 Gtk.main_iteration_do(False)
                 
             iter = buffer.get_iter_at_line(buffer.get_line_count())
-            self.progressview.scroll_to(iter)
+            self.progressview.scroll_to_iter(iter,0.0,False,0.0,0.0)
             
         if not self.__thread_finished:
             return True
