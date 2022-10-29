@@ -716,8 +716,9 @@ if 'checksum' in sgbackup.plugins.PLUGINS:
             
             #self.progress_outputview.show()
                 
-            while Gtk.events_pending():
-                Gtk.main_iteration_do(False)
+            #while Gtk.events_pending():
+            #    Gtk.main_iteration_do(False)
+            
             iter = buffer.get_iter_at_line(buffer.get_line_count())
             self.progress_outputview.scroll_to_iter(iter,0.0,False,0.0,0.0)
             self.progress_outputview.show()
@@ -739,8 +740,8 @@ if 'checksum' in sgbackup.plugins.PLUGINS:
             
             iter = model.append(game.gameview_iter,(game.game_id,game.name,os.path.file,os.path.basename(file),pixbuf))
             
-            while Gtk.events_pending():
-                Gtk.main_iteration_do(False)
+            #while Gtk.events_pending():
+            #    Gtk.main_iteration_do(False)
                 
             self.progress_gameview.scroll_to_cell(model.get_path(iter),self.progress_gameview.column_text)
             self.progress_gameview.show()            
