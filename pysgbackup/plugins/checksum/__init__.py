@@ -563,7 +563,7 @@ if 'checksum' in sgbackup.plugins.PLUGINS:
         def get_checksum_files(self,backup):
             return checksum.find_checksum_files(backup)
             
-        def get_pixbuf_from_icon_name(icon_name):
+        def get_pixbuf_from_icon_name(self,icon_name):
             theme = Gtk.IconTheme.get_default()
             pixbuf = theme.load_icon(icon_name,Gtk.IconSize.MENU,Gtk.IconLookupFLags.NONE)
             if not pixbuf:
