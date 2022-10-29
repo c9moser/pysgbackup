@@ -565,9 +565,13 @@ if 'checksum' in sgbackup.plugins.PLUGINS:
             
         def get_pixbuf_from_icon_name(self,icon_name):
             theme = Gtk.IconTheme.get_default()
-            pixbuf = theme.load_icon(icon_name,Gtk.IconSize.MENU,Gtk.IconLookupFLags.NONE)
+            pixbuf = theme.load_icon(icon_name,Gtk.IconSize.BUTTON,Gtk.IconLookupFlags.DIR_LTR)
             if not pixbuf:
-                pixbuf = theme.load_icon('image-missing',Gtk.IconSize.MENU,Gtk.IconLookupFLags.NONE)
+                pixbuf = theme.load_icon('image-missing',Gtk.IconSize.BUTTON,Gtk.IconLookupFlags.DIR_LTR)
+                
+            if not pixbuf:
+                print('Unable to load pixbuf!',file=sys.stderr)
+                
             return pixbuf
             
         def _on_run_button_clicked(self,button):
@@ -738,7 +742,7 @@ if 'checksum' in sgbackup.plugins.PLUGINS:
             else:
                 pixbuf = self.get_pixbuf_from_icon_name('gtk-yes')
             
-            iter = model.append(game.gameview_iter,(game.game_id,game.name,os.path.file,os.path.basename(file),pixbuf))
+            iter = model.append(game.gameview_iter,(game.game_id,game.name,file,os.path.basename(file),pixbuf))
             
             #while Gtk.events_pending():
             #    Gtk.main_iteration_do(False)
