@@ -474,11 +474,11 @@ if 'checksum' in sgbackup.plugins.PLUGINS:
             self.progress_gameview = Gtk.TreeView.new_with_model(model)
 
             renderer = Gtk.CellRendererPixbuf()
-            column = Gtk.TreeViewColumn(renderer,pixbuf=self.GV_COL_PIXBUF)
+            column = Gtk.TreeViewColumn("Icon",renderer,pixbuf=self.GV_COL_PIXBUF)
             self.progress_gameview.append_column(column)
             
             renderer = Gtk.CellRendererText()
-            self.progress_gameview.column_text = Gtk.TreeViewColumn(renderer,text=self.GV_COL_TEXT)
+            self.progress_gameview.column_text = Gtk.TreeViewColumn("Icon",renderer,text=self.GV_COL_TEXT)
             self.progress_gameview.append_column(self.progress_gameview.column_text)
             
             scrolled.add(self.progress_gameview)
@@ -565,7 +565,7 @@ if 'checksum' in sgbackup.plugins.PLUGINS:
             theme = Gtk.IconTheme.get_default()
             pixbuf = theme.load_icon(icon_name,Gtk.IconSize.MENU,Gtk.IconLookupFLags.NONE)
             if not pixbuf:
-                pixbuf = theme.load_icon('image-missing',Gtk:IconSize.MENU,Gtk.IconLookupFLags.NONE)
+                pixbuf = theme.load_icon('image-missing',Gtk.IconSize.MENU,Gtk.IconLookupFLags.NONE)
             return pixbuf
             
         def _on_run_button_clicked(self,button):
@@ -585,7 +585,7 @@ if 'checksum' in sgbackup.plugins.PLUGINS:
             self.__abort = True
             
         def _thread_func(self):
-            fraction = lambda n,cnt = cnt/n
+            fraction = lambda n,cnt: cnt/n
             
             def check_internal_checksum(db,game,backup):
                 db_backup = db.get_game_backup(game,backup)
@@ -610,7 +610,7 @@ if 'checksum' in sgbackup.plugins.PLUGINS:
                     backups = sgbackup.backup.find_backups(g)
                     
                 if not g.game_id in check_games:
-                    check_games[g.game_id] = {'game':g,backups='backups'}
+                    check_games[g.game_id] = {'game':g,'backups':backups}
                 else:
                     for i in backups:
                         cg_backups = check_games[g.game_id]['backups']
@@ -624,7 +624,7 @@ if 'checksum' in sgbackup.plugins.PLUGINS:
             
             n_steps = 0
             for spec in check_games.values():
-                for i in spec['backups']
+                for i in spec['backups']:
                     n_steps += 1
                     
             if self.check_switch.get_active():
@@ -647,7 +647,7 @@ if 'checksum' in sgbackup.plugins.PLUGINS:
                     if self.check_switch.get_active():
                         GLib.idle_add(self._on_update,text,fraction(n_steps,count))
                         
-                        if check_internal_checksum(db,spec['game'],b)
+                        if check_internal_checksum(db,spec['game'],b):
                             GLib.idle_add(self._on_update_outputview,
                                           '"{}" internal check [OK]\n'.format(os.path.basename(b)))
                         else:
@@ -676,7 +676,7 @@ if 'checksum' in sgbackup.plugins.PLUGINS:
                             if proc.returncode == 0:
                                 text = fmt.format(ext,os.path.basename(b),'OK')
                                 GLib.idle_add(self._on_update_outputview,text)
-                            else
+                            else:
                                 checksum_ok = False
                                 text = fmt.format(ext,os.path.basename(b),'FAILED')
                                 GLib.idle_add(self._on_update_outputview,text,True)
