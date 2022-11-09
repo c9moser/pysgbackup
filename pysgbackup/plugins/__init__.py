@@ -33,7 +33,7 @@ if site.ENABLE_USER_SITE:
     ENABLE_USER_PLUGINS = True
     USER_PLUGIN_DIR = os.path.join(site.USER_SITE,'pysgbackup_plugins')
     if not os.path.isdir(USER_PLUGIN_DIR):
-        os.path.makedirs(USER_PLUGIN_DIR)
+        os.makedirs(USER_PLUGIN_DIR)
         with open(os.path.join(os.path.dirname(__file__),'__user_init.py'),'r') as ifile:
             with open(os.path.join(USER_PLUGIN_DIR,'__init__.py'),'w') as ofile:
                 ofile.write(ifile.read())
