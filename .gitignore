@@ -1,4 +1,6 @@
 # EDITOR TEMP FILES
+.vscode
+.vscode/*
 *.swp
 *~
 
