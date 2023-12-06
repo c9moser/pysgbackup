@@ -1,0 +1,12 @@
+${TITLE}
+
+SYNOPSIS
+${SYNOPSIS}
+
+DESCRIPTION
+    Print a short usage information. This command takes a command name as an
+    argument. If command name is given, print the synopsis information of that
+    command, else print the sgbackup usage information. 
+    
+    It is an error to give an invalid command name as an argument.
+ 

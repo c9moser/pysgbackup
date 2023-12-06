@@ -1,0 +1,183 @@
+${TITLE}
+
+SYNOPSIS
+    ${SYNOPSIS}
+
+DESCRIPTION
+    pysgbackup is a command line utility to backup your savegames. Because
+    it is a command line tool that can be used to backup your savegames 
+    periodically via cron job or Windows TaskManager.
+
+COMMANDS
+${COMMANDS}
+
+FILES
+    All configuration files of pysgbackup are GLib.KeyFile text files. The 
+    file format are GROUPS/SECTIONS with KEY=VALUE pairs. The groups are put
+    in square braces ([GROUPNAME]). Sections and keys are case sensitive!
+
+    VALUES are strings. Backslashes (\) are escape characters. To get a
+    backslash form a value-string it has to be escaped by another backslash
+    (\\). The path "C:\Users\username" has to be written as follows in the
+    configfile: "C:\\Users\\username" to be a valid string.
+
+CONFIGURATION FILE
+    The configuration of pysgbackup is stored in the configuration file
+    "${PYSGBACKUP_CONFIG}".
+    This is file a common KeyFile. The default sections of the configuration
+    file are documented here. Plugins and user modules may provide their own
+    sections and option-keys.
+
+    [sgbackup] SECTION
+        archiver            The archiver to use. This value can be set by
+                            using the "archiver" command. "sgbackup archiver
+                            list" lists the available archivers to use.
+        
+        backupDirectory     The directory to store the backups in. This should
+                            be an absolute path. The directory is created if it
+                            does not exist.
+
+        backupVersions      The number of backups to keep. If the value is 0,
+                            which is the default, all backups are kept. Set 
+                            this value to an positive integer to provide
+                            backup versioning.
+        
+        verbose             Enable verbose messages if set to "true". This
+                            option defaults to "false".
+
+    [zipfileArchiver] SECTION
+        compression         The compression algorithm to use This option 
+                            accepts "store", "deflated", "lzma" and "bzip2".
+
+        compressLevel       The compression level to use. This option is only
+                            useful for "deflated" and "bzip2" algorithm. It
+                            accepts integer values between 0 and 9. This 
+                            option defaults to 9.
+
+    [commandGame] SECTION
+        addInteractive      Add games interactive by default. This behaviour
+                            can be disabled with the "--no-interactive" flag 
+                            for the game command. The default value is "true".
+
+        editInteractive     Edit games interactive by default. This
+                            behaviour can be disabled with the 
+                            "--no-interactive" flag when editing games. The 
+                            default value for this option is "true".
+
+ARCHIVER FILES
+    Archiver files are KeyFiles that store necessary information to run
+    commandline archivers in the [archiver] section. It also supports
+    variables stored in the [variables] section.
+
+    The [variables] section holds key=value pairs of variables. Do not
+    use spaces in variable names!
+
+    Variables given by the program are:
+        FILENAME            Filename to use for the archive.
+
+        SAVEGAME_DIR        A relative directory originating from 
+                            $$SAVEGAME_ROOT.
+
+        SAVEGAME_ROOT       An absolute path where the archiver should
+                            change to when archiving or restoring.
+
+        SGDIR               Same as $$SAVEGAME_DIR.
+
+        SGROOT              Same as $$SAVEGAME_ROOT.
+
+    [archiver] SECTION
+        name            Archiver name/id. This mandatory option is used to
+                        register the archiver so choose a unique name.
+
+        executable      Archivers executable. This should be a absolute path
+                        pointing to the executbale of the archiver.
+                        
+        backupArgs      The arguments and commandline flags used to archive 
+                        savegames. This is a template string and can make use
+                        of variables.
+
+        restoreArgs     The arguments and commandline flags used to extract
+                        savegame-backups. This option is a template string too.
+
+        verbose         This optional variable should hold the verbose flag for
+                        archiving and extracting. It expands to the $$VERBOSE
+                        variable in "backupArgs" and "restoreArgs". If verbose
+                        output is disabled, the $$VERBOSE variable expands to 
+                        an empty string.
+
+GAME FILES
+    Game files are KeyFiles. Their filename ends with ".game". They store the
+    game settings for backing up savegames. The main group is [game] and are
+    located in the "${GAME_DIR}"
+    directory.
+
+    Template strings can contain variables. Variables from the evironment,
+    global config file variables and local variables can be used.
+
+    [game] SECTION:
+        id                      The ID of the game. This should be a short 
+                                string without any whitespace chareacters in
+                                it. Games are looked up by game ids.
+
+        name                    The name of the game. This should be the name 
+                                of the game. This value can contain whitespace 
+                                characters.
+
+        savegameName            The name under which the game should be stored.
+                                It is a good idea to avoid spaces in this 
+                                value, especially when working with scripts
+                                on your savegame files.
+
+        savegameRootDirectory   The root directory of the savegame path. It
+                                should be an absolute path. This directory 
+                                path is stripped from the path in the archive.
+                                
+                                If this path does not exist, backup will fail.
+                                
+                                This path is not created when restoring a 
+                                savegame backup! 
+                                
+                                This value is a template string. You can use
+                                variables in the form "${VARIABLE_NAME}" in
+                                your settings.
+
+        savegameBackupDirectory The directory to back up. This should be a 
+                                relative path originating from 
+                                "savegameRootDirectory".
+                                
+                                If this path does not exist backup will fail.
+                                
+                                This path is created by restore. 
+                                
+                                This value is a template string. Variables can
+                                be used here too.
+
+        installdir              This is an options value. When set it should
+                                point to the installation directory of the 
+                                game as an absolute path.
+
+        steamAppID              This optional value is the steam app id. It
+                                should be a positive integer or "0" if no
+                                app id is set.
+
+        isFinished              This optional value sets the game as finished.
+                                It is a boolean value when set to "true". If
+                                not set "false" is assumed.
+
+    [variables] SECTION
+        Variables can be set here. They can be used in path generation.
+        Variable names should not contain any whitespace!
+
+        Default variables are:
+            INSTALLDIR          Game installation directory if set, an
+                                empty string otherwise
+
+            HOME                Users home directory.
+
+            USER_DOCUMENTS_DIR  Users "Documents" directory. Use this
+                                variable instead of an absolute path 
+                                pointing to the documents direcotry in
+                                your home folder.
+            
+            STEAM_APPID         The Steam AppID of the game or "0" if
+                                not set

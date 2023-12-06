@@ -1,0 +1,24 @@
+${TITLE}
+
+SYNOPSIS
+${SYNOPSIS}
+
+OPTIONS
+    add PATH        Add a Steam library to the list. PATH should be an absolute
+                    path to a steam library containing the file "steam.dll". If
+                    the path does not exist it is not added to the list.
+
+    list            List registered steam libraries.
+
+    remove PATH     Remove a steam library from the list. PATH should be an
+                    absolute path of a already registered steam library. If
+                    PATH is not in list this command does nothing.
+
+DESCRIPTION
+    Manage Steam libraries. With this command you can add, remove or list
+    registered Steam libraries. When calling this command without any
+    arguments, it is the same as running "sgbackup ${COMMAND} list".
+    
+    Steam libraries can be used to scan for Steam games with the 
+    "sgbackup steam scan" command by parsing the *.acf files to see which 
+    games are in a specific library.

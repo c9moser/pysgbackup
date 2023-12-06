@@ -1,0 +1,8 @@
+${TITLE}
+
+SYNOPSIS
+${SYNOPSIS}
+
+DESCRIPTION
+    List command keys only. If you want to list commands with a short 
+    description, use "sgbackup list-commands" instead.

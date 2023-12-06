@@ -1,0 +1,8 @@
+${TITLE}
+
+SYNOPSIS
+${SYNOPSIS}
+
+DESCRIPTION
+    Mark a games as active. This command take GAME_IDs as arguments. It is an
+    error if the GAME_ID does not exist.

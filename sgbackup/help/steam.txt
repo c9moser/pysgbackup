@@ -1,0 +1,31 @@
+${TITLE}
+
+SYNOPSIS
+${SYNOPSIS}
+
+OPTIONS
+    ignored     List ignored steamapps.
+
+    list        List steam games.
+
+    new         List new, unregistered SteamApps.
+
+    scan        Scans for new games and lets you perform actions interactively
+                on the found games.
+
+    update      Update settings of steam games. This includes the update of 
+                INSTALLDIR when the SteamApp is moved to another library.
+
+DESCRIPTION
+    Perform action on SteamApps. When called without any argument, this command
+    lists registered SteamApps.
+
+    The scan command is always interactive. It asks for actions to perform on
+    SteamApps, where you can choos to add, ignore or skip the current App. If
+    you choose "ignore", the SteamApp is added to the ignore list. The "add" 
+    option is simmilar to the "add-game" command in interactive mode.
+
+    The update command automatically updates the settings of Steam-Games in
+    the .game file. This is quite useful if you moved a game from a Steam-
+    Library to another.
+    

@@ -1,0 +1,25 @@
+${TITLE}
+
+SYNOPSIS
+${SYNOPSIS}
+
+DESCRIPTION
+    This command manages archiver settings.
+
+    Without an argument or with "get", the current archiver, being used,
+    is displayed.
+
+    When the "list" argument is used, all available archivers are beind
+    printed to stdout.
+
+    The scan command scans for installed archivers. Currently this command 
+    only works on Windows and only 7zip and WinRAR are looked up. If a
+    supported archiver is found, the corresponding .archiver file is created
+    and the archiver is made available.
+
+    The "set" argument followed by an ArchiverID is used to set the archiver
+    to use for backups.
+
+
+ARCHIVERS
+${ARCHIVERS}

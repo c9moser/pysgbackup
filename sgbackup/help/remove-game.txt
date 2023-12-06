@@ -1,0 +1,22 @@
+${TITLE}
+
+SYNOPSIS
+${SYNOPSIS}
+
+OPTIONS
+    -B --no-backup      Do not create a backup of the corresponding .game file.
+
+    -b --backup         Create a backup of the coreesponding .game file.
+
+CONFIGURATION SETTINGS
+    [commandGame]
+        removeGameBackup    This is a boolean option ("true" or "false") to
+                            enable/disable backup sof .game files when removing
+                            games per default. The default behavoiur can be
+                            changed using commandline switches.
+
+DESCRIPTION
+    This command removes games from the list and deletes the corresponding .game
+    file. If backups are enabled, the .game file is backed up and has the format
+    "$${GAME}.game.bak". Having backups of .game files is generally a good idea,
+    because you can restore .game files by removing the ending ".bak".

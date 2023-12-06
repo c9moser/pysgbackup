@@ -1,0 +1,75 @@
+${TITLE}
+
+SYNOPSIOS
+${SYNOPSIS}
+
+OPTIONS
+    -d --dir <SAVEGAME_DIR>             The savegame directory to backup. This
+                                        should be a relative path originating
+                                        from SAVEGAME_ROOT. This is a parsed
+                                        as template string conataining 
+                                        variables. ($$VARIABLE or 
+                                        $${VARIABLE}).
+
+    -i --interactive                    Add game interactive. This flag asks
+                                        you for the variables needed for a 
+                                        game to backup.
+
+    -I --no-interactive                 Add non ineractive. Useful for scripts.
+                                        You have to set the required variables
+                                        using commandline flags.
+
+    -N --savegame-name <SAVEAGE_NAME>   The name under which the savegames are
+                                        backed up.
+
+    -n --name <NAME>                    The name of the game.
+
+    -s --steam <STREAM_APPID>           This variable is optional. It sets the
+                                        steam-appid for the game. This should
+                                        be an positive integer value or 0 if
+                                        not set.
+
+    -r --root <SAVEGAME_ROOT>           The root directory of savegames. It is
+                                        the directory to which the archiver
+                                        switches before archiving and 
+                                        restoring. It should be an absolute
+                                        path.
+                                        This option is parsed as a template
+                                        string that can conatin variables.
+                                        RESTORE WILL FAIL IF THIS DIRECTORY
+                                        DOES NOT EXIST.
+
+    -v --variable <VAR_NAME=VAR_VALUE>  Set variables. The first equal 
+                                        character ('=') is the separator
+                                        between the variable name and the 
+                                        variable value.
+                                        Variable names should not contain any 
+                                        whitespace characters.
+
+    -x --installdir <INSTALLDIR>        The game installation directory.
+                                        This options is optional and can
+                                        be used as $${INSTALLDIR} variable
+                                        in SAVEGAME_ROOT as path.
+
+CONFIGURATION VARIABLES
+    Group used is [commandGame]: 
+        addGameInteractive  Add a game interactive by default. This is a
+                            boolean value (it accepts "true" or "false").
+                            If set to "false" you have to call that command
+                            with the --interactive flag to enter the
+                            interactive mode.
+
+DESCRIPTION
+    This command creates .game files, so you don't need to write them by hand.
+    The interactive mode asks you for the necessary configuration values for a
+    game to be backed up. If you want to write .game files by hand, read
+    the documentation shown by "sgbackup help".
+
+    The interactive mode can be enabled or disabled by default (see 
+    the section "CONFIGURATION VARIABLES" for more info). If enabled, you can
+    add games with the --no-interactive flag from scripts using command line 
+    options. If required options are missing, the game is not added and the
+    program exits with an error.
+
+    If you have disabled the interactive mode by default, call this command
+    with the --interactive flag to enter the interactive mode.

@@ -1,0 +1,87 @@
+${TITLE}
+
+SYNOPSIS
+${SYNOPSIS}
+
+OPTIONS
+    -d --dir SAVEGAME_DIR               The savegame directory. This should
+                                        be a relative path originating from
+                                        SAVEGAME_ROOT. It can be a template
+                                        string containign variables ($$VARNAME 
+                                        or $${VARNAME}).
+
+    -g --id GAME_ID                     The new GameID to set. If not used the
+                                        old GameID is kept.
+
+    -I --no-interactive                 Disable interactive mode. Useful for
+                                        changing game-settings with scripts.
+
+    -i --interactive                    Enable interactive mode. In this mode
+                                        the user is asked for new game 
+                                        configuration values. Useful for
+                                        editing game configuration on the 
+                                        commandline.
+
+    -N --savegame-name SG_NAME          The SaveGame name. This value is the
+                                        name under which savegame backups are
+                                        stored. This value should not contain
+                                        any spaces, user undescores ("_")
+                                        instead.
+
+    -n --name GAME_NAME                 The full name of the game.
+
+    -R --remove-variable VAR_NAME       Remove variable VAR_NAME from the 
+                                        variables set in .game file. If 
+                                        removing a variable your
+                                        SAVEGAME_ROOT or SAVEGAME_DIR
+                                        string relies on, your backup
+                                        or restore might fail.
+
+    -r --root SAVEGAME_ROOT             The savegame root directory. This
+                                        should be an absolute path. Take 
+                                        a directory that should exist. If
+                                        this directory doeas not exist
+                                        backup and restore will fail.
+                                        SAVEGAME_ROOT can be a template 
+                                        string containing variables.
+
+    -s --steam STEAM_APPID              The steam AppID. This value is
+                                        an integer with the steam-appid
+                                        of the game. Set it to 0 if the
+                                        game is not from steam or does
+                                        not have an AppID.
+
+    -v --variable VAR_NAME=VAR_VALUE    Add/Change a variable. It is in
+                                        the format NAME=VALUE. Value can
+                                        contain equal characters ("=").
+
+    -x --installdir INSTALLDIR          The game installation directory.
+                                        This is an optional value. If
+                                        INSTALLDIR is an empty string,
+                                        it is removed from configuration.
+
+CONFIGURATION SETTINGS
+    The configuration group is [commandGame].
+
+    [commandGame] CONFIGURATION KEYS:
+        editGameInteractive This option enables/disables default interactive
+                            mode. You can change the default behaviour on the
+                            commandline using the "--interactive" or 
+                            "--no-interactive" flag when calling this command. 
+
+DESCRIPTION
+    "sgbackup ${COMMAND}" edits the .game file of a game to backup or restore. 
+    You need to give a GAME_ID as an argument for the program to know which 
+    game to edit. It is an error if the GAME_ID does not exist. If you want
+    to add a new game, use "sgbackup add-game" instead.
+    
+    If in interactive mode is enabled, you are asked for the different
+    configuration settings. If you called that command with options, given 
+    configuration are displayed as defaults for the game settings.
+
+    When in non interactive mode you have to give the paramters you want to
+    change on the commandline.
+
+    The changes made are written to the corresponding .game file and the 
+    sgbackup.Game instance is updated accordingly.
+    

@@ -1,0 +1,20 @@
+${TITLE}
+
+SYNOPSIS
+${SYNOPSIS}
+
+DESCRIPTION
+    Get/set/list configuration values. If called without any argument, this
+    command behaves the same as if it is called with the 'list' subcommand.
+
+    The 'list' subcommand lists all registered configuration options in a
+    NAME=VALUE format.
+
+    When called with the 'get' as subcommnd, a configuration key is needed
+    as an argument. It is an error if the no configuration key is given. This
+    subcommnd prints the variable value to stdout.
+
+    The 'set' subcommand sets a configuration key to a value. It needs a
+    valid configuration key as first argument and a value as a second argument.
+    It is an error if the configuration key is not reigstered. The value is
+    validated if a validate function for that configuration key exists.

@@ -1,0 +1,17 @@
+${TITLE}
+
+SYNOPSIS
+${SYNOPSIS}
+
+OPTIONS
+    -a --active         List active games only.     
+    -f --finished       List finished games only.
+
+DESCRIPTION
+    List games by id and game name. If called wihtout any option, this command
+    shows all games. This is the same as calling it with "--active --finished"
+    flags.
+
+    Calling "list-active-games" behaves the same as calling this command with
+    the "--active" flag. "list-finished-games" is like calling this command
+    with the "--finished" flag.

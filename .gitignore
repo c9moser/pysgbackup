@@ -1,0 +1,27 @@
+# EDITOR TEMP FILES
+*.swp
+*~
+
+# python
+__pycache__
+__pycache__/*
+*/__pycache__
+# NFS CACHE FILES
+.nfs.*
+
+bin/sgbackup
+bin/sgbackup.bat
+
+build
+dist
+pysgbackup.egg-info
+
+# DOXYGEN DOCUMENATATION
+doxygen/html
+doxygen/latex
+doxygen/pdf
+
+# build helpfiles
+sgbackup/help/*.txt.bz2
+
+build/*

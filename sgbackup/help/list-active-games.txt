@@ -1,0 +1,7 @@
+${TITLE}
+
+SYNOPSIS
+${SYNOPSIS}
+
+DESCRIPTION
+    List active games. This command does not take any arguments.

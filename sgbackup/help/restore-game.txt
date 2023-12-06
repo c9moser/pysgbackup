@@ -1,0 +1,30 @@
+${TITLE}
+
+SYNOPSIS
+${SYNOSPIS}
+
+OPTIONS
+    -a --latest-active      Select lastest active backup to restore
+    -c --choose             Choose backup interactive
+    -l --latest             Select latest backup to restore
+    -f --latest-finished    Choose latest finished backup
+
+DESCRIPTION
+    Restore SaveGame backups by GAME_ID. When called without any flags, a
+    backup-file can be given as a second argument. If the backup file is not 
+    an absolute path, it is looked up in $${BACKUP_DIR}/$${SAVEGAME_NAME}
+    directory. If the second argument is missing, it is assumed that you
+    want to choose one of the backup files found in the $$BACKUP_DIR
+    directory. This is the same as using the "--choose" flag.
+
+    When using the "--latest" flag, the latest backup made, be it an active
+    or finished backup, is chosen for restore. To choose the latest active
+    or finished backup use the "--latest-active" or "--latest-finished" flag.
+
+    If the $$SAVEGAME_ROOT directory of the game to restore does not exist, 
+    the program exits with an error. If the $$SAVEGAME_DIR directory does not
+    exist, all missing directories beginning from $$SAVEGAME_ROOT are created.
+
+WARNING
+    Your current savegame files might be overwritten without asking for 
+    permission by this command, so back them up first!!!

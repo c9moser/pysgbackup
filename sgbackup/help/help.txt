@@ -1,0 +1,9 @@
+${TITLE}
+
+SYNOPSIS
+${SYNOPSIS}
+
+DESCRIPTION
+    Print a helpmessage for commands. This command takes an command as an
+    argument and prints its help. If no command is given sgbackup help is 
+    being displayed.

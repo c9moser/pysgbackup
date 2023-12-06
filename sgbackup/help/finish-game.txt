@@ -1,0 +1,22 @@
+${TITLE}
+
+SYNOPSIS
+${SYNOPSIS}
+
+OPTIONS
+    -B --no-backup  Do not create a backup of the backup of given games.
+
+    -b --backup     Create a backup of given games. The created backup is 
+                    marked as finished. 
+
+CONFIGURATION SETTINGS:
+    [commandGame] SECTION
+        finishBackup    Atomatically create backups per default when finishing
+                        games. This behaviour can be altered by using the
+                        "--backup" or "--no-backup" flags on the commandline.
+
+DESCRIPTION
+    Mark games by GAME_ID as finished. If called with "--backup" or if backups
+    are enabled in the configuration, a SaveGame backup is created. This backup
+    is marked as finsihed. Finished games are excluded from the list if you
+    call "sgbackup backup --active" to backup your active games.

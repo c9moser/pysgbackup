@@ -1,0 +1,22 @@
+${TITLE}
+
+SYNOPSIS
+${SYNOPSIS}
+
+DESCRIPTION
+    Get/set/delete/list variables. If called without any argument this command
+    behaves the same as if called with the 'list' subcommand.
+
+    The 'list' subcommand lists the application variables in a NAME=VALUE 
+    format.
+
+    To get a variable value use the 'get' subcommand with a variable name as
+    an argument. If the variable does not exist, an empty string is printed
+    to stdout.
+
+    The 'set' subcommand sets a variable. This subcommand needs to arguments.
+    The first argument is the variable name. The second argument is the
+    variable value. It is an error if one argument is missing.
+
+    The 'delete' subcommand deletes a variable. It needs a variable name as
+    an argument. If the variable does not exist, this subcommand does nothing.

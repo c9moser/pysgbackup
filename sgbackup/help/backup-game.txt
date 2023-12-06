@@ -1,0 +1,23 @@
+${TITLE}
+
+SYNOPSIS
+${SYNOPSIS}
+
+OPTIONS
+    -a --active     Backup active SaveGames
+    -A --all        Backup all SaveGames
+    -f --finished   Backup finished SaveGames
+
+DESCRIPTION
+    This command backs up your savegames. You can select if active, finished,
+    all or only SaveGames listed as GameID arguments are being backed up. If
+    one of the --active or --finished flags are used, GameIDs given by 
+    commandline are added to the list of games being backed up.
+
+    The backups are given by "$${SAVEGAME_NAME}.$${DATETIME}.$${EXTENSION}" 
+    for active games and 
+    "$${SAVEGAME_NAME}.finished.$${DATETIME}.$${EXTENSION}" for finished 
+    games. $${SAVEGAME_NAME} is by savegameName variable in the ".game"
+    configuration file. $${DATETIME} is the date and time when the backup was
+    created. It has the format YYYYmmdd-HHMMSS. $${EXTENSION} is the archive-
+    file-extension used by the archiver.
