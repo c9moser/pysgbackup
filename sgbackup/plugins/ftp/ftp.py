@@ -254,6 +254,27 @@ class FtpClient(GObject.GObject):
                     raise err
         self.cwd(ftp_wd)
 
+    def create_subdirs(self,path_list:list):
+        wd = self.__ftp.pwd()
+        if len(path_list):
+            try:
+                os.path.cwd(path_list[0])
+            except:
+                self.__ftp.mkd(path_list[0])
+                try:
+                    self.__ftp.cwd(path_list[0])
+                except Exception as err:
+                    self.__ftp.cwd(wd)
+                    raise err
+            if len(path_list) > 1:
+                try:
+                    self.create_subdirs(path_list)
+                except Exception as err:
+                    self.__ftp.cwd(wd)
+                    raise err
+                
+        self.__ftp.cwd(wd)
+
     def synchronize(self):
         def synchronize_subdir(backup_dir,subdir,ftp_subdir):
             if not os.path.isdir(os.path.join(backup_dir,subdir)):
@@ -497,9 +518,25 @@ class FtpClient(GObject.GObject):
         
         if self.application.config.verbose:
             print("[FTP:put] {file}".format(file=file))
+
+        path_list = os.path.split(file)
+        subdirs = None
+        for i in range(len(path_list)):
+            if path_list[i] == game.savegame_name:
+                if len(path_list) > i + 2:
+                    subdirs = path_list[i+1:-1]
+                break
+
+        
         try:
+            if subdirs is not None:
+                self.create_subdirs(subdirs)
+
             with open(file,"rb") as ifile:
-                self.__ftp.storbinary("STOR {}".format(os.path.basename(file)),ifile)
+                if subdirs is not None:
+                    self.__ftp.storbinary("STOR {}".format('/'.join(subdirs + [os.path.basename(file)])),ifile)
+                else:
+                    self.__ftp.storbinary("STOR {}".format(os.path.basename(file)),ifile)
         except Exception as err:
             print("Uploading file {file} failed! ({message})".format(file=os.path.basename(file),message=err),file=sys.stderr)
         try:
@@ -538,8 +575,29 @@ class FtpClient(GObject.GObject):
         if self.application.config.verbose:
             print("[FTP:put] {file}".format(file=file))
         try:
+            path_list = os.path.split(file)
+            subdirs = None
+            for i in range(len(path_list)):
+                if path_list[i] == game.savegame_name
+                    if len(path_list) > i + 2:
+                        subdirs = path_list[i+1:-1]
+                    break
+
+            if subdirs is not None:
+                try:
+                    self.create_subdirs(subdirs)
+                except Exception as err:
+                    print("Unable to create subdirectories!",file=sys.stderr)
+                    self.cwd(wd)
+                    if close_connection:
+                        self.__ftp.close()
+                    return
+
             with open(file,"rb") as ifile:
-                self.__ftp.storbinary("STOR {}".format(os.path.basename(file)),ifile)
+                if self.subdirs is not None:
+                    self.__ftp.storbinary("STOR {}".format("/".join(subdirs + [os.path.basename(file)])),ifile)
+                else:
+                    self.__ftp.storbinary("STOR {}".format(os.path.basename(file)),ifile)
         except Exception as err:
             print("Uploading file {file} failed! ({message})".format(file=os.path.basename(file),message=err),file=sys.stderr)
         try:
