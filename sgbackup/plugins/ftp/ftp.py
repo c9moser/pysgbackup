@@ -20,7 +20,7 @@ class FtpClient(GObject.GObject):
                  use_tls=False,
                  backup_dir="",
                  auto_backup=False,
-                 timeout=300):
+                 timeout=600):
         GObject.GObject.__init__(self)
         self.__app = app
         self.__id = self.sanitize_id(id)
@@ -258,10 +258,10 @@ class FtpClient(GObject.GObject):
         wd = self.__ftp.pwd()
         if len(path_list):
             try:
-                os.path.cwd(path_list[0])
+                self.__ftp.cwd(path_list[0])
             except:
-                self.__ftp.mkd(path_list[0])
                 try:
+                    self.__ftp.mkd(path_list[0])
                     self.__ftp.cwd(path_list[0])
                 except Exception as err:
                     self.__ftp.cwd(wd)
@@ -519,14 +519,21 @@ class FtpClient(GObject.GObject):
         if self.application.config.verbose:
             print("[FTP:put] {file}".format(file=file))
 
-        path_list = os.path.split(file)
         subdirs = None
-        for i in range(len(path_list)):
-            if path_list[i] == game.savegame_name:
-                if len(path_list) > i + 2:
-                    subdirs = path_list[i+1:-1]
-                break
+        if self.application.config.platform_win32:
+            dirlist=[]
+            for i in file.split("/"):
+                for j in i.split("\\"):
+                    if j:
+                        dirlist.append(j)
+        else:
+            dirlist=file.split("/")
 
+        for i in range(len(dirlist)):
+            if dirlist[i] == game.savegame_name:
+                if len(dirlist) > i + 2:
+                    subdirs = dirlist[i+1:-1]
+                break
         
         try:
             if subdirs is not None:
@@ -571,30 +578,31 @@ class FtpClient(GObject.GObject):
             if close_connection:
                 self.close()
             return
-        
-        if self.application.config.verbose:
-            print("[FTP:put] {file}".format(file=file))
-        try:
-            path_list = os.path.split(file)
-            subdirs = None
-            for i in range(len(path_list)):
-                if path_list[i] == game.savegame_name
-                    if len(path_list) > i + 2:
-                        subdirs = path_list[i+1:-1]
-                    break
 
+        subdirs = None
+        if self.application.config.platform_win32:
+            dirlist=[]
+            for i in file.split("/"):
+                for j in i.split("\\"):
+                    if j:
+                        dirlist.append(j)
+        else:
+            dirlist=file.split("/")
+
+        for i in range(len(dirlist)):
+            if dirlist[i] == game.savegame_name:
+                if len(dirlist) > i + 2:
+                    subdirs = dirlist[i+1:-1]
+                break
+
+        try:
             if subdirs is not None:
-                try:
-                    self.create_subdirs(subdirs)
-                except Exception as err:
-                    print("Unable to create subdirectories!",file=sys.stderr)
-                    self.cwd(wd)
-                    if close_connection:
-                        self.__ftp.close()
-                    return
+                self.create_subdirs(subdirs)
 
             with open(file,"rb") as ifile:
-                if self.subdirs is not None:
+                if self.application.config.verbose:
+                    print("[FTP:put] {file}".format(file=file))
+                if subdirs is not None:
                     self.__ftp.storbinary("STOR {}".format("/".join(subdirs + [os.path.basename(file)])),ifile)
                 else:
                     self.__ftp.storbinary("STOR {}".format(os.path.basename(file)),ifile)
