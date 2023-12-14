@@ -47,7 +47,7 @@ class Synopsis(Command):
 
         return get_builtin_help(self.id,command,self.get_help_synopsis(command),None,None)
 
-    def do_parse(self, cmd, argv):
+    def parse_vfunc(self, cmd, argv):
         try:
             opts,args = getopt.getopt(argv,'',[],)
         except getopt.GetoptError as err:
@@ -64,7 +64,7 @@ class Synopsis(Command):
             
         return options
 
-    def do_execute(self,options):
+    def execute_vfunc(self,options):
         if not options.topic:
             print(self.get_sgbackup_synopsis())
         else:
@@ -127,7 +127,7 @@ class Help(Command):
             command = self.id
         return get_builtin_help(self.id,command,self.get_help_synopsis(command),None,None)
     
-    def do_parse(self,cmd,argv):
+    def parse_vfunc(self,cmd,argv):
         try:
             opts,args = getopt.getopt(argv,'',[],)
         except getopt.GetoptError as err:
@@ -144,7 +144,7 @@ class Help(Command):
             
         return options
     
-    def do_execute(self,options):
+    def execute_vfunc(self,options):
         if not options.topic:
             text = self.get_sgbackup_help()
         else:

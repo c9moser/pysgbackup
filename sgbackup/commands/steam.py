@@ -66,7 +66,7 @@ class Steamlib(Command):
             command = self.id
         return get_builtin_help(self.id,command,self.get_help_synopsis(command),None,None)
     
-    def do_parse(self, cmd, argv):
+    def parse_vfunc(self, cmd, argv):
         options = SteamlibOptions(self.application,cmd)
 
         if len(argv) > 0:
@@ -95,7 +95,7 @@ class Steamlib(Command):
 
         return options
     
-    def do_execute(self, options:SteamlibOptions):
+    def execute_vfunc(self, options:SteamlibOptions):
         if (options.mode == SteamlibOptions.MODE_LIST):
             for sl in self.application.steam.libraries:
                 print(sl.path)
@@ -107,7 +107,7 @@ class Steamlib(Command):
         elif (options.mode == SteamlibOptions.MODE_REMOVE):
             self.application.steam.remove_library(options.path)
             self.application.config.save()
-    # do_execute()
+    # execute_vfunc()
 # Steamlib class
 
 class SteamOptions(CommandOptions):
@@ -251,7 +251,7 @@ class Steam(Command):
         # while not done
         game.save()
     
-    def do_parse(self, cmd, argv):
+    def parse_vfunc(self, cmd, argv):
         if len(argv) < 1:
             steam_cmd = 'list'
         else:
@@ -265,7 +265,7 @@ class Steam(Command):
         
         return options
 
-    def do_execute(self, options):
+    def execute_vfunc(self, options):
         if options.command == 'list':
             appid_len = 0
             gameid_len = 0

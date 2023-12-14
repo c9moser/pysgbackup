@@ -57,7 +57,7 @@ class Plugin(Command):
         return """{command} [list]
 {command} [description|disable|enable|status] PLUGIN""".format(command=command)
         
-    def do_parse(self, cmd, argv):
+    def parse_vfunc(self, cmd, argv):
         options = PluginOptions(self.application,cmd)
 
         if len(argv) > 0:
@@ -80,7 +80,7 @@ class Plugin(Command):
             
         return options
         
-    def do_execute(self, options:PluginOptions):
+    def execute_vfunc(self, options:PluginOptions):
         if not options.is_valid:
             raise OptionError("Invalid options!")
         

@@ -208,7 +208,7 @@ sgbackup {command} set OPTION VALUE""".format(command=command)
 
         return get_builtin_help(self.id,command,self.get_help_synopsis(command),None,None)
 
-    def do_parse(self, cmd, argv):
+    def parse_vfunc(self, cmd, argv):
         options = ConfigOptions(self.application,cmd)
 
         if len(argv) == 0:
@@ -246,7 +246,7 @@ sgbackup {command} set OPTION VALUE""".format(command=command)
             
         return options
     
-    def do_execute(self, options=ConfigOptions):
+    def execute_vfunc(self, options=ConfigOptions):
         def get_boolean_string(b):
             if b:
                 return "true"

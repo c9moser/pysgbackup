@@ -25,7 +25,7 @@ class ListCommands(Command):
 
         return get_builtin_help(self.id,command,self.get_help_synopsis(command),None,None)
         
-    def do_parse(self,cmd,argv):
+    def parse_vfunc(self,cmd,argv):
         options = CommandOptions_None(self.application,None)
         try:
             opts,args = getopt.getopt(argv,'',[])
@@ -37,7 +37,7 @@ class ListCommands(Command):
         
         return options
     
-    def do_execute(self,options:CommandOptions_None):
+    def execute_vfunc(self,options:CommandOptions_None):
         commands = self.application.commands.list
         cmd_len = 0
         for i in commands:
@@ -67,7 +67,7 @@ class ListCommandKeys(Command):
 
         return get_builtin_help(self.id,command,self.get_help_synopsis(command),None,None)
 
-    def do_parse(self,cmd,argv):
+    def parse_vfunc(self,cmd,argv):
         options = CommandOptions_None(self.application,None)
         try:
             opts,args = getopt.getopt(argv,'',[])
@@ -79,7 +79,7 @@ class ListCommandKeys(Command):
         
         return options
     
-    def do_execute(self,options:CommandOptions_None):
+    def execute_vfunc(self,options:CommandOptions_None):
         for i in self.application.commands.list:
             print(i)
         return 0

@@ -53,7 +53,7 @@ class Checksum(Command):
         return """{command} [list|create-missing]
 {command} check [-d|--delete] [GAME]""".format(command=command)
 
-    def do_parse(self, cmd, argv):
+    def parse_vfunc(self, cmd, argv):
         options = ChecksumOptions(self.application,cmd)
 
         if len(argv) == 0 or argv[0] == 'list':
@@ -84,7 +84,7 @@ class Checksum(Command):
                     
         return options
 
-    def do_execute(self, options:ChecksumOptions):
+    def execute_vfunc(self, options:ChecksumOptions):
 
         if options.subcommand == 'list':
             for i in CHECKSUMS:

@@ -348,7 +348,7 @@ class FtpConfig(Command):
         return options
            
 
-    def do_parse(self, cmd, argv):
+    def parse_vfunc(self, cmd, argv):
         options = FtpConfigOptions(self.application,cmd)
         if len(argv) == 0 or argv[0] == 'list':
             return options
@@ -452,7 +452,7 @@ class FtpConfig(Command):
         
         return options
             
-    def do_execute(self, options:FtpConfigOptions):
+    def execute_vfunc(self, options:FtpConfigOptions):
         if options.subcommand == "list":
             _print_ftp_list(self.application.plugins.get('ftp'))
             return 0
@@ -569,7 +569,7 @@ class Ftp(Command):
         return """{command} [list]
 {command} synchronize [FTPID]"""
 
-    def do_parse(self, cmd, argv):
+    def parse_vfunc(self, cmd, argv):
         options = FtpOptions(self.application,cmd)
         if len(argv) == 0 or argv[0] == 'list':
             return options
@@ -594,7 +594,7 @@ class Ftp(Command):
             
         return options
         
-    def do_execute(self, options:FtpOptions):
+    def execute_vfunc(self, options:FtpOptions):
         if options.subcommand == 'list':
            _print_ftp_list(self.application.plugins.get('ftp'))
            return 0

@@ -54,7 +54,7 @@ sgbackup {command} set VARIABLE_NAME VARIABLE_VALUE""".format(command=command)
 
         return get_builtin_help(self.id,command,self.get_help_synopsis(command),None,None)
     
-    def do_parse(self,command,argv):
+    def parse_vfunc(self,command,argv):
         options = VariableOptions(self.application,command)
         if len(argv) == 0:
             return options
@@ -80,7 +80,7 @@ sgbackup {command} set VARIABLE_NAME VARIABLE_VALUE""".format(command=command)
         
         return options
     
-    def do_execute(self, options:VariableOptions):
+    def execute_vfunc(self, options:VariableOptions):
         if options.mode == 'list':
             for variable,value in self.application.config.raw_variables.items():
                 print("{}={}".format(variable,value))

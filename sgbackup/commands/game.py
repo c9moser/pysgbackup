@@ -181,7 +181,7 @@ class AddGame(Command):
 
         return get_builtin_help(self.id,command,self.get_help_synopsis(command),None,None)
     
-    def do_parse(self, cmd, argv):
+    def parse_vfunc(self, cmd, argv):
         try: 
             opts,args = getopt.getopt(
                 argv,
@@ -411,7 +411,7 @@ class AddGame(Command):
                 return True
         return False
 
-    def do_execute(self, options):
+    def execute_vfunc(self, options):
         if not isinstance(options,GameOptions):
             raise TypeError("\"options\" is not a \"sgbackup.commands.game.GameOptions\" instance!")
         
@@ -449,7 +449,7 @@ class EditGame(Command):
 
         return get_builtin_help(self.id,command,self.get_help_synopsis(command),None,None)
     
-    def do_parse(self,cmd,argv):
+    def parse_vfunc(self,cmd,argv):
         try:
             opts,args = getopt.getopt(argv,'d:g:iIn:N:r:R:s:V:x:',
                                       [
@@ -687,7 +687,7 @@ class EditGame(Command):
                 return True
         return False
 
-    def do_execute(self,options:GameOptions):
+    def execute_vfunc(self,options:GameOptions):
         if options.interactive:
             self.edit_game_interactive(options)
 
@@ -755,7 +755,7 @@ class RemoveGame(Command):
 
         return get_builtin_help(self.id,command,self.get_help_synopsis(command),None,None)
     
-    def do_parse(self,cmd,argv):
+    def parse_vfunc(self,cmd,argv):
         try:
             opts,args = getopt.getopt(argv,'Bb',['--backup','--no-backup'])
         except getopt.GetoptError as err:
@@ -783,7 +783,7 @@ class RemoveGame(Command):
             
         return options
 
-    def do_execute(self, options:RemoveGameOptions):
+    def execute_vfunc(self, options:RemoveGameOptions):
         for gid in options.game_ids:
             try:
                 game = self.application.games.get(gid)
@@ -861,7 +861,7 @@ class ListGames(Command):
 
         return get_builtin_help(self.id,command,self.get_help_synopsis(command),None,None)
         
-    def do_parse(self, cmd, argv):
+    def parse_vfunc(self, cmd, argv):
         try:
             opts,args = getopt.getopt(argv,'af',['active','finished'])
         except getopt.GetoptError as err:
@@ -881,7 +881,7 @@ class ListGames(Command):
         
         return options
     
-    def do_execute(self, options:ListGamesOptions):
+    def execute_vfunc(self, options:ListGamesOptions):
         if options.show_all:
             game_ids = self.application.games.game_ids
         elif options.show_active:
@@ -924,10 +924,10 @@ class ListActiveGames(ListGames):
 
         return get_builtin_help(self.id,command,self.get_help_synopsis(command),None,None)
 
-    def do_parse(self,cmd,argv):
+    def parse_vfunc(self,cmd,argv):
         if len(argv) > 0:
             raise error.OptionError("Command \"{command}\" does not take any options and arguments!".format(command=cmd))
-        return ListGames.do_parse(self,cmd,['--active'])
+        return ListGames.parse_vfunc(self,cmd,['--active'])
 # ListActiveGames class
 
 class ListFinishedGames(ListGames):
@@ -946,10 +946,10 @@ class ListFinishedGames(ListGames):
 
         return get_builtin_help(self.id,command,self.get_help_synopsis(command),None,None)
 
-    def do_parse(self, cmd, argv):
+    def parse_vfunc(self, cmd, argv):
         if len(argv) > 0:
             raise error.OptionError("Command \"{command}\" does not take any options and arguments!".format(command=cmd))
-        return ListGames.do_parse(self,cmd,['--finished'])    
+        return ListGames.parse_vfunc(self,cmd,['--finished'])    
 # ListFinishedGames class
 
 class ActivateGameOptions(CommandOptions):
@@ -996,7 +996,7 @@ class ActivateGame(Command):
 
         return get_builtin_help(self.id,command,self.get_help_synopsis(command),None,None)
     
-    def do_parse(self, cmd, argv):
+    def parse_vfunc(self, cmd, argv):
         try:
             opts,args = getopt.getopt(argv,'',[])
         except getopt.GetoptError as err:
@@ -1015,7 +1015,7 @@ class ActivateGame(Command):
         return options
 
     
-    def do_execute(self, options:ActivateGameOptions):
+    def execute_vfunc(self, options:ActivateGameOptions):
         for game in options.games:
             game.is_active = True
             game.save()
@@ -1079,7 +1079,7 @@ class FinishGame(Command):
 
         return get_builtin_help(self.id,command,self.get_help_synopsis(command),None,None)
 
-    def do_parse(self, cmd, argv):
+    def parse_vfunc(self, cmd, argv):
         try:
             opts,args = getopt.getopt(argv,'bB',['backup','no-backup'])
         except getopt.GetoptError as err:
@@ -1103,7 +1103,7 @@ class FinishGame(Command):
 
         return options
     
-    def do_execute(self, options:FinishGameOptions):
+    def execute_vfunc(self, options:FinishGameOptions):
         for game in options.games:
             game.is_finished = True
             game.save()

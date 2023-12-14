@@ -66,7 +66,7 @@ class BackupGame(Command):
         return get_builtin_help(self.id,command,self.get_help_synopsis(command),None,None)
         
     
-    def do_parse(self, cmd, argv):
+    def parse_vfunc(self, cmd, argv):
         try:
             opts,args = getopt.getopt(argv,'aAf',['all','active','finished'])
         except getopt.GetoptError as err:
@@ -88,7 +88,7 @@ class BackupGame(Command):
 
         return options
     
-    def do_execute(self, options):
+    def execute_vfunc(self, options):
         for game in options.games:
             if self.application.config.verbose:
                 print("Backing up {game_id}: \"{game_name}\"".format(game_id=game.game_id,game_name=game.game_name))
@@ -139,7 +139,7 @@ sgbackup {command} GAME_ID BACKUP_FILE""".format(command=command)
             command = self.id
         return get_builtin_help(self.id,command,self.get_help_synopsis(command),None,None)
     
-    def do_parse(self,cmd,argv):
+    def parse_vfunc(self,cmd,argv):
         try:
             opts,args = getopt.getopt(argv,['acfl'],['choose','latest-active','latest-finished','latest'])
         except getopt.GetoptError as err:
@@ -358,7 +358,7 @@ sgbackup {command} GAME_ID BACKUP_FILE""".format(command=command)
                 choose = 'select'
         return None
 
-    def do_execute(self,options:RestoreGameOptions):
+    def execute_vfunc(self,options:RestoreGameOptions):
         if options.choose:
             bf = self.choose_backup(options.game)
             if bf is not None:

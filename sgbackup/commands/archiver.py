@@ -290,7 +290,7 @@ class Archiver(Command):
     def scan_unix(self):
         return False
     
-    def do_parse(self, cmd, argv):
+    def parse_vfunc(self, cmd, argv):
         options = ArchiverOptions(self.application,cmd)
 
         if len(argv):
@@ -311,7 +311,7 @@ class Archiver(Command):
                 options.archiver = argv[1]
         return options
     
-    def do_execute(self, options):
+    def execute_vfunc(self, options):
         if options.mode == ArchiverOptions.MODE_GET:
             print(self.application.archivers.standard_archiver.id)
             return 0
